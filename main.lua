@@ -16,6 +16,7 @@ function love.load()
   require "worldgeneration"
   require "load"
   require "entities"
+  require "classTest/childClass"
   love.graphics.setDefaultFilter( "nearest", "nearest")
   --love.filesystem.setIdentity("gamename")
   tiles={}
@@ -24,6 +25,9 @@ function love.load()
   entities={}
   textures={}
   tileindexes={}
+  obj = childClass:new(98,"test",999,"class1")
+
+  obj2 = childClass:new(1,"testV2",888,"class2")
   biomelist={}
   world={}
   debugseebiome=false

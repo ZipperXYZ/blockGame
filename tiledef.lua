@@ -13,7 +13,7 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.quadName = quadName or "none"
     self.flags = flags or {}
     self.properties = {}
-
+    self.border = flags["border"] or {}
     --va regarde la liste globale des texture si elle comprend le name de la texture pis si non elle va créer la texture
     if not textures["textures"][textureName] and textureName ~= "none" then
         textures["textures"][textureName] = love.graphics.newImage(textureName)
@@ -31,6 +31,14 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
 
     --flags comprend tout le reste, la pluspart vont être nil, donc assigner des variables pour tout de base
     -- comme par exemple 'newTile.isStone = flags.isStone or false', 'newTile.canBeMined = flags.canBeMined or true' -- ce sont juste des exemples,
+    if not self.border[0] and not textures["quads"][self.border["newQuad"]] then
+        self.border["newQuad"] = love.graphics.newQuad(
+            self.border["newQuad"][1] * self.border["newQuad"][5]
+            , self.border["newQuad"][2] * self.border["newQuad"][5]
+            , self.border["newQuad"][3] * self.border["newQuad"][5]
+            , self.border["newQuad"][4] * self.border["newQuad"][5]
+            , textures["textures"][self.textureName])
+    end
     self.isStone = flags.isStone or false
     self.canBeMined = flags.canBeMined or true
 end

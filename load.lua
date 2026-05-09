@@ -26,17 +26,19 @@ function loadtextures()
   textures["quads"]["wheatgrass"]=love.graphics.newQuad(88,0,8,8,textures["textures"]["tileset"])
   textures["quads"]["diamond"]=love.graphics.newQuad(96,0,8,8,textures["textures"]["tileset"])]]
 end
+
 function loadeverything()
   --loadtextures()
   --loadtiles()
   --loadbiomes()
 end
+
 function loadtiles()
-  tiles={}
-  tileindexes={}
-  textures={}
-  textures["textures"]={}
-  textures["quads"]={}
+  tiles = {}
+  tileindexes = {}
+  textures = {}
+  textures["textures"] = {}
+  textures["quads"] = {}
   --[[tilelists={}
   tilelists["all tiles"]={}
   tilelists["stones"]={}
@@ -46,7 +48,7 @@ function loadtiles()
   newtile("purplegrass","top","tileset","purplegrass",{["border type"]="non-solid"})
   newtile("shadowgrass","top","tileset","shadowgrass",{["border type"]="non-solid"})
   newtile("wheatgrass","top","tileset","wheatgrass",{["border type"]="non-solid"})
-  
+
   newtile("diamond","top","tileset","diamond",{["border type"]="normal"})
   newtile("stone","solid","tileset","stone",{["border"]={["quad"]="stone_top"},["isastone"]=true})
   newtile("darkstone","solid","tileset","darkstone",{["border"]={["quad"]="darkstone_top"},["isastone"]=true})
@@ -55,15 +57,14 @@ function loadtiles()
   newtile("coldstone","solid","tileset","coldstone",{["border"]={["quad"]="coldstone_top"},["isastone"]=true})
   newtile("lightstone","solid","tileset","lightstone",{["border"]={["quad"]="lightstone_top"},["isastone"]=true})
   newtile("hotstone","solid","tileset","hotstone",{["new quad"]={9,0,1,1,8},["border"]={["quad"]="hotstone_top",["new quad"]={9,1,1,1,8}},["isastone"]=true})
-  
+
   newtile("dirt_wall","wall","tileset","dirt",{["border"]={["quad"]="dirt_top2"},["color"]={0.5,0.5,0.5,1}})
   newtile("stone_wall","wall","tileset","stone",{["border"]={["quad"]="stone_top"},["color"]={0.5,0.5,0.5,1},["isastone"]=true})
   newtile("hotstone_wall","wall","tileset","hotstone",{["border"]={["quad"]="hotstone_top"},["color"]={0.5,0.5,0.5,1},["isastone"]=true})
   newtile("coldstone_wall","wall","tileset","coldstone",{["border"]={["quad"]="coldstone_top"},["color"]={0.5,0.5,0.5,1},["isastone"]=true})
-  
   ]]
-  
-  
+  Tile("none")
+  --Tile("dirt", "solid", "tileset", "dirt", { ["border"] = { 0, 1, 1, 1, 8 } }) faut changer border
 end
 
 --[[function gettileinfo(tilename,info)
@@ -71,7 +72,7 @@ end
     if tiles[tileindexes[tilename] ][info]==nil then
       return nil
     else
-      
+
     return tiles[tileindexes[tilename] ][info]
     end
   else
@@ -93,22 +94,22 @@ end]]
   if t["flags"]["new quad"]~=nil then textures["quads"][t["quad"] ]=love.graphics.newQuad(t["flags"]["new quad"][1]*t["flags"]["new quad"][5],t["flags"]["new quad"][2]*t["flags"]["new quad"][5],t["flags"]["new quad"][3]*t["flags"]["new quad"][5],t["flags"]["new quad"][4]*t["flags"]["new quad"][5],textures["textures"][t["texture"] ]) end
   if t["flags"]["border"]==nil then t["flags"]["border"]={} end
   if t["flags"]["border"]["quad"]==nil then t["flags"]["border"]["quad"]="none" end
-  
+
   if t["flags"]["border"]["new quad"]~=nil then textures["quads"][t["flags"]["border"]["quad"] ]=love.graphics.newQuad(t["flags"]["border"]["new quad"][1]*t["flags"]["border"]["new quad"][5],t["flags"]["border"]["new quad"][2]*t["flags"]["border"]["new quad"][5],t["flags"]["border"]["new quad"][3]*t["flags"]["border"]["new quad"][5],t["flags"]["border"]["new quad"][4]*t["flags"]["border"]["new quad"][5],textures["textures"][t["texture"] ]) end
-  
+
   if t["flags"]["border type"]==nil then t["flags"]["border type"]="non-solid" end
   if t["flags"]["isastone"]==nil then t["flags"]["isastone"]=false end
   if t["flags"]["hideback"]==nil then t["flags"]["hideback"]=t["type"]=="empty" end
   if t["flags"]["color"]==nil then t["flags"]["color"]={1,1,1,1} end
-  
+
   tileindexes[t["name"] ]=(#tiles+1)
   table.insert(tiles,t)
   table.insert(tilelists["all tiles"],t["name"])
   if t["flags"]["isastone"] then table.insert(tilelists["stones"],t["name"]) end
-  
+
 end
 function loadbiomes()
-  
+
   biomelist={}
   --newbiome("normalland")
   newbiome("none",0.5,0.5,-1,3,5,1)
@@ -126,18 +127,18 @@ function newbiome(biomename,temperature,wetness,deepnessmin,deepnessmax,deepness
   b["deepnessmax"]=deepnessmax
   b["likeness"]=likeness
   b["deepnesssmooth"]=deepnesssmooth
-  
-  
+
+
   table.insert(biomelist,b)
 end
 function loadentities()
   entitiesdefenition={}
-  
-  
+
+
 end
 function newentity(name)
   ne={}
-  
-  
+
+
   table.insert(entitiesdefenition,ne)
 end]]

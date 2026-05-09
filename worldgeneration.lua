@@ -409,44 +409,81 @@ function gettile(tilex,tiley)
   return tile
 end
 function getbiome(x,y)
-  biome="none"
-  nearest="n"
-  nearcenter=0
-  nearvalue=9999
-  op1=love.math.noise(x/biomesize,y/biomesize,worldseed-5)
-  op2=love.math.noise(x/(biomesize*1.2),y/(biomesize/1.2),worldseed-10)
-  for ib=1,#biomelist do
-    distance1=dist(op1,op2,biomelist[ib]["option1"],biomelist[ib]["option2"])^(biomelist[ib]["likeness"])
-    depth = (-y/worlddeepnessprogression)
-    
-    minDepth = biomelist[ib]["deepnessmin"]
-    maxDepth = biomelist[ib]["deepnessmax"]
-    smooth = biomelist[ib]["deepnesssmooth"]
+    biome = "none"
 
-    -- entering influence
-    enter = (depth - minDepth) / smooth
+    nearcenter = 0
 
-    -- leaving influence
-    exit = (maxDepth - depth) / smooth
+    closestDist = 999999
+    secondDist = 999999
 
-    -- clamp both
-    if enter < 0 then enter = 0 end
-    if enter > 1 then enter = 1 end
+    op1 = love.math.noise(
+        x/biomesize,
+        y/biomesize,
+        worldseed-5
+    )
 
-    if exit < 0 then exit = 0 end
-    if exit > 1 then exit = 1 end
+    op2 = love.math.noise(
+        x/(biomesize*1.2),
+        y/(biomesize/1.2),
+        worldseed-10
+    )
 
-    -- final biome strength
-    ymulti = math.min(enter, exit)
+    for ib=1,#biomelist do
 
-    -- apply influence
-    if ymulti <= 0 then
-        distance1 = 99999
-    else
-        distance1 = distance1 / ymulti
+        distance1 = dist(
+            op1,
+            op2,
+            biomelist[ib]["option1"],
+            biomelist[ib]["option2"]
+        ) ^ biomelist[ib]["likeness"]
+
+        depth = (-y/worlddeepnessprogression)
+
+        minDepth = biomelist[ib]["deepnessmin"]
+        maxDepth = biomelist[ib]["deepnessmax"]
+        smooth = biomelist[ib]["deepnesssmooth"]
+
+        enter = (depth - minDepth) / smooth
+        exit = (maxDepth - depth) / smooth
+
+        if enter < 0 then enter = 0 end
+        if enter > 1 then enter = 1 end
+
+        if exit < 0 then exit = 0 end
+        if exit > 1 then exit = 1 end
+
+        ymulti = math.min(enter, exit)
+
+        if ymulti <= 0 then
+            distance1 = 999999
+        else
+            distance1 = distance1 / ymulti
+        end
+
+        -- track 2 closest biomes
+        if distance1 < closestDist then
+
+            secondDist = closestDist
+
+            closestDist = distance1
+
+            biome = biomelist[ib]["name"]
+
+        elseif distance1 < secondDist then
+
+            secondDist = distance1
+
+        end
     end
-    
-    if distance1<nearvalue then biome=biomelist[ib]["name"] nearvalue=distance1 nearcenter=dist(op1,op2,biomelist[ib]["option1"],biomelist[ib]["option2"])^(1/biomelist[ib]["likeness"]) end
-  end
-  return biome,nearcenter
+
+    -- biome dominance calculation
+    -- 0 = edge
+    -- 1 = center
+
+    nearcenter = 1 - (closestDist / secondDist)
+
+    if nearcenter < 0 then nearcenter = 0 end
+    if nearcenter > 1 then nearcenter = 1 end
+
+    return biome, nearcenter
 end]]

@@ -2,13 +2,13 @@ require "class/superClass"
 
 -- j'ai changer ton code pour qu'il marche
 
-Tile = superClass:extend()
+Tile = SuperClass:extend()
 Tile.className = "Tile"
 
 function Tile:init(tilename,tiletype,textureName,quadName,flags)
 
     if tilename then
-    self.name = tilename or ""
+    self.name = tilename
     else
         return
     end

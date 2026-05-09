@@ -115,7 +115,7 @@ function SuperClass:__tostring()
     return result .. "}"
 end
 
-function superClass:serialize()
+function SuperClass:serialize()
     local data = {}
     for k, v in pairs(self) do
         if type(v) ~= "function" then
@@ -125,7 +125,7 @@ function superClass:serialize()
     return data
 end
 
-function superClass:deserialize(data)
+function SuperClass:deserialize(data)
     for k, v in pairs(data) do
         self[k] = v
     end

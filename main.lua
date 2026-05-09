@@ -21,9 +21,9 @@ function love.load()
   require "class/utility/vector2"
   love.graphics.setDefaultFilter( "nearest", "nearest")
 
-  --require "tiledef"
-  --require "chunk"
-  --require "world"
+  require "tiledef"
+  require "chunk"
+  require "world"
   --love.filesystem.setIdentity("gamename")
   tiles={}
   tilelists={}

@@ -1,12 +1,34 @@
-Chunk = {}
+require "class/superClass"
 
-Chunk.__index = Chunk
+Chunk = SuperClass:extend()
+Chunk.className = "Chunk"
 
-function Chunk.new(chunksize)
-    local newChunk = {}
-
-    setmetatable(newChunk,Chunk)
-    return newChunk
+function Chunk:init(chunkX,chunkY,chunkSize)
+    if (not chunkX) or (not chunkY) then
+        return
+    end
+    self.ChunkX=chunkX
+    self.chunkY=chunkY
+    self.chunkSize=chunkSize
+    self.tiles={}
+    self.backTiles={}
+    self.topTiles={}
+    self.lights={}
+    self.tileProperties={}
+    for local ix=1, self.chunkSize do
+        self.tiles[ix]={}
+        self.backTiles[ix]={}
+        self.topTiles[ix]={}
+        self.lights[ix]={}
+        self.tileProperties[ix]={}
+        for local iy=1, self.chunkSize do
+            self.tiles[ix][iy]="none"
+            self.backTiles[ix][iy]="none"
+            self.topTiles[ix][iy]="none"
+            self.lights[ix][iy]={1,1,1,1}
+            self.tileProperties[ix][iy]={}
+        end
+    end
 end
 
 --la pluspart des fonctions ici ne sont pas sensé être utilisé en tant que tels, à par la génération, ils devraient juste être utilisé

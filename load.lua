@@ -34,6 +34,9 @@ end
 function loadtiles()
   tiles={}
   tileindexes={}
+  textures={}
+  textures["textures"]={}
+  textures["quads"]={}
   --[[tilelists={}
   tilelists["all tiles"]={}
   tilelists["stones"]={}

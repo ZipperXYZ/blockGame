@@ -2,7 +2,7 @@ Chunk = {}
 
 Chunk.__index = Chunk
 
-function Tile.new(chunksize)
+function Chunk.new(chunksize)
     local newChunk = {}
 
     setmetatable(newChunk,Chunk)

@@ -8,15 +8,7 @@ end
 
 function love.load()
   --bonjour
-  --ceci est un jeu
-  --toute les valeurs déclarer ici sont globale
-  -- le code de love 2d se passe en deux étapes, le update et le draw, allez voir la fonction love.update et love.draw pour plus dinfo
-  --l'initialisation des textures et des blocs (tiles), entités, items etc sont dans le fichier load.lua
-  --la génération du monde se passe dans worldgeneration.lua, plus d'explications làbà
-  --mathcs.lua comprend plusieurs fonctions de logiques, ou de math, comme x,y=moveposition180(x,y,direction,distance) x,y=dist(x1,y1,x2,y2) élément1=nextinlistroll(élément1,{élément1,élément2,élément3})
-  --un fichier information comprend tout les fonctions utiles, à la fois celle de math ou bien dans le jeu, comme pour get les tiles, vérifier l'existance d'une tile, ou des information sur comment marche la structure
-  
-  --tout les truc de require ici sont les autres fichier de code
+
   require "lume"
   require "gameudp"
   require "drawudp" --là ou tout le code de dessins
@@ -28,6 +20,10 @@ function love.load()
   require "class/utility/eventEmitter"
   require "class/utility/vector2"
   love.graphics.setDefaultFilter( "nearest", "nearest")
+
+  --require "tiledef"
+  --require "chunk"
+  --require "world"
   --love.filesystem.setIdentity("gamename")
   tiles={}
   tilelists={}

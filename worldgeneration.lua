@@ -1,15 +1,15 @@
 function resetworld()
-  world={}
+  --[[world={}
   entities={}
   camx=0
   camy=0
   realcamy=0
   realcamx=0
-  worldseed=math.random()*100000
+  worldseed=math.random()*100000]]
 end
 function generateworldupdate(dt)
   
-  totalchunkloaddistance=(chunkloaddistance+(math.ceil(szx/camv/2/chunksize)))
+  --[[totalchunkloaddistance=(chunkloaddistance+(math.ceil(szx/camv/2/chunksize)))
   --totalchunkloaddistance=(math.ceil(szx/camv/2/chunksize))-1
   if totalchunkloaddistance<1 then totalchunkloaddistance=1 end
   for ixload=-(totalchunkloaddistance), totalchunkloaddistance do
@@ -20,9 +20,9 @@ function generateworldupdate(dt)
         loadchunk((camx/chunksize)+ixload,(camy/chunksize)+iyload,getchunkloadstep((camx/chunksize)+ixload,(camy/chunksize)+iyload))
       end
     end
-  end
+  end]]
 end
-function checkifchunkloaded(x,y)
+--[[function checkifchunkloaded(x,y)
   x=round(x)
   y=round(y)
   if world[x]== nil then return false end
@@ -449,4 +449,4 @@ function getbiome(x,y)
     if distance1<nearvalue then biome=biomelist[ib]["name"] nearvalue=distance1 nearcenter=dist(op1,op2,biomelist[ib]["option1"],biomelist[ib]["option2"])^(1/biomelist[ib]["likeness"]) end
   end
   return biome,nearcenter
-end
+end]]

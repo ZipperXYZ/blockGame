@@ -1,5 +1,5 @@
 function loadtextures()
-  textures["textures"]={}
+  --[[textures["textures"]={}
   textures["textures"]["tileset"]=love.graphics.newImage("tiles.png")
   --toute les déclarations de texture ici sont pas mal inutile, vue que maintenant on peut les intégrés dans les lignes de création de tiles, items, entitiees
   textures["quads"]={}
@@ -24,17 +24,17 @@ function loadtextures()
   --textures["quads"]["hotstone_top"]=love.graphics.newQuad(72,8,8,8,textures["textures"]["tileset"])
   textures["quads"]["shadowgrass"]=love.graphics.newQuad(80,0,8,8,textures["textures"]["tileset"])
   textures["quads"]["wheatgrass"]=love.graphics.newQuad(88,0,8,8,textures["textures"]["tileset"])
-  textures["quads"]["diamond"]=love.graphics.newQuad(96,0,8,8,textures["textures"]["tileset"])
+  textures["quads"]["diamond"]=love.graphics.newQuad(96,0,8,8,textures["textures"]["tileset"])]]
 end
 function loadeverything()
-  loadtextures()
-  loadtiles()
-  loadbiomes()
+  --loadtextures()
+  --loadtiles()
+  --loadbiomes()
 end
 function loadtiles()
   tiles={}
   tileindexes={}
-  tilelists={}
+  --[[tilelists={}
   tilelists["all tiles"]={}
   tilelists["stones"]={}
   newtile("air","empty","none","none",{})
@@ -58,24 +58,24 @@ function loadtiles()
   newtile("hotstone_wall","wall","tileset","hotstone",{["border"]={["quad"]="hotstone_top"},["color"]={0.5,0.5,0.5,1},["isastone"]=true})
   newtile("coldstone_wall","wall","tileset","coldstone",{["border"]={["quad"]="coldstone_top"},["color"]={0.5,0.5,0.5,1},["isastone"]=true})
   
-  
+  ]]
   
   
 end
 
-function gettileinfo(tilename,info)
-  if tiles[tileindexes[tilename]]~=nil then
-    if tiles[tileindexes[tilename]][info]==nil then
+--[[function gettileinfo(tilename,info)
+  if tiles[tileindexes[tilename] ]~=nil then
+    if tiles[tileindexes[tilename] ][info]==nil then
       return nil
     else
       
-    return tiles[tileindexes[tilename]][info]
+    return tiles[tileindexes[tilename] ][info]
     end
   else
     return nil
   end
-end
-function newtile(tilename,tiletype,texture,quad,flags)
+end]]
+--[[function newtile(tilename,tiletype,texture,quad,flags)
   if tilename==nil then return end
   t={}
   t["name"]=tilename
@@ -87,18 +87,18 @@ function newtile(tilename,tiletype,texture,quad,flags)
   if t["quad"]==nil then t["quad"]="none" end
   t["flags"]=flags
   if t["flags"]==nil then t["flags"]={} end
-  if t["flags"]["new quad"]~=nil then textures["quads"][t["quad"]]=love.graphics.newQuad(t["flags"]["new quad"][1]*t["flags"]["new quad"][5],t["flags"]["new quad"][2]*t["flags"]["new quad"][5],t["flags"]["new quad"][3]*t["flags"]["new quad"][5],t["flags"]["new quad"][4]*t["flags"]["new quad"][5],textures["textures"][t["texture"]]) end
+  if t["flags"]["new quad"]~=nil then textures["quads"][t["quad"] ]=love.graphics.newQuad(t["flags"]["new quad"][1]*t["flags"]["new quad"][5],t["flags"]["new quad"][2]*t["flags"]["new quad"][5],t["flags"]["new quad"][3]*t["flags"]["new quad"][5],t["flags"]["new quad"][4]*t["flags"]["new quad"][5],textures["textures"][t["texture"] ]) end
   if t["flags"]["border"]==nil then t["flags"]["border"]={} end
   if t["flags"]["border"]["quad"]==nil then t["flags"]["border"]["quad"]="none" end
   
-  if t["flags"]["border"]["new quad"]~=nil then textures["quads"][t["flags"]["border"]["quad"]]=love.graphics.newQuad(t["flags"]["border"]["new quad"][1]*t["flags"]["border"]["new quad"][5],t["flags"]["border"]["new quad"][2]*t["flags"]["border"]["new quad"][5],t["flags"]["border"]["new quad"][3]*t["flags"]["border"]["new quad"][5],t["flags"]["border"]["new quad"][4]*t["flags"]["border"]["new quad"][5],textures["textures"][t["texture"]]) end
+  if t["flags"]["border"]["new quad"]~=nil then textures["quads"][t["flags"]["border"]["quad"] ]=love.graphics.newQuad(t["flags"]["border"]["new quad"][1]*t["flags"]["border"]["new quad"][5],t["flags"]["border"]["new quad"][2]*t["flags"]["border"]["new quad"][5],t["flags"]["border"]["new quad"][3]*t["flags"]["border"]["new quad"][5],t["flags"]["border"]["new quad"][4]*t["flags"]["border"]["new quad"][5],textures["textures"][t["texture"] ]) end
   
   if t["flags"]["border type"]==nil then t["flags"]["border type"]="non-solid" end
   if t["flags"]["isastone"]==nil then t["flags"]["isastone"]=false end
   if t["flags"]["hideback"]==nil then t["flags"]["hideback"]=t["type"]=="empty" end
   if t["flags"]["color"]==nil then t["flags"]["color"]={1,1,1,1} end
   
-  tileindexes[t["name"]]=(#tiles+1)
+  tileindexes[t["name"] ]=(#tiles+1)
   table.insert(tiles,t)
   table.insert(tilelists["all tiles"],t["name"])
   if t["flags"]["isastone"] then table.insert(tilelists["stones"],t["name"]) end
@@ -137,4 +137,4 @@ function newentity(name)
   
   
   table.insert(entitiesdefenition,ne)
-end
+end]]

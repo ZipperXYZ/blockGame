@@ -1,5 +1,5 @@
 function drawgame()
-  love.graphics.print(#tiles,0,0)
+  --[[love.graphics.print(#tiles,0,0)
   love.graphics.print(camv,50,0)
   love.graphics.print((getchunkloadstep(mxworldpos/chunksize,myworldpos/chunksize)),300,0)
   if neighborchunksloadcheck(mxworldpos/chunksize,myworldpos/chunksize,"stone") then love.graphics.print("true",300,12) end
@@ -11,8 +11,8 @@ function drawgame()
     
   end
   drawdistance=math.ceil(szx/camv/2)
-  layers=3
-  if debugseebiome then layers=4 end
+  layers=3]]
+  --[[if debugseebiome then layers=4 end
   for il=1,layers do
   for ixt=-drawdistance,drawdistance do
   for iyt=-drawdistance,drawdistance do
@@ -61,9 +61,9 @@ function drawgame()
     end
   end
   end
-  end
+  end]]
 end
-function drawspecifictile(tileix,tileiy,tilename,color)
+--[[function drawspecifictile(tileix,tileiy,tilename,color)
   love.graphics.setColor(color)
   xp1,yp1=positiontoscreen(tileix,tileiy)
   love.graphics.draw(textures["textures"][gettileinfo(tilename,"texture")],textures["quads"][gettileinfo(tilename,"quad")],round(xp1),round(yp1),0,round2(camv/8,8),round2(camv/8,8),4,4)
@@ -125,25 +125,25 @@ function drawtile(tileix,tileiy)
             t2=gettile(tileix,tileiy+1)
             if not t2["outofbounds"] then
             if gettileinfo(t2["tile"],"name")~=name1 then
-              love.graphics.draw(textures["textures"][gettileinfo(t1["tile"],"texture")],textures["quads"][flags["border"]["quad"]],round(xp1),round(yp1),0,round2(camv/8,8),round2(camv/8,8),4,4)
+              love.graphics.draw(textures["textures"][gettileinfo(t1["tile"],"texture")],textures["quads"][flags["border"]["quad"] ],round(xp1),round(yp1),0,round2(camv/8,8),round2(camv/8,8),4,4)
             end end
             
             t2=gettile(tileix,tileiy-1)
             if not t2["outofbounds"] then
             if gettileinfo(t2["tile"],"name")~=name1 then
-              love.graphics.draw(textures["textures"][gettileinfo(t1["tile"],"texture")],textures["quads"][flags["border"]["quad"]],round(xp1),round(yp1),d180topi(180),round2(camv/8,8),round2(camv/8,8),4,4)
+              love.graphics.draw(textures["textures"][gettileinfo(t1["tile"],"texture")],textures["quads"][flags["border"]["quad"] ],round(xp1),round(yp1),d180topi(180),round2(camv/8,8),round2(camv/8,8),4,4)
             end end
             
             t2=gettile(tileix+1,tileiy)
             if not t2["outofbounds"] then
             if gettileinfo(t2["tile"],"name")~=name1 then
-              love.graphics.draw(textures["textures"][gettileinfo(t1["tile"],"texture")],textures["quads"][flags["border"]["quad"]],round(xp1),round(yp1),d180topi(90),round2(camv/8,8),round2(camv/8,8),4,4)
+              love.graphics.draw(textures["textures"][gettileinfo(t1["tile"],"texture")],textures["quads"][flags["border"]["quad"] ],round(xp1),round(yp1),d180topi(90),round2(camv/8,8),round2(camv/8,8),4,4)
             end end
             
             t2=gettile(tileix-1,tileiy)
             if not t2["outofbounds"] then
             if gettileinfo(t2["tile"],"name")~=name1 then
-              love.graphics.draw(textures["textures"][gettileinfo(t1["tile"],"texture")],textures["quads"][flags["border"]["quad"]],round(xp1),round(yp1),d180topi(-90),round2(camv/8,8),round2(camv/8,8),4,4)
+              love.graphics.draw(textures["textures"][gettileinfo(t1["tile"],"texture")],textures["quads"][flags["border"]["quad"] ],round(xp1),round(yp1),d180topi(-90),round2(camv/8,8),round2(camv/8,8),4,4)
             end end
           
           end
@@ -163,26 +163,26 @@ function drawback(tileix,tileiy)
             t2=gettile(tileix,tileiy+1)
             if not t2["outofbounds"] then
             if gettileinfo(t2["back"],"name")~=name1 then
-              love.graphics.draw(textures["textures"][gettileinfo(t1["back"],"texture")],textures["quads"][flags["border"]["quad"]],round(xp1),round(yp1),0,round2(camv/8,8),round2(camv/8,8),4,4)
+              love.graphics.draw(textures["textures"][gettileinfo(t1["back"],"texture")],textures["quads"][flags["border"]["quad"] ],round(xp1),round(yp1),0,round2(camv/8,8),round2(camv/8,8),4,4)
             end end
             
             t2=gettile(tileix,tileiy-1)
             if not t2["outofbounds"] then
             if gettileinfo(t2["back"],"name")~=name1 then
-              love.graphics.draw(textures["textures"][gettileinfo(t1["back"],"texture")],textures["quads"][flags["border"]["quad"]],round(xp1),round(yp1),d180topi(180),round2(camv/8,8),round2(camv/8,8),4,4)
+              love.graphics.draw(textures["textures"][gettileinfo(t1["back"],"texture")],textures["quads"][flags["border"]["quad"] ],round(xp1),round(yp1),d180topi(180),round2(camv/8,8),round2(camv/8,8),4,4)
             end end
             
             t2=gettile(tileix+1,tileiy)
             if not t2["outofbounds"] then
             if gettileinfo(t2["back"],"name")~=name1 then
-              love.graphics.draw(textures["textures"][gettileinfo(t1["back"],"texture")],textures["quads"][flags["border"]["quad"]],round(xp1),round(yp1),d180topi(90),round2(camv/8,8),round2(camv/8,8),4,4)
+              love.graphics.draw(textures["textures"][gettileinfo(t1["back"],"texture")],textures["quads"][flags["border"]["quad"] ],round(xp1),round(yp1),d180topi(90),round2(camv/8,8),round2(camv/8,8),4,4)
             end end
             
             t2=gettile(tileix-1,tileiy)
             if not t2["outofbounds"] then
             if gettileinfo(t2["back"],"name")~=name1 then
-              love.graphics.draw(textures["textures"][gettileinfo(t1["back"],"texture")],textures["quads"][flags["border"]["quad"]],round(xp1),round(yp1),d180topi(-90),round2(camv/8,8),round2(camv/8,8),4,4)
+              love.graphics.draw(textures["textures"][gettileinfo(t1["back"],"texture")],textures["quads"][flags["border"]["quad"] ],round(xp1),round(yp1),d180topi(-90),round2(camv/8,8),round2(camv/8,8),4,4)
             end end
           
           end
-end
+end]]

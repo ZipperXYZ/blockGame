@@ -28,15 +28,15 @@ function loadtextures()
 end
 
 function loadeverything()
+  textures = {}
   --loadtextures()
-  --loadtiles()
+  loadtiles()
   --loadbiomes()
 end
 
 function loadtiles()
   tiles = {}
-  tileindexes = {}
-  textures = {}
+
   textures["textures"] = {}
   textures["quads"] = {}
   --[[tilelists={}
@@ -63,8 +63,114 @@ function loadtiles()
   newtile("hotstone_wall","wall","tileset","hotstone",{["border"]={["quad"]="hotstone_top"},["color"]={0.5,0.5,0.5,1},["isastone"]=true})
   newtile("coldstone_wall","wall","tileset","coldstone",{["border"]={["quad"]="coldstone_top"},["color"]={0.5,0.5,0.5,1},["isastone"]=true})
   ]]
-  Tile("none")
-  --Tile("dirt", "solid", "tileset", "dirt", { ["border"] = { 0, 1, 1, 1, 8 } }) faut changer border
+  tiles["none"]         = Tile("none")
+
+  tiles["dirt"]         = Tile("dirt", "solid", "tile.png", "dirt",
+    {
+      ["newQuad"] = { 0, 0, 1, 1, 8, },
+      ["border"] = {
+        ["quad"] = "dirt_top",
+        ["newQuad"] = { 0, 2, 1, 1, 8 }
+      }
+    })
+
+  tiles["grass"]        = Tile("grass", "top", "tile.png", "grass",
+    {
+      ["newQuad"] = { 1, 0, 1, 1, 8 },
+      ["border type"] = "non-solid"
+    })
+
+  tiles["purplegrass"]  = Tile("purplegrass", "top", "tile.png", "purplegrass",
+    {
+      ["newQuad"] = { 4, 0, 1, 1, 8 },
+      ["border type"] = "non-solid"
+    })
+
+  tiles["shadowgrass"]  = Tile("shadowgrass", "top", "tile.png", "shadowgrass",
+    {
+      ["newQuad"] = { 10, 0, 1, 1, 8 },
+      ["border type"] = "non-solid"
+    })
+
+  tiles["wheatgrass"]   = Tile("wheatgrass", "top", "tile.png", "wheatgrass",
+    {
+      ["newQuad"] = { 11, 0, 1, 1, 8 },
+      ["border type"] = "non-solid"
+    })
+
+  tiles["diamond"]      = Tile("diamond", "top", "tile.png", "diamond",
+    {
+      ["newQuad"] = { 12, 0, 1, 1, 8 },
+      ["border type"] = "normal"
+    })
+
+  tiles["stone"]        = Tile("stone", "solid", "tile.png", "stone", {
+    ["newQuad"] = { 2, 0, 1, 1, 8 },
+    ["border"] = {
+      ["quad"] = "stone_top",
+      ["newQuad"] = { 2, 1, 1, 1, 8 }
+    },
+    ["isastone"] = true
+  })
+
+  tiles["darkstone"]    = Tile("darkstone", "solid", "tile.png", "darkstone",
+    {
+      ["newQuad"] = { 3, 0, 1, 1, 8 },
+      ["border"] = {
+        ["quad"] = "darkstone_top",
+        ["newQuad"] = { 3, 1, 1, 1, 8 }
+      },
+      ["isastone"] = true
+    })
+
+  tiles["palestone"]    = Tile("palestone", "solid", "tile.png", "palestone",
+    {
+      ["newQuad"] = { 3, 0, 1, 1, 8 },
+      ["border"] = {
+        ["quad"] = "palestone_top",
+        ["newQuad"] = { 5, 1, 1, 1, 8 }
+      },
+      ["isastone"] = true
+    })
+  tiles["ancientstone"] = Tile("ancientstone", "solid", "tile.png", "ancientstone",
+    {
+      ["newQuad"] = { 6, 0, 1, 1, 8 },
+      ["border"] = {
+        ["quad"] = "ancientstone_top",
+        ["newQuad"] = { 6, 1, 1, 1, 8 }
+      },
+      ["isastone"] = true
+    })
+
+  tiles["coldstone"]    = Tile("coldstone", "solid", "tile.png", "coldstone",
+    {
+      ["newQuad"] = { 7, 0, 1, 1, 8 },
+      ["border"] = {
+        ["quad"] = "coldstone_top",
+        ["newQuad"] = { 7, 1, 1, 1, 8 }
+      },
+      ["isastone"] = true
+    })
+
+  tiles["lightstone"]   = Tile("lightstone", "solid", "tile.png", "lightstone",
+    {
+      ["newQuad"] = { 8, 0, 1, 1, 8 },
+      ["border"] = {
+        ["quad"] = "lightstone_top",
+        ["newQuad"] = { 8, 1, 1, 1, 8 }
+      },
+      ["isastone"] = true
+    })
+
+  tiles["ancientstone"] = Tile("hotstone", "solid", "tile.png", "hotstone",
+    {
+      ["new quad"] = { 9, 0, 1, 1, 8 },
+      ["border"] = {
+        ["quad"] = "hotstone_top",
+        ["new quad"] = { 9, 1, 1, 1, 8 }
+      },
+      ["isastone"] = true
+    })
 end
 
 --[[function gettileinfo(tilename,info)

@@ -8,7 +8,11 @@ function resetworld()
   worldseed=math.random()*100000]]
 end
 function generateworldupdate(dt)
-  
+  local totalChunkLoadDistanceX=(chunkloaddistance+(math.ceil(szx/camv/2/chunksize)))
+  local totalChunkLoadDistanceY=(chunkloaddistance+(math.ceil(szy/camv/2/chunksize)))
+  local centerX=(camx/chunksize)
+  local centerY=(camy/chunksize)
+  world:generate(centerX, centerY, totalChunkLoadDistanceX, totalChunkLoadDistanceY, false, nil)
   --[[totalchunkloaddistance=(chunkloaddistance+(math.ceil(szx/camv/2/chunksize)))
   --totalchunkloaddistance=(math.ceil(szx/camv/2/chunksize))-1
   if totalchunkloaddistance<1 then totalchunkloaddistance=1 end

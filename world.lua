@@ -7,10 +7,11 @@ World.className = "World"
 --  depthProgression correspond au nombre de blocs
 --  par progression du monde, comme par exemple, mettre 100 feras en sorte que des enemies vont commencer à spawn à y-100, d'autres à -200 et ça s'applique
 --  sur tout genre les mobs, les ores, les tiles, les biomes, les structures etc.
-function World:init(worldSeed, depthProgression, biomeSize, biomeList, generationSteps)
+function World:init(worldSeed, chunkSize, depthProgression, biomeSize, biomeList, generationSteps)
     self.worldSeed = worldSeed or math.random() * 100000
     self.depthProgression = depthProgression or 100
     self.biomeSize = biomeSize or 150
+    self.chunkSize = chunkSize or 10
     self.biomeList = biomeList or {}
     self.generationSteps = generationSteps or {}
     self.chunks = {}
@@ -18,18 +19,26 @@ end
 
 --clear() -- vide le monde de tout ses chunks, gardant toutes ses propriétés les mêmes
 function World:clear()
-
+    self.chunks = {}
 end
 
 --convertWorldPosToChunkPos(worldPosX,worldPosY) --return ChunkX,ChunkY,posInChunkX,posInChunkY
 function World:convertWorldPosToChunkPos(worldPosX, worldPosY)
     local ChunkX, ChunkY, posInChunkX, posInChunkY
+    worldPosX=round(worldPosX)
+    worldPosY=round(worldPosY)
+    ChunkX=math.floor(worldPosX/self.chunkSize)
+    ChunkY=math.floor(worldPosY/self.chunkSize)
+    posInChunkX=((worldPosX)%self.chunkSize)+1
+    posInChunkY=((worldPosY)%self.chunkSize)+1
     return ChunkX, ChunkY, posInChunkX, posInChunkY
 end
 
 --convertChunkPosToWorldPos(ChunkX,ChunkY,posInChunkX,posInChunkY) --return worldPosX,worldPosY
 function World:convertChunkPosToWorldPos(ChunkX, ChunkY, posInChunkX, posInChunkY)
     local worldPosX, worldPosY
+    worldPosX=ChunkX*self.chunkSize+posInChunkX-1 
+    worldPosY=ChunkY*self.chunkSize+posInChunkY-1 
     return worldPosX, worldPosY
 end
 
@@ -37,14 +46,23 @@ end
 --à refaire puisque tu ne peux pas avoir la position globale avec juste une liste de chunks, serait inutile
 --peut être retourne la liste de coordonées de chaque chunks et les utilisés de cette façon?
 function World:getNeighboringChunks(chunkX, chunkY)
-    return {}
+    return {}--pas fini
 end
 
 --checkIfChunkCanGenerate(step) --return true/false, regarde tout les chunks autour pour savoir si il peut générer à une certaine étape
 --nomralement ça devrait généréer si tout les chunks autour ont finit l'étape précédante
 --je sais pas trop comment comparer les étapes de génération de chunk, peut être une liste de toutes les étapes en paramètre du monde
 function World:checkIfChunkCanGenerate(step, chunkX, chunkY)
-    return false
+    return false--pas fini
+end
+
+function World:checkIfChunkExists(chunkX, chunkY)
+    chunkX=round(chunkX)
+    chunkY=round(chunkY)
+    if self.chunks== nil then return false end
+    if self.chunks[chunkX]== nil then return false end
+    if self.chunks[chunkX][chunkY]== nil then return false end
+    return true
 end
 
 --placeTile(tile,worldPosX,worldPosY,layer,force) --return true/false si ça l'a marcher, force activé pour la genération du monde, force désactivé pour le joueur
@@ -63,9 +81,11 @@ end
 --qui retourne les propriétés et setTilePropriety(propriety, value) qui set une propriété de la tile, comme l'inventaire d'un
 --coffre ou l'orientation d'un bloc)
 function World:getTile(worldPosX, worldPosY, layer)
-    local tile = nil
-    tile = tiles["none"]
-    tile = tiles["dirt"]
+    local tile = tiles["none"]
+    local chunkX,chunkY,posX,posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
+    if self:checkIfChunkExists(chunkX,chunkY) then
+    tile = self.chunks[chunkX][chunkY]:getTile(posX,posY,layer)
+    end
     return tile
 end
 
@@ -89,7 +109,31 @@ end
 --force va forcer jusqu'à ce que tout les chunks sont au minimum au step
 --devrait être éxécuter chaque seconde à la position de la caméra ainsi que avec force=false
 --pour la gen des structure, force=true pis la taille de la structure
-function World:generates(centerX, centerY, length, heigth, biomeList, force, step)
+function World:generate(centerX, centerY, length, heigth, force, step)
+    if step==nil then step=self.generationSteps end
+    centerX=round(centerX)
+    centerY=round(centerY)
+    local ix = 1
+    local iy = 1
+    for ix=-length,length do
+        for iy=-heigth,heigth do
+            local chunkPosX=centerX+ix
+            local chunkPosY=centerY+iy
+            if self:checkIfChunkExists(chunkPosX, chunkPosY) then
+                self.chunks[chunkPosX][chunkPosY]:generate(self.chunks[chunkPosX][chunkPosY]:getGenerationStatus(),self.stepList,self.worldseed,self.depthProgression,self.biomeSize,self.biomeList)
+            else
+                if self.chunks==nil then
+                    self.chunks={}
+                end
+                if self.chunks[chunkPosX]==nil then
+                    self.chunks[chunkPosX]={}
+                end
+                if self.chunks[chunkPosX][chunkPosY]==nil then
+                    self.chunks[chunkPosX][chunkPosY]=Chunk(chunkPosX,chunkPosY,self.chunkSize)
+                end
+            end
+        end
+    end
     return true
 end
 

@@ -1,5 +1,5 @@
 function gameupdate(dt)
-  --generateworldupdate(dt)
+  generateworldupdate(dt)
   --entityupdate(dt)
   --playerupdate(dt)
   --updatelight(dt)

@@ -1,4 +1,9 @@
 function drawgame()
+  local drawdistanceX=math.ceil(szx/camv/2)
+  local drawdistanceY=math.ceil(szx/camv/2)
+  world:drawTiles(camx, camy, drawdistanceX, drawdistanceY, {})
+
+
   --[[love.graphics.print(#tiles,0,0)
   love.graphics.print(camv,50,0)
   love.graphics.print((getchunkloadstep(mxworldpos/chunksize,myworldpos/chunksize)),300,0)

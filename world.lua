@@ -64,6 +64,8 @@ end
 --coffre ou l'orientation d'un bloc)
 function World:getTile(worldPosX, worldPosY, layer)
     local tile = nil
+    tile = tiles["none"]
+    tile = tiles["dirt"]
     return tile
 end
 
@@ -140,14 +142,37 @@ function World:getClosestNonSolidTile(worldPosX,wordPosY)
 
 end
 
-function World:draw()
-    return true
-end
 
 function World:drawTiles(centerX, centerY, length, heigth, parameters)
+    centerX = round(centerX)
+    centerY = round(centerY)
+    local ix=-length
+    local iy=-heigth
+    local il=1
+    local layers={"backTiles","tile","topTiles"}
+    for il,#layers do
+        for ix,length do
+            for iy,heigth do
+                self.drawTile(ix+centerX, centerY+iy, layers[il])
+                --[[local currentLayer=layers[il]
+                tile=self.getTile(ix+centerX, centerY+iy, currentLayer)
+                if tile.getName()~="none" then
+                    self.drawTile(ix+centerX, centerY+iy, currentLayer)
+                end]]
+            end
+        end
+    end
     return true
 end
 
 function World:drawTile(worldPosX, worldPosY, layer)
-    return true
+    tile=self.getTile(ix+centerX, centerY+iy, currentLayer)
+    if tile.getName()~="none" then
+        love.graphics.setColor(1,1,1,1)
+        local screenPosX
+        local screenPosY
+        screenPosX,screenPosY=positiontoscreen(worldPosX,worldPosY)
+        love.graphics.draw(textures["textures"][tile.getTextureName()],textures["quads"][gettileinfo(tile.getQuadName())],round(screenPosX),round(screenPosY),0,round2(camv/8,8),round2(camv/8,8),4,4)
+
+    end
 end

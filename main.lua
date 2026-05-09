@@ -1,3 +1,11 @@
+local function test1()
+  print("Salut je run!!!")
+end
+
+local function test2()
+  print("Wow c cool je run aussi")
+end
+
 function love.load()
   --bonjour
   --ceci est un jeu
@@ -16,7 +24,9 @@ function love.load()
   require "worldgeneration"
   require "load"
   require "entities"
-  require "classTest/childClass"
+  require "class/childClass"
+  require "class/utility/eventEmitter"
+  require "class/utility/vector2"
   love.graphics.setDefaultFilter( "nearest", "nearest")
   --love.filesystem.setIdentity("gamename")
   tiles={}
@@ -25,9 +35,38 @@ function love.load()
   entities={}
   textures={}
   tileindexes={}
-  obj = childClass:new(98,"test",999,"class1")
 
-  obj2 = childClass:new(1,"testV2",888,"class2")
+  -- ici c'est une exemple de défénitions
+  obj = ChildClass:new(98,"test",999,"class1")
+
+
+  obj2 = ChildClass:new(1,"testV2",888,"class2")
+  print(obj:getClassName())
+
+  -- test de la fonction statique
+
+  obj:testStaticFunc()
+
+  -- un event emitter et les fonctions qui écoute l'event
+
+  testEvent = EventEmitter()
+  testEvent:on(test1)
+  testEvent:on(test2)
+  testEvent:emit()
+
+  -- clone d'un objet 
+  objClone = obj:clone()
+
+  print(objClone)
+
+  -- ici démonstration de la classe Vector2
+
+  -- d'ailleurs comme vous voyez il est possible de ne pas faire class:new() et de juste faire () le résultat est le même
+
+  vec = Vector2(12,12)
+  vec2 = Vector2(98,13)
+  print(vec2:normalize())
+
   biomelist={}
   world={}
   debugseebiome=false

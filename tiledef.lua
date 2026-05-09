@@ -1,26 +1,25 @@
-Tile = {}
+require "class/superClass"
 
-Tile.__index = Tile
+-- j'ai changer ton code pour qu'il marche
 
-function Tile.new(tilename,tiletype,textureName,quadName,flags)
-    local newTile = {}
+Tile = superClass:extend()
+Tile.className = "Tile"
+
+function Tile:init(tilename,tiletype,textureName,quadName,flags)
 
     if tilename then
-    newTile.name = tilename
+    self.name = tilename or ""
     else
         return
     end
-    newTile.type = tiletype
-    newTile.textureName = textureName
+    self.type = tiletype or ""
+    self.textureName = textureName or ""
     --va regarde la liste globale des texture si elle comprend le name de la texture pis si non elle va créer la texture
-    newTile.quadName = quadName
+    self.quadName = quadName or ""
     --va regarde la liste globale des quads si elle comprend le name de la quad pis si non elle va créer la quad selon des paramètres
-    newTile.flags = flags
+    self.flags = flags or nil
     --flags comprend tout le reste, la pluspart vont être nil, donc assigner des variables pour tout de base
     -- comme par exemple 'newTile.isStone = flags.isStone or false', 'newTile.canBeMined = flags.canBeMined or true' -- ce sont juste des exemples,
-
-    setmetatable(newTile,Tile)
-    return newTile
 end
 
 --  il s'agit ici de la défénition d'une tuile, est la même pour chaque tiles du même type dans le monde

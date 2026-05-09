@@ -1,7 +1,7 @@
 require "class/superClass"
 
 Sprite = SuperClass:extend()
-Sprite.className = "Tile"
+Sprite.className = "Sprite"
 
 --init()
 function Sprite:init(name, type, textureName, quadName)

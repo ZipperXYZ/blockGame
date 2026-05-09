@@ -1,7 +1,9 @@
 require "class/superClass"
+require "class/utility/vector2"
+require "class/utility/eventEmitter"
 
 Entity = SuperClass:extend()
-Entity.className = "Tile"
+Entity.className = "Entity"
 
 --init()
 function Entity:init(name, type, sprite, health, level, ia, flags)
@@ -12,10 +14,10 @@ function Entity:init(name, type, sprite, health, level, ia, flags)
     self.ia = ia or "none"
     self.flags = flags or {}
     self.sprite = sprite or sprite()
-    self.posX = 0
-    self.poxY = 0
-    self.velocityX = 0
-    self.velocityY = 0
+    self.position = vector2:new(0,0)
+    self.velocity = vector2:new(0,0)
+    self.deathEvent = eventEmitter:new()
+
 end
 
 function Entity:setType(newType)
@@ -27,38 +29,46 @@ function Entity:setHealth(newHealth)
 end
 
 function Entity:setPosY(posY)
-    self.poxY = posY
+    self.position:setY(y)
 end
 
 function Entity:setPosX(posX)
-    self.posX = posX
+    self.position:setY(y)
 end
 
 function Entity:setPos(posX, posY)
-    self:setPosX(posX)
-    self:setPosY(posY)
+    self.position = vector2:new(posX,posY)
 end
 
-function Entity:setVelocityX(velocity)
-    self.velocityX = velocity
+function Entity:setVelocityX(velocityX)
+    self.velocity:setX(velocityX)
 end
 
-function Entity:setVelocityY(velocity)
-    self.velocityY = velocity
+function Entity:setVelocityY(velocityY)
+    self.velocity:setY(velocityY)
 end
 
 function Entity:setLevel(newLevel)
     self.level = newLevel
 end
 
-function Entity:spawnentity(name, x, y)
+function Entity:spawnEntity(name, x, y)
+    self.position = vector2:new(x,y)
+end
+
+function Entity:damage(damage)
+    if (self.health - damage < 0) then
+        self.health = 0
+        self:deathEvent:emit()
+    else
+        self.health -= damage 
+    end
+end
+
+function Entity:entityUpdate(dt)
 
 end
 
-function Entity:entityupdate(dt)
-
-end
-
-function Entity:playerupdate(dt)
+function Entity:playerUpdate(dt)
 
 end

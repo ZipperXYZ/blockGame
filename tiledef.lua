@@ -1,7 +1,5 @@
 require "class/superClass"
 
--- j'ai changer ton code pour qu'il marche
-
 Tile = SuperClass:extend()
 Tile.className = "Tile"
 
@@ -9,19 +7,19 @@ Tile.className = "Tile"
 function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.name = tilename or "none"
     self.type = tiletype or "empty"
-    self.textureName = textureName or "none"
+    self.textureName = textureName or "tiles.png"
     self.quadName = quadName or "none"
     self.flags = flags or {}
     self.properties = {}
     self.border = self.flags["border"] or {}
 
     --va regarde la liste globale des texture si elle comprend le name de la texture pis si non elle va créer la texture
-    if not textures["textures"][textureName] and not textureName == "none" then
+    if (not textures["textures"][textureName]) and (not textureName == "none") then
         textures["textures"][textureName] = love.graphics.newImage(textureName)
     end
 
     --va regarde la liste globale des quads si elle comprend le name de la quad pis si non elle va créer la quad selon des paramètres
-    if not textures["quads"][self.quadName] and not self.quadName == "none" then
+    if not textures["quads"][self.quadName] and (not self.quadName == "none") then
         textures["quads"][self.quadName] = love.graphics.newQuad(
             self.flags["newQuad"][1] * self.flags["newQuad"][5]
             , self.flags["newQuad"][2] * self.flags["newQuad"][5]
@@ -32,7 +30,7 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
 
     --flags comprend tout le reste, la pluspart vont être nil, donc assigner des variables pour tout de base
     -- comme par exemple 'newTile.isStone = flags.isStone or false', 'newTile.canBeMined = flags.canBeMined or true' -- ce sont juste des exemples,
-    if not #self.border == 0 and not textures["quads"][self.border["newQuad"]] then
+    if (not #self.border == 0) and (not textures["quads"][self.border["newQuad"]]) then
         self.border["newQuad"] = love.graphics.newQuad(
             self.border["newQuad"][1] * self.border["newQuad"][5]
             , self.border["newQuad"][2] * self.border["newQuad"][5]

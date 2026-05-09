@@ -153,7 +153,7 @@ function World:drawTiles(centerX, centerY, length, heigth, parameters)
     for il=1,#layers do
         for ix=-length,length do
             for iy=-heigth,heigth do
-                self.drawTile(ix+centerX, centerY+iy, layers[il])
+                self:drawTile(ix+centerX, iy+centerY, layers[il])
                 --[[local currentLayer=layers[il]
                 tile=self.getTile(ix+centerX, centerY+iy, currentLayer)
                 if tile.getName()~="none" then
@@ -166,13 +166,14 @@ function World:drawTiles(centerX, centerY, length, heigth, parameters)
 end
 
 function World:drawTile(worldPosX, worldPosY, layer)
-    tile=tiles["dirt"]--self.getTile(ix+centerX, centerY+iy, currentLayer)
-    if tile.getName()~="none" then
+    tile=self:getTile(worldPosX, worldPosY, layer)
+    if tile:getName()~="none" then
         love.graphics.setColor(1,1,1,1)
         local screenPosX
         local screenPosY
         screenPosX,screenPosY=positiontoscreen(worldPosX,worldPosY)
-        love.graphics.draw(tile.getTexture(),tile.getQuad(),round(screenPosX),round(screenPosY),0,round2(camv/8,8),round2(camv/8,8),4,4)
+        love.graphics.draw(tile:getTexture(),tile:getQuad(),round(screenPosX),round(screenPosY),0,round2(camv/8,8),round2(camv/8,8),4,4)
+        --love.graphics.draw(textures["textures"]["tiles.png"],textures["quads"]["dirt"],round(screenPosX),round(screenPosY),0,round2(camv/8,8),round2(camv/8,8),4,4)
 
     end
 end

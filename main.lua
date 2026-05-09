@@ -64,9 +64,10 @@ function love.load()
   print(vec2:normalize())
 
   biomelist = {}
-  world = World()
+  world = World(math.random() * 1000000, 100, 150, {}, { "terrain" })
   debugseebiome = false
-
+  lightreach = 5
+  biomesize = 150
   worldseed = math.random() * 100000
   chunksize = 10
   worlddeepnessprogression = 100
@@ -148,8 +149,10 @@ function love.keypressed(key)
     love.window.setFullscreen(fullscreen)
   end
   if key == "r" then resetworld() end
-  if key == "space" then replacetile(round(mxworldpos), round(myworldpos),
-      { ["tile"] = "stone", ["top"] = "none", ["back"] = "none", ["light"] = { 1, 1, 1, 1 } }) end
+  if key == "space" then
+    replacetile(round(mxworldpos), round(myworldpos),
+      { ["tile"] = "stone", ["top"] = "none", ["back"] = "none", ["light"] = { 1, 1, 1, 1 } })
+  end
   --if key=="e" and spectator then camv=nextinlistroll(camv,{16,24,32,40,48,56,64,72,80}) end
   --if key=="q" and spectator then camv=nextinlistrollreverse(camv,{16,24,32,40,48,56,64,72,80}) end
   if key == "e" and spectator then

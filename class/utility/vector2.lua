@@ -16,6 +16,14 @@ function Vector2:getY()
     return self.y
 end
 
+function Vector2:setX(x)
+    self.x = x
+end
+
+function Vector2:setY(y)
+    self.y = y
+end
+
 function Vector2:__add(b)
     return Vector2:new(self:getX() + b:getX(), self:getY() + b:getY())
 end

@@ -64,7 +64,7 @@ function love.load()
   print(vec2:normalize())
 
   biomelist={}
-  world={}
+  world=World(math.random()*1000000, 100, 150, {}, {"terrain"})
   debugseebiome=false
   lightreach=5
   biomesize=150

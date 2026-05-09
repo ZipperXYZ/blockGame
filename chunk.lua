@@ -23,7 +23,7 @@ function Chunk:init(chunkX,chunkY,chunkSize)
         self.lights[ix]={}
         self.tileProperties[ix]={}
         for iy=1, self.chunkSize do
-            self.tiles[ix][iy]="none"
+            self.tiles[ix][iy]="dirt"
             self.backTiles[ix][iy]="none"
             self.topTiles[ix][iy]="none"
             self.lights[ix][iy]={1,1,1,1}
@@ -90,15 +90,7 @@ end
 --[[
 
 --ceux si vont être dans world à la place
---updateLight(neighboringChunks) -- (getNeighboringChunks())
-function Chunk:updateLight()
 
-end
-
---getClosestNonSolidTile(worldPosX,wordPosY) --utilisé dans updateLight
-function Chunk:getClosestNonSolidTile(worldPosX,wordPosY)
-
-end
 
 ]]
 

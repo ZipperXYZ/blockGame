@@ -128,6 +128,18 @@ end
 --drawTile(worldPosX,worldPosY,layer)
 --dessine une tuile en spécifique dans le monde
 --ne peut pas être unique aux classes tile et chunk vue que chaque tuiles intéragit avec les autres (ex. les bordures)
+
+
+--updateLight(neighboringChunks) -- (getNeighboringChunks())
+function World:updateLight()
+
+end
+
+--getClosestNonSolidTile(worldPosX,wordPosY) --utilisé dans updateLight
+function World:getClosestNonSolidTile(worldPosX,wordPosY)
+
+end
+
 function World:draw()
     return true
 end

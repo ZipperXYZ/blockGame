@@ -5,25 +5,36 @@ require "class/superClass"
 Tile = SuperClass:extend()
 Tile.className = "Tile"
 
-function Tile:init(tilename,tiletype,textureName,quadName,flags)
-
-    if tilename then
-    self.name = tilename
-    else
-        return
-    end
-    self.type = tiletype or ""
-    self.textureName = textureName or ""
-    --va regarde la liste globale des texture si elle comprend le name de la texture pis si non elle va créer la texture
-    self.quadName = quadName or ""
-    --va regarde la liste globale des quads si elle comprend le name de la quad pis si non elle va créer la quad selon des paramètres
+function Tile:init(tilename, tiletype, textureName, quadName, flags)
+    self.name = tilename or "none"
+    self.type = tiletype or "empty"
+    self.textureName = textureName or "none"
+    self.quadName = quadName or "none"
     self.flags = flags or nil
+
+    --va regarde la liste globale des texture si elle comprend le name de la texture pis si non elle va créer la texture
+    if not textures["textures"][textureName] and textureName ~= "none" then
+        textures["textures"][textureName] = love.graphics.newImage(textureName)
+    end
+
+    --va regarde la liste globale des quads si elle comprend le name de la quad pis si non elle va créer la quad selon des paramètres
+    if not textures["quads"][quadName] and quadName ~= "none" then
+        textures["quads"][quadName] = love.graphics.newQuad(
+            flags["newQuad"][1] * flags["newQuad"][5]
+            , flags["newQuad"][2] * flags["newQuad"][5]
+            , flags["newQuad"][3] * flags["newQuad"][5]
+            , flags["newQuad"][4] * flags["newQuad"][5]
+            , textures["textures"][textureName])
+    end
+
     --flags comprend tout le reste, la pluspart vont être nil, donc assigner des variables pour tout de base
     -- comme par exemple 'newTile.isStone = flags.isStone or false', 'newTile.canBeMined = flags.canBeMined or true' -- ce sont juste des exemples,
+    self.isStone = flags.isStone or false
+    self.canBeMined = flags.canBeMined or true
 end
 
 --  il s'agit ici de la défénition d'une tuile, est la même pour chaque tiles du même type dans le monde
---  pour les propriété unique à une tuile (inventaire d'un coffre, orientation, vie de la tuile), utilise 
+--  pour les propriété unique à une tuile (inventaire d'un coffre, orientation, vie de la tuile), utilise
 --  getTilePropreties et setTileProprety dans l'objet monde
 --new()
 --getName()

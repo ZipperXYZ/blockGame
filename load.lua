@@ -138,7 +138,7 @@ function loadtiles()
 
   tiles["palestone"]     = Tile("palestone", "solid", "tiles.png", "palestone",
     {
-      ["newQuad"] = { 3, 0, 1, 1, 8 },
+      ["newQuad"] = { 5, 0, 1, 1, 8 },
       ["border"] = {
         ["quad"] = "palestone_top",
         ["newQuad"] = { 5, 1, 1, 1, 8 }

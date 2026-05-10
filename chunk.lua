@@ -122,7 +122,7 @@ function Chunk:generate(step,stepList,worldSeed,depthProgression,biomeSize,biome
                 if backRaw == "dirt_wall" then
                     if love.math.noise(wx/8, wy/8, worldSeed+600) > (wy/(dp*3))+0.75 then
                         if not (love.math.noise(wx/45, wy/30, worldSeed+800) > 0.7) then
-                            self.tiles["backTiles"][ix][iy] = "stone_wall"
+                            self.tiles["backTiles"][ix][iy] = "stone"
                         end
                     end
                 end

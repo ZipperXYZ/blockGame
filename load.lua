@@ -1,5 +1,4 @@
 function loadtextures()
-
   --[[textures["textures"]={}
   textures["textures"]["tileset"]=love.graphics.newImage("tiles.png")
   --toute les déclarations de texture ici sont pas mal inutile, vue que maintenant on peut les intégrés dans les lignes de création de tiles, items, entitiees
@@ -40,8 +39,8 @@ function loadtiles()
 
   textures["textures"] = {}
   textures["quads"] = {}
-  textures["textures"]["tiles.png"]=love.graphics.newImage("tiles.png")
- -- textures["quads"]["dirt"]=love.graphics.newQuad(0,0,8,8,textures["textures"]["tiles.png"])
+  -- textures["textures"]["tiles.png"]=love.graphics.newImage("tiles.png")
+  -- textures["quads"]["dirt"]=love.graphics.newQuad(0,0,8,8,textures["textures"]["tiles.png"])
   --[[tilelists={}
   tilelists["all tiles"]={}
   tilelists["stones"]={}
@@ -67,19 +66,19 @@ function loadtiles()
   newtile("coldstone_wall","wall","tileset","coldstone",{["border"]={["quad"]="coldstone_top"},["color"]={0.5,0.5,0.5,1},["isastone"]=true})
   ]]
 
-  tilelists["stones"] = {
-        "stone", "darkstone", "palestone", "ancientstone",
-        "coldstone", "lightstone", "hotstone"
+  tilelists["stones"]    = {
+    "stone", "darkstone", "palestone", "ancientstone",
+    "coldstone", "lightstone", "hotstone"
   }
   tilelists["all tiles"] = {
-        "none", "dirt", "grass", "purplegrass", "shadowgrass",
-        "wheatgrass", "diamond", "stone", "darkstone", "palestone",
-        "ancientstone", "coldstone", "lightstone", "hotstone",
-        "dirt_wall", "stone_wall", "hotstone_wall", "coldstone_wall"
-    }
-  tiles["none"]         = Tile("none")
-  
-  tiles["dirt"]         = Tile("dirt", "solid", "tiles.png", "dirt",
+    "none", "dirt", "grass", "purplegrass", "shadowgrass",
+    "wheatgrass", "diamond", "stone", "darkstone", "palestone",
+    "ancientstone", "coldstone", "lightstone", "hotstone",
+    "dirt_wall", "stone_wall", "hotstone_wall", "coldstone_wall"
+  }
+  tiles["none"]          = Tile("none")
+
+  tiles["dirt"]          = Tile("dirt", "solid", "tiles.png", "dirt",
     {
       ["newQuad"] = { 0, 0, 1, 1, 8, },
       ["border"] = {
@@ -88,37 +87,37 @@ function loadtiles()
       }
     })
 
-  tiles["grass"]        = Tile("grass", "top", "tiles.png", "grass",
+  tiles["grass"]         = Tile("grass", "top", "tiles.png", "grass",
     {
       ["newQuad"] = { 1, 0, 1, 1, 8 },
       ["border type"] = "non-solid"
     })
 
-  tiles["purplegrass"]  = Tile("purplegrass", "top", "tiles.png", "purplegrass",
+  tiles["purplegrass"]   = Tile("purplegrass", "top", "tiles.png", "purplegrass",
     {
       ["newQuad"] = { 4, 0, 1, 1, 8 },
       ["border type"] = "non-solid"
     })
 
-  tiles["shadowgrass"]  = Tile("shadowgrass", "top", "tiles.png", "shadowgrass",
+  tiles["shadowgrass"]   = Tile("shadowgrass", "top", "tiles.png", "shadowgrass",
     {
       ["newQuad"] = { 10, 0, 1, 1, 8 },
       ["border type"] = "non-solid"
     })
 
-  tiles["wheatgrass"]   = Tile("wheatgrass", "top", "tiles.png", "wheatgrass",
+  tiles["wheatgrass"]    = Tile("wheatgrass", "top", "tiles.png", "wheatgrass",
     {
       ["newQuad"] = { 11, 0, 1, 1, 8 },
       ["border type"] = "non-solid"
     })
 
-  tiles["diamond"]      = Tile("diamond", "top", "tiles.png", "diamond",
+  tiles["diamond"]       = Tile("diamond", "top", "tiles.png", "diamond",
     {
       ["newQuad"] = { 12, 0, 1, 1, 8 },
       ["border type"] = "normal"
     })
 
-  tiles["stone"]        = Tile("stone", "solid", "tiles.png", "stone", {
+  tiles["stone"]         = Tile("stone", "solid", "tiles.png", "stone", {
     ["newQuad"] = { 2, 0, 1, 1, 8 },
     ["border"] = {
       ["quad"] = "stone_top",
@@ -127,7 +126,7 @@ function loadtiles()
     ["isastone"] = true
   })
 
-  tiles["darkstone"]    = Tile("darkstone", "solid", "tiles.png", "darkstone",
+  tiles["darkstone"]     = Tile("darkstone", "solid", "tiles.png", "darkstone",
     {
       ["newQuad"] = { 3, 0, 1, 1, 8 },
       ["border"] = {
@@ -137,7 +136,7 @@ function loadtiles()
       ["isastone"] = true
     })
 
-  tiles["palestone"]    = Tile("palestone", "solid", "tiles.png", "palestone",
+  tiles["palestone"]     = Tile("palestone", "solid", "tiles.png", "palestone",
     {
       ["newQuad"] = { 3, 0, 1, 1, 8 },
       ["border"] = {
@@ -146,7 +145,7 @@ function loadtiles()
       },
       ["isastone"] = true
     })
-  tiles["ancientstone"] = Tile("ancientstone", "solid", "tiles.png", "ancientstone",
+  tiles["ancientstone"]  = Tile("ancientstone", "solid", "tiles.png", "ancientstone",
     {
       ["newQuad"] = { 6, 0, 1, 1, 8 },
       ["border"] = {
@@ -156,7 +155,7 @@ function loadtiles()
       ["isastone"] = true
     })
 
-  tiles["coldstone"]    = Tile("coldstone", "solid", "tiles.png", "coldstone",
+  tiles["coldstone"]     = Tile("coldstone", "solid", "tiles.png", "coldstone",
     {
       ["newQuad"] = { 7, 0, 1, 1, 8 },
       ["border"] = {
@@ -166,7 +165,7 @@ function loadtiles()
       ["isastone"] = true
     })
 
-  tiles["lightstone"]   = Tile("lightstone", "solid", "tiles.png", "lightstone",
+  tiles["lightstone"]    = Tile("lightstone", "solid", "tiles.png", "lightstone",
     {
       ["newQuad"] = { 8, 0, 1, 1, 8 },
       ["border"] = {
@@ -176,7 +175,7 @@ function loadtiles()
       ["isastone"] = true
     })
 
-  tiles["hotstone"] = Tile("hotstone", "solid", "tiles.png", "hotstone",
+  tiles["hotstone"]      = Tile("hotstone", "solid", "tiles.png", "hotstone",
     {
       ["newQuad"] = { 9, 0, 1, 1, 8 },
       ["border"] = {

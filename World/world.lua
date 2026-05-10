@@ -90,7 +90,10 @@ end
 --placeTile(tile,worldPosX,worldPosY,layer,force) --return true/false si ça l'a marcher, force activé pour la genération du monde, force désactivé pour le joueur
 ----peut être placer une tile fait aussi un updateLight(?)
 function World:placeTile(tile, worldPosX, worldPosY, layer, force)
-    print("test")
+    local chunkX, chunkY, posX, posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
+    if self:checkIfChunkExists(chunkX, chunkY) then
+        self.chunks[chunkX][chunkY]:placeTile(tile, posX, posY, layer, force)
+    end
     return true
 end
 

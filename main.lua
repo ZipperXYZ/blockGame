@@ -118,8 +118,7 @@ function love.keypressed(key)
   end
   if key == "r" then world = World(math.random() * 1000000, 10, 100, 150, {}, { "terrain" }) end
   if key == "space" then
-    replacetile(round(mxworldpos), round(myworldpos),
-      { ["tile"] = "stone", ["top"] = "none", ["back"] = "none", ["light"] = { 1, 1, 1, 1 } })
+    world:placeTile("stone", round(mxworldpos), round(myworldpos), "tiles", true)
   end
   --if key=="e" and spectator then camv=nextinlistroll(camv,{16,24,32,40,48,56,64,72,80}) end
   --if key=="q" and spectator then camv=nextinlistrollreverse(camv,{16,24,32,40,48,56,64,72,80}) end

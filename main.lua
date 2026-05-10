@@ -154,7 +154,7 @@ function love.keypressed(key)
     fullscreen = not fullscreen
     love.window.setFullscreen(fullscreen)
   end
-  if key == "r" then resetworld() end
+  if key == "r" then world = World(math.random() * 1000000,10, 100, 150, {}, { "terrain" }) end
   if key == "space" then
     replacetile(round(mxworldpos), round(myworldpos),
       { ["tile"] = "stone", ["top"] = "none", ["back"] = "none", ["light"] = { 1, 1, 1, 1 } })

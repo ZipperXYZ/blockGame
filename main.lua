@@ -1,11 +1,3 @@
-local function test1()
-  print("Salut je run!!!")
-end
-
-local function test2()
-  print("Wow c cool je run aussi")
-end
-
 function love.load()
   --bonjour
 
@@ -13,19 +5,19 @@ function love.load()
   require "gameudp"
   require "drawudp" --là ou tout le code de dessins
   require "mathsc"  --math comprend plusieurs truc bien qui sont pas dans lua de base
-  require "worldgeneration"
+  require "World/worldgeneration"
   require "load"
---  require "entities"
+  --  require "entities"
   require "class/childClass"
   require "class/utility/eventEmitter"
   require "class/utility/vector2"
   love.graphics.setDefaultFilter("nearest", "nearest")
 
-  require "tiledef"
-  require "chunk"
-  require "world"
- -- require "chunkv2"
- -- require "worldv2"
+  require "World/tiledef"
+  require "World/chunk"
+  require "World/world"
+  -- require "chunkv2"
+  -- require "worldv2"
   --love.filesystem.setIdentity("gamename")
   tiles = {}
   tilelists = {}
@@ -34,43 +26,12 @@ function love.load()
   textures = {}
   tileindexes = {}
 
-  -- ici c'est une exemple de défénitions
-  obj = ChildClass:new(98, "test", 999, "class1")
-
-
-  obj2 = ChildClass:new(1, "testV2", 888, "class2")
-  print(obj:getClassName())
-
-  -- test de la fonction statique
-
-  obj:testStaticFunc()
-
-  -- un event emitter et les fonctions qui écoute l'event
-
-  testEvent = EventEmitter()
-  testEvent:on(test1)
-  testEvent:on(test2)
-  testEvent:emit()
-
-  -- clone d'un objet
-  objClone = obj:clone()
-
-  print(objClone)
-
-  -- ici démonstration de la classe Vector2
-
-  -- d'ailleurs comme vous voyez il est possible de ne pas faire class:new() et de juste faire () le résultat est le même
-
-  vec = Vector2(12, 12)
-  vec2 = Vector2(98, 13)
-  print(vec2:normalize())
-
   --entity = Entity:new("test", "test", "test", 1, 9)
 
- -- entity:damage(99)
+  -- entity:damage(99)
 
   biomelist = {}
-  world = World(math.random() * 1000000,10, 100, 150, {}, { "terrain" })
+  world = World(math.random() * 1000000, 10, 100, 150, {}, { "terrain" })
   debugseebiome = false
   lightreach = 5
   biomesize = 150
@@ -154,7 +115,7 @@ function love.keypressed(key)
     fullscreen = not fullscreen
     love.window.setFullscreen(fullscreen)
   end
-  if key == "r" then resetworld() end
+  if key == "r" then world = World(math.random() * 1000000, 10, 100, 150, {}, { "terrain" }) end
   if key == "space" then
     replacetile(round(mxworldpos), round(myworldpos),
       { ["tile"] = "stone", ["top"] = "none", ["back"] = "none", ["light"] = { 1, 1, 1, 1 } })

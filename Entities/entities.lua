@@ -14,13 +14,12 @@ function Entity:init(name, type, sprite, health, level, ia, flags)
     self.ia = ia or "none"
     self.flags = flags or {}
     self.sprite = sprite or sprite()
-    self.position = Vector2:new(0,0)
-    self.velocity = Vector2:new(0,0)
+    self.position = Vector2:new(0, 0)
+    self.velocity = Vector2:new(0, 0)
     self.deathEvent = EventEmitter:new()
     self.state = "alive"
 
     self.deathEvent:on(self:death())
-
 end
 
 function Entity:setType(newType)
@@ -40,7 +39,7 @@ function Entity:setPosX(posX)
 end
 
 function Entity:setPos(posX, posY)
-    self.position = vector2:new(posX,posY)
+    self.position = vector2:new(posX, posY)
 end
 
 function Entity:setVelocityX(velocityX)
@@ -55,16 +54,17 @@ function Entity:setLevel(newLevel)
     self.level = newLevel
 end
 
-function Entity:spawnEntity(name, x, y)
-    self.position = vector2:new(x,y)
-end
+--dans world et non entities
+--function Entity:spawnEntity(name, x, y)
+--    self.position = vector2:new(x,y)
+--end
 
 function Entity:damage(damage)
     if (self.health - damage < 0) then
         self.health = 0
         self.deathEvent:emit()
     else
-        self.health =- damage 
+        self.health = -damage
     end
 end
 

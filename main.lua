@@ -13,19 +13,19 @@ function love.load()
   require "gameudp"
   require "drawudp" --là ou tout le code de dessins
   require "mathsc"  --math comprend plusieurs truc bien qui sont pas dans lua de base
-  require "worldgeneration"
+  require "World/worldgeneration"
   require "load"
---  require "entities"
+  --  require "entities"
   require "class/childClass"
   require "class/utility/eventEmitter"
   require "class/utility/vector2"
   love.graphics.setDefaultFilter("nearest", "nearest")
 
-  require "tiledef"
-  require "chunk"
-  require "world"
- -- require "chunkv2"
- -- require "worldv2"
+  require "World/tiledef"
+  require "World/chunk"
+  require "World/world"
+  -- require "chunkv2"
+  -- require "worldv2"
   --love.filesystem.setIdentity("gamename")
   tiles = {}
   tilelists = {}
@@ -67,10 +67,10 @@ function love.load()
 
   --entity = Entity:new("test", "test", "test", 1, 9)
 
- -- entity:damage(99)
+  -- entity:damage(99)
 
   biomelist = {}
-  world = World(math.random() * 1000000,10, 100, 150, {}, { "terrain" })
+  world = World(math.random() * 1000000, 10, 100, 150, {}, { "terrain" })
   debugseebiome = false
   lightreach = 5
   biomesize = 150

@@ -13,13 +13,15 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.properties = {}
     self.border = self.flags["border"] or {}
 
+    self.textureName = ("Textures/" .. self.textureName)
+
     --va regarde la liste globale des texture si elle comprend le name de la texture pis si non elle va créer la texture
     if not textures["textures"][self.textureName] and self.textureName ~= "none" then
         textures["textures"][self.textureName] = love.graphics.newImage(self.textureName)
     end
 
     --va regarde la liste globale des quads si elle comprend le name de la quad pis si non elle va créer la quad selon des paramètres
-    if  not textures["quads"][self.quadName] and self.quadName ~= "none" then
+    if not textures["quads"][self.quadName] and self.quadName ~= "none" then
         textures["quads"][self.quadName] = love.graphics.newQuad(
             self.flags["newQuad"][1] * self.flags["newQuad"][5]
             , self.flags["newQuad"][2] * self.flags["newQuad"][5]

@@ -81,14 +81,65 @@ function Chunk:getGenerationStatus()
 end
 
 --generate(step,chunkX,chunkY,worldSeed,depthProgression,biomeSize,biomeList) -- generate according to step
-function Chunk:generate(step,stepList,worldSeed,depthProgression,biomeSize,biomeList)
-    print(step)
+function Chunk:generate(step,stepList,worldSeed,depthProgression,biomeSize,biomeList, world)
     if (step == "none") then
-        step = "stone"
-        self.step = "stone"
+        for ix = 1, self.chunkSize do
+            for iy = 1, self.chunkSize do
+                local wx, wy = self:convertChunkPosToWorldPos(ix,iy)
+                self.tiles["tiles"][ix][iy] = world:generateTerrainTile(wx, wy)
+                self.tiles["topTiles"][ix][iy]  = "none"
+                self.tiles["backTiles"][ix][iy] = "none"
+                self.tiles["lights"][ix][iy]    = {1, 1, 1, 1}
+            end
+        end
+
+        self.generationStatus = "stone"
+        return
     end
 
-    
+
+    if step == "stone" and world:getNeighboringChunks(self.chunkX, self.chunkY, "stone") then
+        -- première passe : backs
+        for ix = 1, self.chunkSize do
+            for iy = 1, self.chunkSize do
+                
+                local wx, wy = self:convertChunkPosToWorldPos(ix, iy)
+
+                if love.math.noise(wx/14, wy/14, worldSeed-608) < 0.6 then
+                    self.tiles["backTiles"][ix][iy] = "dirt_wall"
+                end
+                if love.math.noise(wx/15, wy/30, worldSeed+100) > (-wy/30) then
+                    self.tiles["backTiles"][ix][iy] = "none"
+                end
+            end
+        end
+        -- deuxième passe : stone
+        for ix = 1, self.chunkSize do
+            for iy = 1, self.chunkSize do
+                local wx, wy  = self:convertChunkPosToWorldPos(ix, iy)
+                local tileRaw = self:getTile(ix, iy, "tiles")
+                local backRaw = self:getTile(ix, iy, "backTiles")
+                if backRaw == "dirt_wall" then
+                    if love.math.noise(wx/8, wy/8, worldSeed+600) > (wy/(dp*3))+0.75 then
+                        if not (love.math.noise(wx/45, wy/30, worldSeed+800) > 0.7) then
+                            self.tiles["backTiles"][ix][iy] = "stone_wall"
+                        end
+                    end
+                end
+                if tileRaw == "dirt" then
+                    if love.math.noise(wx/8, wy/8, worldSeed+600) > (wy/(dp*3))+0.75 then
+                        if not (love.math.noise(wx/45, wy/30, worldSeed+800) > 0.7) then
+                            self.tiles["tiles"][ix][iy] = "stone"
+                        end
+                    end
+                end
+            end
+        end
+        self.generationStatus = "stone2"
+        return
+    end
+
+
     --pas fini
 end
 

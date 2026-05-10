@@ -3,6 +3,12 @@ require "class/superClass"
 World = SuperClass:extend()
 World.className = "World"
 
+
+local stepOrder = {"none", "stone", "stone2", "grass", "ores", "done"}
+local stepIndex = {}
+for i, s in ipairs(stepOrder) do stepIndex[s] = i end
+
+
 --new(worldseed,depthProgression,biomeSize,biomeList,generationSteps) --Biomelist peut être empty,
 --  depthProgression correspond au nombre de blocs
 --  par progression du monde, comme par exemple, mettre 100 feras en sorte que des enemies vont commencer à spawn à y-100, d'autres à -200 et ça s'applique
@@ -45,8 +51,24 @@ end
 --getNeighboringChunks(chunkX,chunkY) --return une liste de chunk,
 --à refaire puisque tu ne peux pas avoir la position globale avec juste une liste de chunks, serait inutile
 --peut être retourne la liste de coordonées de chaque chunks et les utilisés de cette façon?
-function World:getNeighboringChunks(chunkX, chunkY)
-    return {}--pas fini
+function World:getNeighboringChunks(chunkX, chunkY, step)
+    local required = stepIndex[step]
+    if not required then return false end
+
+    local neighbors = {
+        {chunkX+1, chunkY+1}, {chunkX+1, chunkY}, {chunkX+1, chunkY-1},
+        {chunkX,   chunkY-1}, {chunkX-1, chunkY-1}, {chunkX-1, chunkY},
+        {chunkX-1, chunkY+1}, {chunkX,   chunkY+1}
+    }
+
+    for _, n in ipairs(neighbors) do
+        local nx, ny = n[1], n[2]
+        if not self:checkIfChunkExists(nx, ny) then return false end
+        local neighborStatus = self.chunks[nx][ny]:getGenerationStatus()
+        -- le voisin doit avoir complété au moins l'étape précédente
+        if stepIndex[neighborStatus] < required then return false end
+    end
+    return true
 end
 
 --checkIfChunkCanGenerate(step) --return true/false, regarde tout les chunks autour pour savoir si il peut générer à une certaine étape
@@ -68,6 +90,7 @@ end
 --placeTile(tile,worldPosX,worldPosY,layer,force) --return true/false si ça l'a marcher, force activé pour la genération du monde, force désactivé pour le joueur
 ----peut être placer une tile fait aussi un updateLight(?)
 function World:placeTile(tile, worldPosX, worldPosY, layer, force)
+    print("test")
     return true
 end
 
@@ -82,6 +105,7 @@ end
 --coffre ou l'orientation d'un bloc)
 function World:getTile(worldPosX, worldPosY, layer)
     local tile = tiles["none"]
+
     local chunkX,chunkY,posX,posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
     if self:checkIfChunkExists(chunkX,chunkY) then
     tile = self.chunks[chunkX][chunkY]:getTile(posX,posY,layer)
@@ -114,7 +138,6 @@ function World:generate(centerX, centerY, length, heigth, force, step)
     centerX=round(centerX)
     centerY=round(centerY)
 
-    self.stepList = {"first","stone","grass","ores","done"}
     local ix = 1
     local iy = 1
     for ix=-length,length do
@@ -122,7 +145,7 @@ function World:generate(centerX, centerY, length, heigth, force, step)
             local chunkPosX=centerX+ix
             local chunkPosY=centerY+iy
             if self:checkIfChunkExists(chunkPosX, chunkPosY) then
-                self.chunks[chunkPosX][chunkPosY]:generate(self.chunks[chunkPosX][chunkPosY]:getGenerationStatus(),self.stepList,self.worldseed,self.depthProgression,self.biomeSize,self.biomeList)
+                self.chunks[chunkPosX][chunkPosY]:generate(self.chunks[chunkPosX][chunkPosY]:getGenerationStatus(),stepOrder,self.worldSeed,self.depthProgression,self.biomeSize,self.biomeList,self)
             else
                 if self.chunks==nil then
                     self.chunks={}
@@ -213,6 +236,11 @@ end
 
 function World:drawTile(worldPosX, worldPosY, layer)
     local tile=self:getTile(worldPosX, worldPosY, layer)
+   
+    if (tile == nil) then
+        return
+    end
+
     if tile:getName()~="none" then
         love.graphics.setColor(1,1,1,1)
         local screenPosX
@@ -222,4 +250,33 @@ function World:drawTile(worldPosX, worldPosY, layer)
         --love.graphics.draw(textures["textures"]["tiles.png"],textures["quads"]["dirt"],round(screenPosX),round(screenPosY),0,round2(camv/8,8),round2(camv/8,8),4,4)
 
     end
+end
+
+function World:generateTerrainTile(tileX, tileY)
+    local seed = self.worldSeed
+    local dp   = self.depthProgression
+    local name = "none"
+
+    if love.math.noise(tileX/20, tileY/20, seed) >= 0.25 then
+        name = "dirt"
+    end
+    if love.math.noise(tileX/40, tileY/40, seed-100) < 0.3 then
+        name = "none"
+    end
+    if love.math.noise(tileX/12, tileY/12, seed-500) < 0.35 then
+        name = "none"
+    end
+    if love.math.noise(tileX/5, tileY/5, seed-600) < 0.35 and
+       love.math.noise(tileX/15, tileY/15, seed+100) < (tileY/(dp*2))+1 then
+        name = "none"
+    end
+    local n = love.math.noise(tileX/25, tileY/90, seed-200)
+    if n < 0.4 and n > 0.36 then
+        name = "none"
+    end
+    if love.math.noise(tileX/15, tileY/30, seed+100) > (-tileY/20) then
+        name = "none"
+    end
+
+    return name
 end

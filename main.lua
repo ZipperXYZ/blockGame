@@ -32,6 +32,9 @@ function love.load()
 
   biomelist = {}
   world = World(math.random() * 1000000, 10, 100, 150, {}, { "terrain" })
+  world:addBiome("none",0.5,0.5,-1,3,5,1)
+  world:addBiome("coldland",0.2,0.4,2,8,3,1)
+  world:addBiome("hotland",0.8,0.6,3.5,99999,1,1)
   debugseebiome = false
   lightreach = 5
   biomesize = 150

@@ -2,6 +2,7 @@ function drawgame()
   local drawdistanceX=math.ceil(szx/camv/2)
   local drawdistanceY=math.ceil(szx/camv/2)
   world:drawTiles(camx, camy, drawdistanceX, drawdistanceY, {})
+ -- world:drawTiles(camx, camy, drawdistanceX, drawdistanceY, {["showBiomes"]=true})
 
 
   --[[love.graphics.print(#tiles,0,0)

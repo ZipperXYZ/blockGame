@@ -161,7 +161,7 @@ function Chunk:generate(step,stepList,worldSeed,depthProgression,biomeSize,biome
                 local wx, wy  = self:convertChunkPosToWorldPos(ix, iy)
                 local tileRaw = self:getRawTile(ix, iy, "tiles")
                 local backRaw = self:getRawTile(ix, iy, "backTiles")
-                local biome   = world:getbiome(wx, wy)
+                local biome   = self:getBiome(wx,wy,worldSeed,depthProgression,biomeSize,biomeList)
                 if checkifinlist(tileRaw, tilelists["stones"]) then
                     if biome == "hotland"  then self.chunkTiles["tiles"][ix][iy] = "hotstone"  end
                     if biome == "coldland" then self.chunkTiles["tiles"][ix][iy] = "coldstone" end
@@ -285,7 +285,115 @@ end
 
 --getBiome(x,y) --return le nom du biome
 function Chunk:getBiome(posInChunkX,posInChunkY,worldSeed,depthProgression,biomeSize,biomeList)
+local biome = "none"
 
+    -- biome confidence
+    -- 0 = near edge
+    -- 1 = near center
+    local nearCenter = 0
+
+    local closestDist = math.huge
+    local secondDist = math.huge
+
+    -- biome noise coordinates
+    local op1 = love.math.noise(
+        posInChunkX / biomeSize,
+        posInChunkY / biomeSize,
+        worldSeed - 5
+    )
+
+    local op2 = love.math.noise(
+        posInChunkX / (biomeSize * 1.2),
+        posInChunkY / (biomeSize / 1.2),
+        worldSeed - 10
+    )
+
+    for ib = 1, #biomeList do
+
+        local currentBiome = biomeList[ib]
+
+        -- distance from biome point
+        local dx = op1 - currentBiome.option1
+        local dy = op2 - currentBiome.option2
+
+        local distance1 =
+            math.sqrt(dx * dx + dy * dy)
+            ^ currentBiome.likeness
+
+        ------------------------------------------------
+        -- DEPTH INFLUENCE
+        ------------------------------------------------
+
+        local depth = (-posInChunkY / depthProgression)
+
+        local minDepth = currentBiome.deepnessmin
+        local maxDepth = currentBiome.deepnessmax
+        local smooth = currentBiome.deepnesssmooth
+
+        -- smooth entering
+        local enter = (depth - minDepth) / smooth
+
+        -- smooth leaving
+        local exit = (maxDepth - depth) / smooth
+
+        -- clamp
+        if enter < 0 then enter = 0 end
+        if enter > 1 then enter = 1 end
+
+        if exit < 0 then exit = 0 end
+        if exit > 1 then exit = 1 end
+
+        -- final depth multiplier
+        local depthStrength = math.min(enter, exit)
+
+        ------------------------------------------------
+        -- APPLY DEPTH
+        ------------------------------------------------
+
+        if depthStrength <= 0 then
+            distance1 = math.huge
+        else
+            distance1 = distance1 / depthStrength
+        end
+
+        ------------------------------------------------
+        -- TRACK 2 CLOSEST BIOMES
+        ------------------------------------------------
+
+        if distance1 < closestDist then
+
+            secondDist = closestDist
+
+            closestDist = distance1
+
+            biome = currentBiome.name
+
+        elseif distance1 < secondDist then
+
+            secondDist = distance1
+
+        end
+    end
+
+    ------------------------------------------------
+    -- BIOME CENTER CONFIDENCE
+    ------------------------------------------------
+
+    if secondDist ~= math.huge and secondDist > 0 then
+
+        nearCenter =
+            1 - (closestDist / secondDist)
+
+        if nearCenter < 0 then
+            nearCenter = 0
+        end
+
+        if nearCenter > 1 then
+            nearCenter = 1
+        end
+    end
+
+    return biome, nearCenter
 end
 
 

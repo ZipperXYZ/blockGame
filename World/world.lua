@@ -103,6 +103,17 @@ end
 --uniques qui sont nécessaires pour mettons l'information unique à une tile, comme son orientation, peut être un getTilePropreties
 --qui retourne les propriétés et setTilePropriety(propriety, value) qui set une propriété de la tile, comme l'inventaire d'un
 --coffre ou l'orientation d'un bloc)
+function World:getBiome(worldPosX, worldPosY)
+    local biome = "none"
+    local nearCenter = 0.5
+
+    local chunkX,chunkY,posX,posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
+    if self:checkIfChunkExists(chunkX,chunkY) then
+    biome,nearCenter = self.chunks[chunkX][chunkY]:getBiome(posX,posY,self.worldSeed,self.depthProgression,self.biomeSize,self.biomeList)
+    end
+    return biome,nearCenter
+end
+
 function World:getTile(worldPosX, worldPosY, layer)
     local tile = tiles["none"]
 
@@ -170,7 +181,16 @@ function World:getBiomes()
 end
 
 --addBiome(biome)
-function World:addBiome(biome)
+function World:addBiome(biomeName,temperature,wetness,deepnessmin,deepnessmax,deepnesssmooth,likeness)
+    if self.biomeList == nil then self.biomeList={} end
+    local biome={}
+    biome.name=biomeName
+    biome.option1=temperature
+    biome.option2=wetness
+    biome.deepnessmin=deepnessmin
+    biome.deepnessmax=deepnessmax
+    biome.likeness=likeness
+    biome.deepnesssmooth=deepnesssmooth
     table.insert(self.biomeList, biome)
     return true
 end
@@ -215,6 +235,7 @@ end
 function World:drawTiles(centerX, centerY, length, heigth, parameters)
     centerX = round(centerX)
     centerY = round(centerY)
+    showBiomes = parameters["showBiomes"] or false
     local ix=-length
     local iy=-heigth
     local il=1
@@ -223,6 +244,11 @@ function World:drawTiles(centerX, centerY, length, heigth, parameters)
         for ix=-length,length do
             for iy=-heigth,heigth do
                 self:drawTile(ix+centerX, iy+centerY, layers[il])
+                if showBiomes then
+                    local screenPosX,screenPosY
+                    screenPosX,screenPosY=positiontoscreen(ix+centerX,iy+centerY)
+                    love.graphics.print(self:getBiome(ix+centerX,iy+centerY),screenPosX,screenPosY)
+                end
                 --[[local currentLayer=layers[il]
                 tile=self.getTile(ix+centerX, centerY+iy, currentLayer)
                 if tile.getName()~="none" then
@@ -335,6 +361,8 @@ function World:generateTerrainTile(tileX, tileY)
     if love.math.noise(tileX/20, tileY/20, seed) >= 0.25 then
         name = "dirt"
     end
+
+
     if love.math.noise(tileX/40, tileY/40, seed-100) < 0.3 then
         name = "none"
     end
@@ -349,6 +377,18 @@ function World:generateTerrainTile(tileX, tileY)
     if n < 0.4 and n > 0.36 then
         name = "none"
     end
+
+    --special biomes dirt terrain:
+    local biome, nearcenter = self:getBiome(tileX,tileY)
+    if biome=="hotland" then
+        if nearCenter<0.6 then
+            name="dirt"
+        else
+            name="none"
+        end
+    end
+
+    --ground level
     if love.math.noise(tileX/15, tileY/30, seed+100) > (-tileY/20) then
         name = "none"
     end
@@ -356,7 +396,7 @@ function World:generateTerrainTile(tileX, tileY)
     return name
 end
 
-function World:getbiome(x, y)
+function World:nePasUtiliserCetteFonction(x, y)
     local biome       = "none"
     local closestDist = 999999
     local secondDist  = 999999

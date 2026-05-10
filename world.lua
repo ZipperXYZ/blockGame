@@ -279,3 +279,36 @@ function World:generateTerrainTile(tileX, tileY)
 
     return name
 end
+
+function World:getbiome(x, y)
+    local biome       = "none"
+    local closestDist = 999999
+    local secondDist  = 999999
+    local nearcenter  = 0
+
+    local op1 = love.math.noise(x/self.biomeSize,       y/self.biomeSize,       self.worldSeed-5)
+    local op2 = love.math.noise(x/(self.biomeSize*1.2), y/(self.biomeSize/1.2), self.worldSeed-10)
+
+    for ib = 1, #self.biomeList do
+        local bm = self.biomeList[ib]
+        local d  = dist(op1, op2, bm["option1"], bm["option2"]) ^ bm["likeness"]
+
+        local depth    = -y / self.depthProgression
+        local enter    = math.max(0, math.min(1, (depth - bm["deepnessmin"]) / bm["deepnesssmooth"]))
+        local exitVal  = math.max(0, math.min(1, (bm["deepnessmax"] - depth) / bm["deepnesssmooth"]))
+        local ymulti   = math.min(enter, exitVal)
+
+        d = ymulti <= 0 and 999999 or (d / ymulti)
+
+        if d < closestDist then
+            secondDist  = closestDist
+            closestDist = d
+            biome       = bm["name"]
+        elseif d < secondDist then
+            secondDist = d
+        end
+    end
+
+    nearcenter = math.max(0, math.min(1, 1 - (closestDist / secondDist)))
+    return biome, nearcenter
+end

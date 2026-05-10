@@ -11,7 +11,9 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.quadName = quadName or "none"
     self.flags = flags or {}
     self.properties = {}
+    self.borderType = self.flags["border type"] or "same block"
     self.border = self.flags["border"] or {}
+    if self.border=={} then self.borderType="none" end
 
     --va regarde la liste globale des texture si elle comprend le name de la texture pis si non elle va créer la texture
     if not textures["textures"][self.textureName] and self.textureName ~= "none" then
@@ -30,8 +32,8 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
 
     --flags comprend tout le reste, la pluspart vont être nil, donc assigner des variables pour tout de base
     -- comme par exemple 'newTile.isStone = flags.isStone or false', 'newTile.canBeMined = flags.canBeMined or true' -- ce sont juste des exemples,
-    if (not #self.border == 0) and (not textures["quads"][self.border["newQuad"]]) then
-        self.border["newQuad"] = love.graphics.newQuad(
+    if self.border.quad ~= "none" and not textures["quads"][self.border.quad] and self.border["newQuad"] then
+        textures["quads"][self.border.quad] = love.graphics.newQuad(
             self.border["newQuad"][1] * self.border["newQuad"][5]
             , self.border["newQuad"][2] * self.border["newQuad"][5]
             , self.border["newQuad"][3] * self.border["newQuad"][5]
@@ -66,6 +68,22 @@ end
 
 function Tile:getFlags()
     return self.flags
+end
+
+function Tile:getBorder()
+    return self.border
+end
+
+function Tile:getBorderType()
+    return self.borderType
+end
+
+function Tile:getColor()
+    return self.color
+end
+
+function Tile:getBorderQuad()
+    return textures["quads"][self.border.quad]
 end
 
 --  il s'agit ici de la défénition d'une tuile, est la même pour chaque tiles du même type dans le monde

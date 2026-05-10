@@ -242,12 +242,88 @@ function World:drawTile(worldPosX, worldPosY, layer)
     end
 
     if tile:getName()~="none" then
-        love.graphics.setColor(1,1,1,1)
         local screenPosX
         local screenPosY
         screenPosX,screenPosY=positiontoscreen(worldPosX,worldPosY)
-        love.graphics.draw(tile:getTexture(),tile:getQuad(),round(screenPosX),round(screenPosY),0,round2(camv/8,8),round2(camv/8,8),4,4)
+        if layer=="topTiles" then
+            love.graphics.setColor(1,1,1,1)
+            love.graphics.draw(tile:getTexture(),tile:getQuad(),round(screenPosX),round(screenPosY),0,round2(camv/8,8),round2(camv/8,8),4,4)
+            
+            local border = tile:getBorder()
+            local borderType = tile:getBorderType()
 
+            if borderType == "normal" then
+                love.graphics.draw(tile:getTexture(),tile:getQuad(),round(screenPosX),round(screenPosY),0,round2(camv/8,8),round2(camv/8,8),4,4)
+            end
+
+            if borderType == "non-solid" then
+                local borderingTile = self:getTile(worldPosX, worldPosY+1, layer)
+                if borderingTile then
+                    if (tile:getType() ~= borderingTile:getType()) then
+                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY), 0, round2(camv/8,8), round2(camv/8,8), 4, 4)
+                    end
+                end
+                local borderingTile = self:getTile(worldPosX+1, worldPosY, layer)
+                if borderingTile then
+                    if (tile:getType() ~= borderingTile:getType()) then
+                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY), d180topi(90), round2(camv/8,8), round2(camv/8,8), 4, 4)
+                    end
+                end
+                local borderingTile = self:getTile(worldPosX, worldPosY-1, layer)
+                if borderingTile then
+                    if (tile:getType() ~= borderingTile:getType()) then
+                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY), d180topi(180), round2(camv/8,8), round2(camv/8,8), 4, 4)
+                    end
+                end
+                local borderingTile = self:getTile(worldPosX-1, worldPosY, layer)
+                if borderingTile then
+                    if (tile:getType() ~= borderingTile:getType()) then
+                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY), d180topi(270), round2(camv/8,8), round2(camv/8,8), 4, 4)
+                    end
+                end
+            end
+        end
+        if layer=="backTiles" or layer=="tiles" then
+            local colour = tile:getColor()
+            love.graphics.setColor(colour)
+            if layer=="backTiles" then 
+                love.graphics.setColor(colour[1]*0.4,colour[2]*0.4,colour[3]*0.4,colour[4]) 
+            end
+
+            --draw la texture principale
+            love.graphics.draw(tile:getTexture(),tile:getQuad(),round(screenPosX),round(screenPosY),0,round2(camv/8,8),round2(camv/8,8),4,4)
+            
+            local border = tile:getBorder()
+            local borderType = tile:getBorderType()
+
+            --draw les border du bloc
+            if borderType ~= "none" then
+                local borderingTile = self:getTile(worldPosX, worldPosY+1, layer)
+                if borderingTile then
+                    if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then
+                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY), 0, round2(camv/8,8), round2(camv/8,8), 4, 4)
+                    end
+                end
+                local borderingTile = self:getTile(worldPosX+1, worldPosY, layer)
+                if borderingTile then
+                    if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then
+                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY), d180topi(90), round2(camv/8,8), round2(camv/8,8), 4, 4)
+                    end
+                end
+                local borderingTile = self:getTile(worldPosX, worldPosY-1, layer)
+                if borderingTile then
+                    if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then
+                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY), d180topi(180), round2(camv/8,8), round2(camv/8,8), 4, 4)
+                    end
+                end
+                local borderingTile = self:getTile(worldPosX-1, worldPosY, layer)
+                if borderingTile then
+                    if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then
+                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY), d180topi(270), round2(camv/8,8), round2(camv/8,8), 4, 4)
+                    end
+                end
+            end
+        end
     end
 end
 

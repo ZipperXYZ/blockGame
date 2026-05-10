@@ -83,7 +83,7 @@ function loadtiles()
       ["newQuad"] = { 0, 0, 1, 1, 8, },
       ["border"] = {
         ["quad"] = "dirt_top",
-        ["newQuad"] = { 0, 2, 1, 1, 8 }
+        ["newQuad"] = { 0, 1, 1, 1, 8 }
       }
     })
 

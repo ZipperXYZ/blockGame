@@ -113,6 +113,8 @@ function World:generate(centerX, centerY, length, heigth, force, step)
     if step==nil then step=self.generationSteps end
     centerX=round(centerX)
     centerY=round(centerY)
+
+    self.stepList = {"first","stone","grass","ores","done"}
     local ix = 1
     local iy = 1
     for ix=-length,length do

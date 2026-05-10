@@ -66,8 +66,21 @@ function loadtiles()
   newtile("hotstone_wall","wall","tileset","hotstone",{["border"]={["quad"]="hotstone_top"},["color"]={0.5,0.5,0.5,1},["isastone"]=true})
   newtile("coldstone_wall","wall","tileset","coldstone",{["border"]={["quad"]="coldstone_top"},["color"]={0.5,0.5,0.5,1},["isastone"]=true})
   ]]
+
+  tilelists["stones"] = {
+        "stone", "darkstone", "palestone", "ancientstone",
+        "coldstone", "lightstone", "hotstone"
+  }
+  tilelists["all tiles"] = {
+        "air", "dirt", "grass", "purplegrass", "shadowgrass",
+        "wheatgrass", "diamond", "stone", "darkstone", "palestone",
+        "ancientstone", "coldstone", "lightstone", "hotstone",
+        "dirt_wall", "stone_wall", "hotstone_wall", "coldstone_wall"
+    }
   tiles["none"]         = Tile("none")
 
+  tiles["air"] = Tile("air", "empty", "none", "none", {})
+  
   tiles["dirt"]         = Tile("dirt", "solid", "tiles.png", "dirt",
     {
       ["newQuad"] = { 0, 0, 1, 1, 8, },
@@ -167,10 +180,10 @@ function loadtiles()
 
   tiles["ancientstone"] = Tile("hotstone", "solid", "tiles.png", "hotstone",
     {
-      ["new quad"] = { 9, 0, 1, 1, 8 },
+      ["newQuad"] = { 9, 0, 1, 1, 8 },
       ["border"] = {
         ["quad"] = "hotstone_top",
-        ["new quad"] = { 9, 1, 1, 1, 8 }
+        ["newQuad"] = { 9, 1, 1, 1, 8 }
       },
       ["isastone"] = true
     })

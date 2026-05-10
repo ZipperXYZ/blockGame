@@ -272,12 +272,15 @@ function normalisevector(xr,yr)
   
   return xf,yf
 end
-function checkifinlist(value1,list1)
-  inside=false
-  if #list1>0 then for j6=1,#list1 do
-  if list1[j6]==value1 then inside=true end
-  end end
-  return inside
+function checkifinlist(value1, list1)
+    if list1 == nil then return false end  -- ← ajout
+    local inside = false
+    if #list1 > 0 then
+        for j6 = 1, #list1 do
+            if list1[j6] == value1 then inside = true end
+        end
+    end
+    return inside
 end
 function pickrandomvalued(values)
   table1={}

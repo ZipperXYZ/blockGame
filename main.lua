@@ -24,6 +24,8 @@ function love.load()
   require "tiledef"
   require "chunk"
   require "world"
+ -- require "chunkv2"
+ -- require "worldv2"
   --love.filesystem.setIdentity("gamename")
   tiles = {}
   tilelists = {}

@@ -82,6 +82,13 @@ end
 
 --generate(step,chunkX,chunkY,worldSeed,depthProgression,biomeSize,biomeList) -- generate according to step
 function Chunk:generate(step,stepList,worldSeed,depthProgression,biomeSize,biomeList)
+    print(step)
+    if (step == "none") then
+        step = "stone"
+        self.step = "stone"
+    end
+
+    
     --pas fini
 end
 

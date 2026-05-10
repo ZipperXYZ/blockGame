@@ -184,11 +184,68 @@ function loadtiles()
       },
       ["isastone"] = true
     })
+  tiles["shadowStone"] = Tile("shadowStone", "solid", "tiles.png", "shadowStone",
+    {
+      ["newQuad"] = { 13, 0, 1, 1, 8 },
+      ["border"] = {
+        ["quad"] = "shadowStone_top",
+        ["newQuad"] = { 13, 1, 1, 1, 8 }
+      },
+      ["isastone"] = true
+    })
+  tiles["ice"] = Tile("ice", "solid", "tiles.png", "ice",
+    {
+      ["newQuad"] = { 14, 0, 1, 1, 8 },
+      ["border"] = {
+        ["quad"] = "ice_top",
+        ["newQuad"] = { 14, 1, 1, 1, 8 }
+      },
+      ["color"] = {1,1,1,0.4}
+    })
+  tiles["sand"] = Tile("sand", "solid", "tiles.png", "sand",
+    {
+      ["newQuad"] = { 15, 0, 1, 1, 8 },
+      ["border"] = {
+        ["quad"] = "sand_top",
+        ["newQuad"] = { 15, 1, 1, 1, 8 }
+      }
+     })
 end
 
 function loadEntities()
   entities("Player", "player", "player", 100, 0, "none")
 end
+
+function generateBaseBiomes()
+  
+  world:addBiome("none",0.5,0.5,-1,4,5,1)
+  world:addBiome("coldland",0.2,0.4,0.5,15,8,1)
+  world:addBiome("hotland",0.8,0.6,2.5,30,8,1)
+  world:addBiome("darkland",0.5,0.3,10,99999,1,1)
+  world:addBiome("ancientland",0.3,0.9,5,50,8,0.8)
+  world:addBiome("duneland",0.7,0.2,6,30,10,1.2)
+  world:addBiome("duneland",0.7,0.2,-1,3,2,0.3)  --oui, il est en double, une fois à la surface
+  
+  --[[
+  world:addBiome("none",0.5,0.5,-1,99999,5,1)
+  world:addBiome("coldland",0.2,0.4,-1,99999,8,1)
+  world:addBiome("hotland",0.8,0.6,-1,99999,8,1)
+  world:addBiome("darkland",0.5,0.3,-1,99999,1,1)
+  world:addBiome("ancientland",0.3,0.9,-1,99999,8,0.8)
+  world:addBiome("duneland",0.7,0.2,-1,99999,10,1.2)]]
+end
+
+function generateRandomBiomeList()
+  world:clearBiomes()
+  if math.random()>0.6 then world:addBiome("none",0.5,0.5,math.random()*3-1,99999,5,1) end
+  if math.random()>0.6 then world:addBiome("coldland",0.2,0.4,math.random()*3-1,99999,3,1) end
+  if math.random()>0.6 then world:addBiome("hotland",0.8,0.6,math.random()*3-1,99999,1,1) end
+  if math.random()>0.6 then world:addBiome("darkland",0.5,0.3,math.random()*3-1,99999,1,1) end
+  if math.random()>0.6 then world:addBiome("ancientland",0.3,0.9,math.random()*3-1,99999,1,0.2) end
+  if math.random()>0.6 then world:addBiome("duneland",0.7,0.2,math.random()*3-1,99999,5,1) end
+end
+
+
 
 --[[function gettileinfo(tilename,info)
   if tiles[tileindexes[tilename] ]~=nil then

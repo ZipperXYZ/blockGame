@@ -1,73 +1,63 @@
 function drawgame()
   local drawdistanceX=math.ceil(szx/camv/2)
   local drawdistanceY=math.ceil(szx/camv/2)
-  world:drawTiles(camx, camy, drawdistanceX, drawdistanceY, {})
- -- world:drawTiles(camx, camy, drawdistanceX, drawdistanceY, {["showBiomes"]=true})
-
-
-  --[[love.graphics.print(#tiles,0,0)
-  love.graphics.print(camv,50,0)
-  love.graphics.print((getchunkloadstep(mxworldpos/chunksize,myworldpos/chunksize)),300,0)
-  if neighborchunksloadcheck(mxworldpos/chunksize,myworldpos/chunksize,"stone") then love.graphics.print("true",300,12) end
-  if neighborchunksloadcheck(mxworldpos/chunksize,myworldpos/chunksize,"grass") then love.graphics.print("true",300,24) end
-  for i=1,#tiles do
-    love.graphics.setColor(1,1,1,1)
-    love.graphics.print(tiles[i]["name"],0,12*i)
-    
-    
+  if love.keyboard.isDown("n") or love.keyboard.isDown("b") then
+    drawBiomeMap()
+  else
+    if love.keyboard.isDown("m") then
+      drawWorldMap()
+    else
+      world:drawTiles(camx, camy, drawdistanceX, drawdistanceY, {})
+    end
   end
-  drawdistance=math.ceil(szx/camv/2)
-  layers=3]]
-  --[[if debugseebiome then layers=4 end
-  for il=1,layers do
-  for ixt=-drawdistance,drawdistance do
-  for iyt=-drawdistance,drawdistance do
-    t1=gettile(camx+ixt,camy+iyt) --getinfofromworldtile
-    if not t1["outofbounds"] then
-      if il==2 then
-        if gettileinfo(t1["tile"],"texture")~="none" then
-        if gettileinfo(t1["tile"],"quad")~="none" then
-          drawtile(round(camx+ixt),round(camy+iyt))
-          
-          
-          
-        end
-        end
-      end
-      if il==3 then
-        if t1["top"]~="none" then
-          if gettileinfo(t1["top"],"texture")~="none" then
-          if gettileinfo(t1["top"],"quad")~="none" then
-            drawtop(round(camx+ixt),round(camy+iyt))
-          end
-          end
-        end
-      end
-      if il==4 then
-        tilename=nil
-        biome=getbiome(round(camx+ixt),round(camy+iyt))
-        if biome=="none" then tilename="stone" end
-        if biome=="hotland" then tilename="hotstone" end
-        if biome=="coldland" then tilename="coldstone" end
-        if tilename~=nil then
-          drawspecifictile(round(camx+ixt),round(camy+iyt),tilename,{1,1,1,1})
-        end
-      end
-      if il==1 then
-        if t1["back"]~="none" then
-          if gettileinfo(t1["back"],"texture")~="none" then
-          if gettileinfo(t1["back"],"quad")~="none" then
-          if not gettileinfo(t1["tile"],"hideback") then
-            drawback(round(camx+ixt),round(camy+iyt))
-          end
-          end
-          end
-        end
+end
+function drawWorldMap()
+  local mapSizePerPixel=5
+  for ix=0,round2(szx,mapSizePerPixel),mapSizePerPixel do
+    for iy=0,round2(szy,mapSizePerPixel),mapSizePerPixel do
+      local wx = camx+((ix-szx/2)*(128/camv))
+      local wy = camy+(20-(iy-szy/2)*(128/camv))
+      local t1 = world:getRawTile(wx,wy,"tiles")
+      if t1 ~= "none" then
+        b1, c1 = world:getBiome(wx,wy)
+        love.graphics.setColor(0.8,0.8,0.8,1)
+        if b1=="none" then love.graphics.setColor(0.5,0.5,0.5,1) end
+        if b1=="coldland" then love.graphics.setColor(0.3,0.8,0.8,1) end
+        if b1=="hotland" then love.graphics.setColor(0.8,0.4,0.1,1) end
+        if b1=="darkland" then love.graphics.setColor(0.5,0.2,0.5,1) end
+        if b1=="ancientland" then love.graphics.setColor(0.6,0.8,0.6,1) end
+        if b1=="duneland" then love.graphics.setColor(0.8,0.8,0.6,1) end
+        love.graphics.rectangle("fill",ix,iy,mapSizePerPixel,mapSizePerPixel)
       end
     end
   end
+end
+function drawBiomeMap()
+  local mapSizePerPixel=2
+  for ix=0,round2(szx,mapSizePerPixel),mapSizePerPixel do
+    for iy=0,round2(szy,mapSizePerPixel),mapSizePerPixel do
+      local wx = camx+((ix-szx/2)*(128/camv))
+      local wy = camy+(20-(iy-szy/8)*(128/camv))
+      local t1 = "dirt"
+      if love.keyboard.isDown("b") then
+        t1 = world:generateTerrainTile(wx, wy)
+      end
+      b1, c1 = world:getBiome(wx,wy)
+      if (love.keyboard.isDown("n")) or (t1 == "dirt" and love.keyboard.isDown("b") ) then
+
+        love.graphics.setColor(1,1,1,1)
+
+        if b1=="none" then love.graphics.setColor(0.5,0.5,0.5,1) end
+        if b1=="coldland" then love.graphics.setColor(0.3,0.8,0.8,1) end
+        if b1=="hotland" then love.graphics.setColor(0.8,0.4,0.1,1) end
+        if b1=="darkland" then love.graphics.setColor(0.5,0.2,0.5,1) end
+        if b1=="ancientland" then love.graphics.setColor(0.6,0.8,0.6,1) end
+        if b1=="duneland" then love.graphics.setColor(0.8,0.8,0.6,1) end
+
+        love.graphics.rectangle("fill",ix,iy,mapSizePerPixel,mapSizePerPixel)
+      end
+    end
   end
-  end]]
 end
 --[[function drawspecifictile(tileix,tileiy,tilename,color)
   love.graphics.setColor(color)

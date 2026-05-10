@@ -45,7 +45,7 @@ function Chunk:getTile(xInChunk, yInChunk, layer)
     local tile = tiles["none"]
 
     if self.chunkTiles[layer] == nil then return tiles["none"] end
-
+    if love.keyboard.isDown("space") and (xInChunk <= 1 or xInChunk > self.chunkSize or yInChunk <= 1) then return tiles["none"] end
     if (xInChunk <= 0 or xInChunk > self.chunkSize or yInChunk <= 0 or yInChunk > self.chunkSize) then
         return tiles["none"]
     end
@@ -59,7 +59,9 @@ end
 function Chunk:getRawTile(xInChunk, yInChunk, layer)
     if layer == "top" then layer = "topTiles" end
     if layer == "back" then layer = "backTiles" end
+
     if self.chunkTiles[layer] == nil then return "none" end
+
     if xInChunk <= 0 or xInChunk > self.chunkSize or
         yInChunk <= 0 or yInChunk > self.chunkSize then
         return "none"
@@ -165,11 +167,32 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                 local biome   = self:getBiome(wx,wy,worldSeed,depthProgression,biomeSize,biomeList)
                 if checkifinlist(tileRaw, tilelists["stones"]) then
                     if biome == "hotland" then self.chunkTiles["tiles"][ix][iy] = "hotstone" end
-                    if biome == "coldland" then self.chunkTiles["tiles"][ix][iy] = "coldstone" end
+                    if biome == "coldland" then 
+                        self.chunkTiles["tiles"][ix][iy] = "coldstone" 
+                        if love.math.noise(wx / 30, wy / 22, worldSeed - 855) <0.4 then
+                            self.chunkTiles["tiles"][ix][iy] = "ice" 
+                        end
+                    end
+                    if biome == "darkland" then self.chunkTiles["tiles"][ix][iy] = "shadowStone" end
+                    if biome == "ancientland" then self.chunkTiles["tiles"][ix][iy] = "ancientstone" end
+                end
+                if checkifinlist(tileRaw, tilelists["stones"]) or tileRaw == "dirt" then
+                    if biome == "duneland" then self.chunkTiles["tiles"][ix][iy] = "sand" end
                 end
                 if checkifinlist(backRaw, tilelists["stones"]) then
                     if biome == "hotland" then self.chunkTiles["backTiles"][ix][iy] = "hotstone" end
-                    if biome == "coldland" then self.chunkTiles["backTiles"][ix][iy] = "coldstone" end
+                    if biome == "coldland" then 
+                        self.chunkTiles["backTiles"][ix][iy] = "coldstone" 
+                        if love.math.noise(wx / 30, wy / 22, worldSeed - 855) <0.4 then
+                            self.chunkTiles["backTiles"][ix][iy] = "ice" 
+                        end
+                    end
+                    if biome == "darkland" then self.chunkTiles["backTiles"][ix][iy] = "shadowStone" end
+                    if biome == "duneland" then self.chunkTiles["backTiles"][ix][iy] = "sand" end
+                    if biome == "ancientland" then self.chunkTiles["backTiles"][ix][iy] = "ancientstone" end
+                end
+                if checkifinlist(backRaw, tilelists["stones"]) or backRaw == "dirt" then
+                    if biome == "duneland" then self.chunkTiles["backTiles"][ix][iy] = "sand" end
                 end
                 if checkifinlist(tileRaw, tilelists["stones"]) then
                     if love.math.noise(wx / 35, wy / 35, worldSeed - 580) > (wy / (depthProgression * 5)) + 1.8 then
@@ -285,8 +308,8 @@ function Chunk:convertChunkPosToWorldPos(posInChunkX, posInChunkY)
 end
 
 --getBiome(x,y) --return le nom du biome
-function Chunk:getBiome(posInChunkX,posInChunkY,worldSeed,depthProgression,biomeSize,biomeList)
-local biome = "none"
+function Chunk:getBiome(worldPosX,worldPosY,worldSeed,depthProgression,biomeSize,biomeList)
+    local biome = "none"
 
     -- biome confidence
     -- 0 = near edge
@@ -298,14 +321,14 @@ local biome = "none"
 
     -- biome noise coordinates
     local op1 = love.math.noise(
-        posInChunkX / biomeSize,
-        posInChunkY / biomeSize,
+        worldPosX / biomeSize,
+        worldPosY / biomeSize,
         worldSeed - 5
     )
 
     local op2 = love.math.noise(
-        posInChunkX / (biomeSize * 1.2),
-        posInChunkY / (biomeSize / 1.2),
+        worldPosX / (biomeSize * 1.2),
+        worldPosY / (biomeSize / 1.2),
         worldSeed - 10
     )
 
@@ -325,7 +348,7 @@ local biome = "none"
         -- DEPTH INFLUENCE
         ------------------------------------------------
 
-        local depth = (-posInChunkY / depthProgression)
+        local depth = (-worldPosY / depthProgression)
 
         local minDepth = currentBiome.deepnessmin
         local maxDepth = currentBiome.deepnessmax
@@ -380,7 +403,12 @@ local biome = "none"
     -- BIOME CENTER CONFIDENCE
     ------------------------------------------------
 
-    if secondDist ~= math.huge and secondDist > 0 then
+    -- no competing biome
+    if secondDist == math.huge then
+
+        nearCenter = 1
+
+    elseif secondDist > 0 then
 
         nearCenter =
             1 - (closestDist / secondDist)
@@ -392,6 +420,8 @@ local biome = "none"
         if nearCenter > 1 then
             nearCenter = 1
         end
+    else
+        nearCenter = 1
     end
 
     return biome, nearCenter

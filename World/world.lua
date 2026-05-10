@@ -28,6 +28,10 @@ function World:clear()
     self.chunks = {}
 end
 
+function World:clearBiomes()
+    self.biomeList = {}
+end
+
 --convertWorldPosToChunkPos(worldPosX,worldPosY) --return ChunkX,ChunkY,posInChunkX,posInChunkY
 function World:convertWorldPosToChunkPos(worldPosX, worldPosY)
     local ChunkX, ChunkY, posInChunkX, posInChunkY
@@ -112,7 +116,10 @@ function World:getBiome(worldPosX, worldPosY)
 
     local chunkX,chunkY,posX,posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
     if self:checkIfChunkExists(chunkX,chunkY) then
-    biome,nearCenter = self.chunks[chunkX][chunkY]:getBiome(posX,posY,self.worldSeed,self.depthProgression,self.biomeSize,self.biomeList)
+        biome,nearCenter = self.chunks[chunkX][chunkY]:getBiome(worldPosX,worldPosY,self.worldSeed,self.depthProgression,self.biomeSize,self.biomeList)
+    else
+        local temporaryChunk=Chunk(chunkX,chunkY,1)
+        biome,nearCenter = temporaryChunk:getBiome(worldPosX,worldPosY,self.worldSeed,self.depthProgression,self.biomeSize,self.biomeList)
     end
     return biome,nearCenter
 end
@@ -123,6 +130,16 @@ function World:getTile(worldPosX, worldPosY, layer)
     local chunkX, chunkY, posX, posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
     if self:checkIfChunkExists(chunkX, chunkY) then
         tile = self.chunks[chunkX][chunkY]:getTile(posX, posY, layer)
+    end
+    return tile
+end
+
+function World:getRawTile(worldPosX, worldPosY, layer)
+    local tile = "none"
+
+    local chunkX, chunkY, posX, posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
+    if self:checkIfChunkExists(chunkX, chunkY) then
+        tile = self.chunks[chunkX][chunkY]:getRawTile(posX, posY, layer)
     end
     return tile
 end
@@ -388,11 +405,56 @@ function World:generateTerrainTile(tileX, tileY)
     if n < 0.4 and n > 0.36 then
         name = "none"
     end
+
+    --specific biomes
+    local biome,distanceFromBiomeEdge = self:getBiome(tileX,tileY)
+
+    if biome=="hotland" then
+        if distanceFromBiomeEdge<0.15 then
+            name = "dirt"
+        else
+            name="dirt"
+            if love.math.noise(tileX / 25, tileY / 15, seed - 225)<0.4 
+            or love.math.noise(tileX / 25, tileY / 15, seed - 225)>0.6 then
+            name = "none"
+            end
+        end
+    end
+
+    if biome=="coldland" then
+        if love.math.noise(tileX / 7, tileY / 7, seed - 1055)<0.4*distanceFromBiomeEdge then
+            name="none"
+        end
+    end
+
+    if biome=="darkland" then
+        name="dirt"
+        if love.math.noise(tileX / 20, tileY / 20, seed - 805)<0.45 and distanceFromBiomeEdge>0.2 then
+            name="none"
+        end
+    end
+
+    if biome=="ancientland" then
+        name="dirt"
+        if love.math.noise(tileX / 15, tileY / 5, seed - 505)<1.3*distanceFromBiomeEdge then
+            name="none"
+        end
+        if love.math.noise(tileX / 10, tileY / 10, seed - 570)<0.38*distanceFromBiomeEdge then
+            name="dirt"
+        end
+    end
+
+    --ground
+
     if love.math.noise(tileX/15, tileY/30, seed+100) > (-tileY/20) then
         name = "none"
     end
 
     return name
+end
+
+function World:getSeed()
+    return self.worldSeed
 end
 
 function World:nePasUtiliserCetteFonction(x, y)

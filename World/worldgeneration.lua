@@ -12,6 +12,10 @@ function generateworldupdate(dt)
   local totalChunkLoadDistanceY=(chunkloaddistance+(math.ceil(szy/camv/2/chunksize)))
   local centerX=(camx/chunksize)
   local centerY=(camy/chunksize)
+  if love.keyboard.isDown("k") then 
+    totalChunkLoadDistanceX=totalChunkLoadDistanceX*4 
+    totalChunkLoadDistanceY=totalChunkLoadDistanceY*4
+  end
   world:generate(centerX, centerY, totalChunkLoadDistanceX, totalChunkLoadDistanceY, false, nil)
   --[[totalchunkloaddistance=(chunkloaddistance+(math.ceil(szx/camv/2/chunksize)))
   --totalchunkloaddistance=(math.ceil(szx/camv/2/chunksize))-1

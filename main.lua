@@ -25,7 +25,25 @@ function love.load()
   entities = {}
   sprites = {}
   textures = {}
-  tileindexes = {}
+
+  --[[
+  --commandes: 
+
+  p:fullscreen
+  wasd:bouger
+  qe:zoomer/dézoomer
+
+  r:reset le monde avec une nouvelle seed et des biomes normaux
+  t:reset le monde avec la meme seed et une liste au hasard de biomes
+
+  maintenir pour les commandes suivantes:
+
+  m:afficher la carte de blocs loadés
+  n:afficher la carte des biomes
+  b:afficher la carte des biomes et du terrain
+  
+  k:quadrupler la distance de génération de chunks
+  --]]
 
   --entity = Entity:new("test", "test", "test", 1, 9)
 
@@ -33,9 +51,8 @@ function love.load()
 
   biomelist = {}
   world = World(math.random() * 1000000, 10, 100, 150, {}, { "terrain" })
-  world:addBiome("none",0.5,0.5,-1,3,5,1)
-  world:addBiome("coldland",0.2,0.4,2,8,3,1)
-  world:addBiome("hotland",0.8,0.6,3.5,99999,1,1)
+  generateBaseBiomes()
+  
   debugseebiome = false
   lightreach = 5
   biomesize = 150
@@ -119,7 +136,14 @@ function love.keypressed(key)
     fullscreen = not fullscreen
     love.window.setFullscreen(fullscreen)
   end
-  if key == "r" then world = World(math.random() * 1000000, 10, 100, 150, {}, { "terrain" }) end
+  if key == "r" then  
+    world = World(math.random() * 1000000, 10, 100, 150, {}, { "terrain" }) 
+    generateBaseBiomes()
+  end
+  if key == "t" then  
+    world:clear()
+    generateRandomBiomeList() 
+  end
   if key == "space" then
     world:placeTile("stone", round(mxworldpos), round(myworldpos), "tiles", true)
   end

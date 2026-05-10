@@ -32,8 +32,8 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
 
     --flags comprend tout le reste, la pluspart vont être nil, donc assigner des variables pour tout de base
     -- comme par exemple 'newTile.isStone = flags.isStone or false', 'newTile.canBeMined = flags.canBeMined or true' -- ce sont juste des exemples,
-    if (not #self.border == 0) and (not textures["quads"][self.border["newQuad"]]) then
-        self.border["newQuad"] = love.graphics.newQuad(
+    if (#self.border ~= 0) and (not textures["quads"][self.border["newQuad"]]) then
+        textures["quads"] = love.graphics.newQuad(
             self.border["newQuad"][1] * self.border["newQuad"][5]
             , self.border["newQuad"][2] * self.border["newQuad"][5]
             , self.border["newQuad"][3] * self.border["newQuad"][5]

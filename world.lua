@@ -247,7 +247,6 @@ function World:drawTile(worldPosX, worldPosY, layer)
         local screenPosY
         screenPosX,screenPosY=positiontoscreen(worldPosX,worldPosY)
         love.graphics.draw(tile:getTexture(),tile:getQuad(),round(screenPosX),round(screenPosY),0,round2(camv/8,8),round2(camv/8,8),4,4)
-        --love.graphics.draw(textures["textures"]["tiles.png"],textures["quads"]["dirt"],round(screenPosX),round(screenPosY),0,round2(camv/8,8),round2(camv/8,8),4,4)
 
     end
 end

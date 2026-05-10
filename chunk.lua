@@ -7,7 +7,7 @@ function Chunk:init(chunkX,chunkY,chunkSize)
     if (not chunkX) or (not chunkY) then
         return
     end
-    self.ChunkX=chunkX
+    self.chunkX=chunkX -- changer Chunkx pour chunkX
     self.chunkY=chunkY
     self.chunkSize=chunkSize
     self.generationStatus="none"
@@ -43,10 +43,10 @@ function Chunk:getTile(xInChunk,yInChunk,layer)
     if layer=="top" then layer="topTiles" end
     if layer=="back" then layer="backTiles" end
     local tile=nil
-    if self.tiles[layer]==nil then return false end
-    if (xInChunk<=0 or xInChunk>self.chunkSize or yInChunk<=0 or yInChunk>self.chunkSize) then return nil end
+    if self.tiles[layer]==nil then return tiles["none"] end
+    if (xInChunk<=0 or xInChunk>self.chunkSize or yInChunk<=0 or yInChunk>self.chunkSize) then return tiles["none"] end
     tile=self.tiles[layer][xInChunk][yInChunk]
-    if layer~="lights" or layer~="properties" then tile=tiles[tile] end
+    if layer~="lights" and layer~="properties" then tile=tiles[tile] end
     return tile
 end
 --placeTile(xinchunk,yinchunk,layer,bool:force) 

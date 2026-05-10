@@ -193,7 +193,7 @@ function World:drawTiles(centerX, centerY, length, heigth, parameters)
     local ix=-length
     local iy=-heigth
     local il=1
-    local layers={"backTiles","tile","topTiles"}
+    local layers={"backTiles","tiles","topTiles"} -- changer tile pour tiles
     for il=1,#layers do
         for ix=-length,length do
             for iy=-heigth,heigth do
@@ -210,7 +210,7 @@ function World:drawTiles(centerX, centerY, length, heigth, parameters)
 end
 
 function World:drawTile(worldPosX, worldPosY, layer)
-    tile=self:getTile(worldPosX, worldPosY, layer)
+    local tile=self:getTile(worldPosX, worldPosY, layer)
     if tile:getName()~="none" then
         love.graphics.setColor(1,1,1,1)
         local screenPosX

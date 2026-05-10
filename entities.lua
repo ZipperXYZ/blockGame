@@ -14,9 +14,12 @@ function Entity:init(name, type, sprite, health, level, ia, flags)
     self.ia = ia or "none"
     self.flags = flags or {}
     self.sprite = sprite or sprite()
-    self.position = vector2:new(0,0)
-    self.velocity = vector2:new(0,0)
-    self.deathEvent = eventEmitter:new()
+    self.position = Vector2:new(0,0)
+    self.velocity = Vector2:new(0,0)
+    self.deathEvent = EventEmitter:new()
+    self.state = "alive"
+
+    self.deathEvent:on(self:death())
 
 end
 
@@ -59,10 +62,15 @@ end
 function Entity:damage(damage)
     if (self.health - damage < 0) then
         self.health = 0
-        self:deathEvent:emit()
+        self.deathEvent:emit()
     else
-        self.health -= damage 
+        self.health =- damage 
     end
+end
+
+function Entity:death()
+    self.state = "death"
+    print("I died")
 end
 
 function Entity:entityUpdate(dt)

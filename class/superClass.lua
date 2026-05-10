@@ -110,7 +110,11 @@ end
 function SuperClass:__tostring()
     local result = self.className .. " {\n"
     for k, v in pairs(self) do
-        result = result .. "  " .. k .. " = " .. tostring(v) .. "\n"
+        if type(v) == "table" then
+            result = result .. "  " .. k .. " = [table]\n" 
+        else
+            result = result .. "  " .. k .. " = " .. tostring(v) .. "\n"
+        end
     end
     return result .. "}"
 end

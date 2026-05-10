@@ -15,7 +15,7 @@ function love.load()
   require "mathsc"  --math comprend plusieurs truc bien qui sont pas dans lua de base
   require "worldgeneration"
   require "load"
-  require "entities"
+--  require "entities"
   require "class/childClass"
   require "class/utility/eventEmitter"
   require "class/utility/vector2"
@@ -62,6 +62,10 @@ function love.load()
   vec = Vector2(12, 12)
   vec2 = Vector2(98, 13)
   print(vec2:normalize())
+
+  --entity = Entity:new("test", "test", "test", 1, 9)
+
+ -- entity:damage(99)
 
   biomelist = {}
   world = World(math.random() * 1000000,10, 100, 150, {}, { "terrain" })

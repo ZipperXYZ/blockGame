@@ -349,7 +349,7 @@ function World:drawTile(worldPosX, worldPosY, layer)
             local borderType = tile:getBorderType()
 
             --draw les border du bloc
-            if borderType ~= "none" then
+            if borderType ~= "none" and camv>20 then
                 local borderingTile = self:getTile(worldPosX, worldPosY + 1, layer)
                 if borderingTile then
                     if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then

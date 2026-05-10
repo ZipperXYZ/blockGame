@@ -13,13 +13,18 @@ function Entity:init(name, type, sprite, health, level, ia, flags)
     self.level = level or 0
     self.ia = ia or "none"
     self.flags = flags or {}
-    self.sprite = sprite or sprite()
+    self.sprite = sprite or "none"
     self.position = Vector2:new(0, 0)
     self.velocity = Vector2:new(0, 0)
     self.deathEvent = EventEmitter:new()
     self.state = "alive"
-
     self.deathEvent:on(self:death())
+
+    self.animation = flags["animation"] or false
+
+    if self.sprite ~= "none" and ~sprites[self.sprite] then
+        Sprite(self.name, self.animation, nil, "player", { ["newQuad"] = { 9, 0, 1, 1, 8 } })
+    end
 end
 
 function Entity:setType(newType)

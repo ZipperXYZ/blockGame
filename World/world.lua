@@ -4,7 +4,7 @@ World = SuperClass:extend()
 World.className = "World"
 
 
-local stepOrder = {"none", "stone", "stone2", "grass", "ores", "done"}
+local stepOrder = { "none", "stone", "stone2", "grass", "ores", "done" }
 local stepIndex = {}
 for i, s in ipairs(stepOrder) do stepIndex[s] = i end
 
@@ -31,20 +31,20 @@ end
 --convertWorldPosToChunkPos(worldPosX,worldPosY) --return ChunkX,ChunkY,posInChunkX,posInChunkY
 function World:convertWorldPosToChunkPos(worldPosX, worldPosY)
     local ChunkX, ChunkY, posInChunkX, posInChunkY
-    worldPosX=round(worldPosX)
-    worldPosY=round(worldPosY)
-    ChunkX=math.floor(worldPosX/self.chunkSize)
-    ChunkY=math.floor(worldPosY/self.chunkSize)
-    posInChunkX=((worldPosX)%self.chunkSize)+1
-    posInChunkY=((worldPosY)%self.chunkSize)+1
+    worldPosX = round(worldPosX)
+    worldPosY = round(worldPosY)
+    ChunkX = math.floor(worldPosX / self.chunkSize)
+    ChunkY = math.floor(worldPosY / self.chunkSize)
+    posInChunkX = ((worldPosX) % self.chunkSize) + 1
+    posInChunkY = ((worldPosY) % self.chunkSize) + 1
     return ChunkX, ChunkY, posInChunkX, posInChunkY
 end
 
 --convertChunkPosToWorldPos(ChunkX,ChunkY,posInChunkX,posInChunkY) --return worldPosX,worldPosY
 function World:convertChunkPosToWorldPos(ChunkX, ChunkY, posInChunkX, posInChunkY)
     local worldPosX, worldPosY
-    worldPosX=ChunkX*self.chunkSize+posInChunkX-1 
-    worldPosY=ChunkY*self.chunkSize+posInChunkY-1 
+    worldPosX = ChunkX * self.chunkSize + posInChunkX - 1
+    worldPosY = ChunkY * self.chunkSize + posInChunkY - 1
     return worldPosX, worldPosY
 end
 
@@ -56,9 +56,9 @@ function World:getNeighboringChunks(chunkX, chunkY, step)
     if not required then return false end
 
     local neighbors = {
-        {chunkX+1, chunkY+1}, {chunkX+1, chunkY}, {chunkX+1, chunkY-1},
-        {chunkX,   chunkY-1}, {chunkX-1, chunkY-1}, {chunkX-1, chunkY},
-        {chunkX-1, chunkY+1}, {chunkX,   chunkY+1}
+        { chunkX + 1, chunkY + 1 }, { chunkX + 1, chunkY }, { chunkX + 1, chunkY - 1 },
+        { chunkX,     chunkY - 1 }, { chunkX - 1, chunkY - 1 }, { chunkX - 1, chunkY },
+        { chunkX - 1, chunkY + 1 }, { chunkX, chunkY + 1 }
     }
 
     for _, n in ipairs(neighbors) do
@@ -75,15 +75,15 @@ end
 --nomralement ça devrait généréer si tout les chunks autour ont finit l'étape précédante
 --je sais pas trop comment comparer les étapes de génération de chunk, peut être une liste de toutes les étapes en paramètre du monde
 function World:checkIfChunkCanGenerate(step, chunkX, chunkY)
-    return false--pas fini
+    return false --pas fini
 end
 
 function World:checkIfChunkExists(chunkX, chunkY)
-    chunkX=round(chunkX)
-    chunkY=round(chunkY)
-    if self.chunks== nil then return false end
-    if self.chunks[chunkX]== nil then return false end
-    if self.chunks[chunkX][chunkY]== nil then return false end
+    chunkX = round(chunkX)
+    chunkY = round(chunkY)
+    if self.chunks == nil then return false end
+    if self.chunks[chunkX] == nil then return false end
+    if self.chunks[chunkX][chunkY] == nil then return false end
     return true
 end
 
@@ -106,9 +106,9 @@ end
 function World:getTile(worldPosX, worldPosY, layer)
     local tile = tiles["none"]
 
-    local chunkX,chunkY,posX,posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
-    if self:checkIfChunkExists(chunkX,chunkY) then
-    tile = self.chunks[chunkX][chunkY]:getTile(posX,posY,layer)
+    local chunkX, chunkY, posX, posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
+    if self:checkIfChunkExists(chunkX, chunkY) then
+        tile = self.chunks[chunkX][chunkY]:getTile(posX, posY, layer)
     end
     return tile
 end
@@ -134,27 +134,28 @@ end
 --devrait être éxécuter chaque seconde à la position de la caméra ainsi que avec force=false
 --pour la gen des structure, force=true pis la taille de la structure
 function World:generate(centerX, centerY, length, heigth, force, step)
-    if step==nil then step=self.generationSteps end
-    centerX=round(centerX)
-    centerY=round(centerY)
+    if step == nil then step = self.generationSteps end
+    centerX = round(centerX)
+    centerY = round(centerY)
 
     local ix = 1
     local iy = 1
-    for ix=-length,length do
-        for iy=-heigth,heigth do
-            local chunkPosX=centerX+ix
-            local chunkPosY=centerY+iy
+    for ix = -length, length do
+        for iy = -heigth, heigth do
+            local chunkPosX = centerX + ix
+            local chunkPosY = centerY + iy
             if self:checkIfChunkExists(chunkPosX, chunkPosY) then
-                self.chunks[chunkPosX][chunkPosY]:generate(self.chunks[chunkPosX][chunkPosY]:getGenerationStatus(),stepOrder,self.worldSeed,self.depthProgression,self.biomeSize,self.biomeList,self)
+                self.chunks[chunkPosX][chunkPosY]:generate(self.chunks[chunkPosX][chunkPosY]:getGenerationStatus(),
+                    stepOrder, self.worldSeed, self.depthProgression, self.biomeSize, self.biomeList, self)
             else
-                if self.chunks==nil then
-                    self.chunks={}
+                if self.chunks == nil then
+                    self.chunks = {}
                 end
-                if self.chunks[chunkPosX]==nil then
-                    self.chunks[chunkPosX]={}
+                if self.chunks[chunkPosX] == nil then
+                    self.chunks[chunkPosX] = {}
                 end
-                if self.chunks[chunkPosX][chunkPosY]==nil then
-                    self.chunks[chunkPosX][chunkPosY]=Chunk(chunkPosX,chunkPosY,self.chunkSize)
+                if self.chunks[chunkPosX][chunkPosY] == nil then
+                    self.chunks[chunkPosX][chunkPosY] = Chunk(chunkPosX, chunkPosY, self.chunkSize)
                 end
             end
         end
@@ -207,22 +208,21 @@ function World:updateLight()
 end
 
 --getClosestNonSolidTile(worldPosX,wordPosY) --utilisé dans updateLight
-function World:getClosestNonSolidTile(worldPosX,wordPosY)
+function World:getClosestNonSolidTile(worldPosX, wordPosY)
 
 end
-
 
 function World:drawTiles(centerX, centerY, length, heigth, parameters)
     centerX = round(centerX)
     centerY = round(centerY)
-    local ix=-length
-    local iy=-heigth
-    local il=1
-    local layers={"backTiles","tiles","topTiles"} -- changer tile pour tiles
-    for il=1,#layers do
-        for ix=-length,length do
-            for iy=-heigth,heigth do
-                self:drawTile(ix+centerX, iy+centerY, layers[il])
+    local ix = -length
+    local iy = -heigth
+    local il = 1
+    local layers = { "backTiles", "tiles", "topTiles" } -- changer tile pour tiles
+    for il = 1, #layers do
+        for ix = -length, length do
+            for iy = -heigth, heigth do
+                self:drawTile(ix + centerX, iy + centerY, layers[il])
                 --[[local currentLayer=layers[il]
                 tile=self.getTile(ix+centerX, centerY+iy, currentLayer)
                 if tile.getName()~="none" then
@@ -235,91 +235,102 @@ function World:drawTiles(centerX, centerY, length, heigth, parameters)
 end
 
 function World:drawTile(worldPosX, worldPosY, layer)
-    local tile=self:getTile(worldPosX, worldPosY, layer)
-   
+    local tile = self:getTile(worldPosX, worldPosY, layer)
+
     if (tile == nil) then
         return
     end
 
-    if tile:getName()~="none" then
+    if tile:getName() ~= "none" then
         local screenPosX
         local screenPosY
-        screenPosX,screenPosY=positiontoscreen(worldPosX,worldPosY)
-        if layer=="topTiles" then
-            love.graphics.setColor(1,1,1,1)
-            love.graphics.draw(tile:getTexture(),tile:getQuad(),round(screenPosX),round(screenPosY),0,round2(camv/8,8),round2(camv/8,8),4,4)
-            
+        screenPosX, screenPosY = positiontoscreen(worldPosX, worldPosY)
+        if layer == "topTiles" then
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.draw(tile:getTexture(), tile:getQuad(), round(screenPosX), round(screenPosY), 0,
+                round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
+
             local border = tile:getBorder()
             local borderType = tile:getBorderType()
 
             if borderType == "normal" then
-                love.graphics.draw(tile:getTexture(),tile:getQuad(),round(screenPosX),round(screenPosY),0,round2(camv/8,8),round2(camv/8,8),4,4)
+                love.graphics.draw(tile:getTexture(), tile:getQuad(), round(screenPosX), round(screenPosY), 0,
+                    round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
             end
 
             if borderType == "non-solid" then
-                local borderingTile = self:getTile(worldPosX, worldPosY+1, layer)
+                local borderingTile = self:getTile(worldPosX, worldPosY + 1, layer)
                 if borderingTile then
                     if (tile:getType() ~= borderingTile:getType()) then
-                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY), 0, round2(camv/8,8), round2(camv/8,8), 4, 4)
+                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY),
+                            0, round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
                     end
                 end
-                local borderingTile = self:getTile(worldPosX+1, worldPosY, layer)
+                local borderingTile = self:getTile(worldPosX + 1, worldPosY, layer)
                 if borderingTile then
                     if (tile:getType() ~= borderingTile:getType()) then
-                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY), d180topi(90), round2(camv/8,8), round2(camv/8,8), 4, 4)
+                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY),
+                            d180topi(90), round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
                     end
                 end
-                local borderingTile = self:getTile(worldPosX, worldPosY-1, layer)
+                local borderingTile = self:getTile(worldPosX, worldPosY - 1, layer)
                 if borderingTile then
                     if (tile:getType() ~= borderingTile:getType()) then
-                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY), d180topi(180), round2(camv/8,8), round2(camv/8,8), 4, 4)
+                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY),
+                            d180topi(180), round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
                     end
                 end
-                local borderingTile = self:getTile(worldPosX-1, worldPosY, layer)
+                local borderingTile = self:getTile(worldPosX - 1, worldPosY, layer)
                 if borderingTile then
                     if (tile:getType() ~= borderingTile:getType()) then
-                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY), d180topi(270), round2(camv/8,8), round2(camv/8,8), 4, 4)
+                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY),
+                            d180topi(270), round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
                     end
                 end
             end
         end
-        if layer=="backTiles" or layer=="tiles" then
+        if layer == "backTiles" or layer == "tiles" then
             local colour = tile:getColor()
             love.graphics.setColor(colour)
-            if layer=="backTiles" then 
-                love.graphics.setColor(colour[1]*0.4,colour[2]*0.4,colour[3]*0.4,colour[4]) 
+            if layer == "backTiles" then
+                love.graphics.setColor(colour[1] * 0.4, colour[2] * 0.4, colour[3] * 0.4, colour[4])
             end
 
             --draw la texture principale
-            love.graphics.draw(tile:getTexture(),tile:getQuad(),round(screenPosX),round(screenPosY),0,round2(camv/8,8),round2(camv/8,8),4,4)
-            
+            love.graphics.draw(tile:getTexture(), tile:getQuad(), round(screenPosX), round(screenPosY), 0,
+                round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
+
             local border = tile:getBorder()
             local borderType = tile:getBorderType()
 
             --draw les border du bloc
             if borderType ~= "none" then
-                local borderingTile = self:getTile(worldPosX, worldPosY+1, layer)
+                local borderingTile = self:getTile(worldPosX, worldPosY + 1, layer)
                 if borderingTile then
                     if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then
-                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY), 0, round2(camv/8,8), round2(camv/8,8), 4, 4)
+                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY),
+                            0, round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
                     end
                 end
-                local borderingTile = self:getTile(worldPosX+1, worldPosY, layer)
+                local borderingTile = self:getTile(worldPosX + 1, worldPosY, layer)
                 if borderingTile then
                     if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then
-                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY), d180topi(90), round2(camv/8,8), round2(camv/8,8), 4, 4)
+                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY),
+                            d180topi(90), round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
                     end
                 end
-                local borderingTile = self:getTile(worldPosX, worldPosY-1, layer)
+                local borderingTile = self:getTile(worldPosX, worldPosY - 1, layer)
                 if borderingTile then
                     if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then
-                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY), d180topi(180), round2(camv/8,8), round2(camv/8,8), 4, 4)
+                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY),
+                            d180topi(180), round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
                     end
                 end
-                local borderingTile = self:getTile(worldPosX-1, worldPosY, layer)
+                local borderingTile = self:getTile(worldPosX - 1, worldPosY, layer)
                 if borderingTile then
                     if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then
-                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY), d180topi(270), round2(camv/8,8), round2(camv/8,8), 4, 4)
+                        love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY),
+                            d180topi(270), round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
                     end
                 end
             end
@@ -332,24 +343,24 @@ function World:generateTerrainTile(tileX, tileY)
     local dp   = self.depthProgression
     local name = "none"
 
-    if love.math.noise(tileX/20, tileY/20, seed) >= 0.25 then
+    if love.math.noise(tileX / 20, tileY / 20, seed) >= 0.25 then
         name = "dirt"
     end
-    if love.math.noise(tileX/40, tileY/40, seed-100) < 0.3 then
+    if love.math.noise(tileX / 40, tileY / 40, seed - 100) < 0.3 then
         name = "none"
     end
-    if love.math.noise(tileX/12, tileY/12, seed-500) < 0.35 then
+    if love.math.noise(tileX / 12, tileY / 12, seed - 500) < 0.35 then
         name = "none"
     end
-    if love.math.noise(tileX/5, tileY/5, seed-600) < 0.35 and
-       love.math.noise(tileX/15, tileY/15, seed+100) < (tileY/(dp*2))+1 then
+    if love.math.noise(tileX / 5, tileY / 5, seed - 600) < 0.35 and
+        love.math.noise(tileX / 15, tileY / 15, seed + 100) < (tileY / (dp * 2)) + 1 then
         name = "none"
     end
-    local n = love.math.noise(tileX/25, tileY/90, seed-200)
+    local n = love.math.noise(tileX / 25, tileY / 90, seed - 200)
     if n < 0.4 and n > 0.36 then
         name = "none"
     end
-    if love.math.noise(tileX/15, tileY/30, seed+100) > (-tileY/20) then
+    if love.math.noise(tileX / 15, tileY / 30, seed + 100) > (-tileY / 20) then
         name = "none"
     end
 
@@ -362,19 +373,19 @@ function World:getbiome(x, y)
     local secondDist  = 999999
     local nearcenter  = 0
 
-    local op1 = love.math.noise(x/self.biomeSize,       y/self.biomeSize,       self.worldSeed-5)
-    local op2 = love.math.noise(x/(self.biomeSize*1.2), y/(self.biomeSize/1.2), self.worldSeed-10)
+    local op1         = love.math.noise(x / self.biomeSize, y / self.biomeSize, self.worldSeed - 5)
+    local op2         = love.math.noise(x / (self.biomeSize * 1.2), y / (self.biomeSize / 1.2), self.worldSeed - 10)
 
     for ib = 1, #self.biomeList do
-        local bm = self.biomeList[ib]
-        local d  = dist(op1, op2, bm["option1"], bm["option2"]) ^ bm["likeness"]
+        local bm      = self.biomeList[ib]
+        local d       = dist(op1, op2, bm["option1"], bm["option2"]) ^ bm["likeness"]
 
-        local depth    = -y / self.depthProgression
-        local enter    = math.max(0, math.min(1, (depth - bm["deepnessmin"]) / bm["deepnesssmooth"]))
-        local exitVal  = math.max(0, math.min(1, (bm["deepnessmax"] - depth) / bm["deepnesssmooth"]))
-        local ymulti   = math.min(enter, exitVal)
+        local depth   = -y / self.depthProgression
+        local enter   = math.max(0, math.min(1, (depth - bm["deepnessmin"]) / bm["deepnesssmooth"]))
+        local exitVal = math.max(0, math.min(1, (bm["deepnessmax"] - depth) / bm["deepnesssmooth"]))
+        local ymulti  = math.min(enter, exitVal)
 
-        d = ymulti <= 0 and 999999 or (d / ymulti)
+        d             = ymulti <= 0 and 999999 or (d / ymulti)
 
         if d < closestDist then
             secondDist  = closestDist
@@ -387,4 +398,8 @@ function World:getbiome(x, y)
 
     nearcenter = math.max(0, math.min(1, 1 - (closestDist / secondDist)))
     return biome, nearcenter
+end
+
+function World:placeEntity(entityName, worldPosX, worldPosY)
+
 end

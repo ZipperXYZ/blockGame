@@ -23,6 +23,7 @@ function love.load()
   tilelists = {}
   entitiesdefenition = {}
   entities = {}
+  sprites = {}
   textures = {}
   tileindexes = {}
 

@@ -186,6 +186,10 @@ function loadtiles()
     })
 end
 
+function loadEntities()
+  entities("Player", "player", "player", 100, 0, "none")
+end
+
 --[[function gettileinfo(tilename,info)
   if tiles[tileindexes[tilename] ]~=nil then
     if tiles[tileindexes[tilename] ][info]==nil then

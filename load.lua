@@ -41,7 +41,7 @@ function loadtiles()
   textures["textures"] = {}
   textures["quads"] = {}
   textures["textures"]["tiles.png"]=love.graphics.newImage("tiles.png")
-  textures["quads"]["dirt"]=love.graphics.newQuad(0,0,8,8,textures["textures"]["tiles.png"])
+ -- textures["quads"]["dirt"]=love.graphics.newQuad(0,0,8,8,textures["textures"]["tiles.png"])
   --[[tilelists={}
   tilelists["all tiles"]={}
   tilelists["stones"]={}
@@ -176,9 +176,9 @@ function loadtiles()
       ["isastone"] = true
     })
 
-  tiles["ancientstone"] = Tile("hotstone", "solid", "tiles.png", "hotstone",
+  tiles["hotstone"] = Tile("hotstone", "solid", "tiles.png", "hotstone",
     {
-      ["newnQuad"] = { 9, 0, 1, 1, 8 },
+      ["newQuad"] = { 9, 0, 1, 1, 8 },
       ["border"] = {
         ["quad"] = "hotstone_top",
         ["newQuad"] = { 9, 1, 1, 1, 8 }

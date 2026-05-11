@@ -74,26 +74,25 @@ end --placeTile(xinchunk,yinchunk,layer,bool:force)
 function Chunk:placeTile(tile, xInChunk, yInChunk, layer, force)
     if layer == "top" then layer = "topTiles" end
     if layer == "back" then layer = "backTiles" end
-    print(self.chunkTiles[layer])
     if self.chunkTiles[layer] == nil then return false end
     if (xInChunk <= 0 or xInChunk > self.chunkSize or yInChunk <= 0 or yInChunk > self.chunkSize) then return false end
     if force or true then
         self.chunkTiles[layer][xInChunk][yInChunk] = tile
-        if layer~="lights" then self:updateNeighboringLights() end
+        if layer ~= "lights" then self:updateNeighboringLights() end
         return true
     end
 end
 
 function Chunk:updateNeighboringLights()
     world:updateLight(self.chunkX, self.chunkY)
-    world:updateLight(self.chunkX+1, self.chunkY)
-    world:updateLight(self.chunkX-1, self.chunkY)
-    world:updateLight(self.chunkX, self.chunkY+1)
-    world:updateLight(self.chunkX+1, self.chunkY+1)
-    world:updateLight(self.chunkX-1, self.chunkY+1)
-    world:updateLight(self.chunkX, self.chunkY-1)
-    world:updateLight(self.chunkX-1, self.chunkY-1)
-    world:updateLight(self.chunkX+1, self.chunkY-1)
+    world:updateLight(self.chunkX + 1, self.chunkY)
+    world:updateLight(self.chunkX - 1, self.chunkY)
+    world:updateLight(self.chunkX, self.chunkY + 1)
+    world:updateLight(self.chunkX + 1, self.chunkY + 1)
+    world:updateLight(self.chunkX - 1, self.chunkY + 1)
+    world:updateLight(self.chunkX, self.chunkY - 1)
+    world:updateLight(self.chunkX - 1, self.chunkY - 1)
+    world:updateLight(self.chunkX + 1, self.chunkY - 1)
 end
 
 function Chunk:destroyTile(xInChunk, yInChunk, layer, force)
@@ -103,7 +102,7 @@ function Chunk:destroyTile(xInChunk, yInChunk, layer, force)
     if (xInChunk <= 0 or xInChunk > self.chunkSize or yInChunk <= 0 or yInChunk > self.chunkSize) then return false end
     if force or true then
         self.chunkTiles[layer][xInChunk][yInChunk] = "none"
-        if layer~="lights" then self:updateNeighboringLights() end
+        if layer ~= "lights" then self:updateNeighboringLights() end
         return true
     end
 end
@@ -178,13 +177,13 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                 local wx, wy  = self:convertChunkPosToWorldPos(ix, iy)
                 local tileRaw = self:getRawTile(ix, iy, "tiles")
                 local backRaw = self:getRawTile(ix, iy, "backTiles")
-                local biome   = self:getBiome(wx,wy,worldSeed,depthProgression,biomeSize,biomeList)
+                local biome   = self:getBiome(wx, wy, worldSeed, depthProgression, biomeSize, biomeList)
                 if checkifinlist(tileRaw, tilelists["stones"]) then
                     if biome == "hotland" then self.chunkTiles["tiles"][ix][iy] = "hotstone" end
-                    if biome == "coldland" then 
-                        self.chunkTiles["tiles"][ix][iy] = "coldstone" 
-                        if love.math.noise(wx / 30, wy / 22, worldSeed - 855) <0.4 then
-                            self.chunkTiles["tiles"][ix][iy] = "ice" 
+                    if biome == "coldland" then
+                        self.chunkTiles["tiles"][ix][iy] = "coldstone"
+                        if love.math.noise(wx / 30, wy / 22, worldSeed - 855) < 0.4 then
+                            self.chunkTiles["tiles"][ix][iy] = "ice"
                         end
                     end
                     if biome == "darkland" then self.chunkTiles["tiles"][ix][iy] = "shadowStone" end
@@ -195,10 +194,10 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                 end
                 if checkifinlist(backRaw, tilelists["stones"]) then
                     if biome == "hotland" then self.chunkTiles["backTiles"][ix][iy] = "hotstone" end
-                    if biome == "coldland" then 
-                        self.chunkTiles["backTiles"][ix][iy] = "coldstone" 
-                        if love.math.noise(wx / 30, wy / 22, worldSeed - 855) <0.4 then
-                            self.chunkTiles["backTiles"][ix][iy] = "ice" 
+                    if biome == "coldland" then
+                        self.chunkTiles["backTiles"][ix][iy] = "coldstone"
+                        if love.math.noise(wx / 30, wy / 22, worldSeed - 855) < 0.4 then
+                            self.chunkTiles["backTiles"][ix][iy] = "ice"
                         end
                     end
                     if biome == "darkland" then self.chunkTiles["backTiles"][ix][iy] = "shadowStone" end
@@ -343,7 +342,7 @@ function Chunk:convertChunkPosToWorldPos(posInChunkX, posInChunkY)
 end
 
 --getBiome(x,y) --return le nom du biome
-function Chunk:getBiome(worldPosX,worldPosY,worldSeed,depthProgression,biomeSize,biomeList)
+function Chunk:getBiome(worldPosX, worldPosY, worldSeed, depthProgression, biomeSize, biomeList)
     local biome = "none"
 
     -- biome confidence
@@ -368,7 +367,6 @@ function Chunk:getBiome(worldPosX,worldPosY,worldSeed,depthProgression,biomeSize
     )
 
     for ib = 1, #biomeList do
-
         local currentBiome = biomeList[ib]
 
         -- distance from biome point
@@ -420,17 +418,13 @@ function Chunk:getBiome(worldPosX,worldPosY,worldSeed,depthProgression,biomeSize
         ------------------------------------------------
 
         if distance1 < closestDist then
-
             secondDist = closestDist
 
             closestDist = distance1
 
             biome = currentBiome.name
-
         elseif distance1 < secondDist then
-
             secondDist = distance1
-
         end
     end
 
@@ -440,11 +434,8 @@ function Chunk:getBiome(worldPosX,worldPosY,worldSeed,depthProgression,biomeSize
 
     -- no competing biome
     if secondDist == math.huge then
-
         nearCenter = 1
-
     elseif secondDist > 0 then
-
         nearCenter =
             1 - (closestDist / secondDist)
 

@@ -7,7 +7,7 @@ function love.load()
   require "mathsc"  --math comprend plusieurs truc bien qui sont pas dans lua de base
   require "World/worldgeneration"
   require "load"
-  --  require "entities"
+  require "Entities/entities"
   require "class/childClass"
   require "class/utility/eventEmitter"
   require "class/utility/vector2"
@@ -27,7 +27,7 @@ function love.load()
   textures = {}
 
   --[[
-  --commandes: 
+  --commandes:
 
   p:fullscreen
   wasd:bouger
@@ -41,7 +41,7 @@ function love.load()
   m:afficher la carte de blocs loadés
   n:afficher la carte des biomes
   b:afficher la carte des biomes et du terrain
-  
+
   k:quadrupler la distance de génération de chunks
   --]]
 
@@ -52,7 +52,7 @@ function love.load()
   biomelist = {}
   world = World(math.random() * 1000000, 10, 100, 150, {}, { "none", "stone", "stone2", "grass", "ores", "deco", "done" })
   generateBaseBiomes()
-  
+
   debugseebiome = false
   lightreach = 5 --cette valeure est importante
   chunkloaddistance = 8 --celle la aussi
@@ -142,12 +142,12 @@ function love.keypressed(key)
     world = World(math.random() * 1000000, 10, 100, 150, {}, { "none", "stone", "stone2", "grass", "ores", "deco", "done"  }) 
     generateBaseBiomes()
   end
-  if key == "t" then  
+  if key == "t" then
     world:clear()
-    generateRandomBiomeList() 
+    generateRandomBiomeList()
   end
   if key == "space" then
-    world:placeTile("stone", round(mxworldpos), round(myworldpos), "tiles", true)
+    --world:spawnEntity("player", "player", "player", "tiles.png", 100, 0, "player", { ["newQuad"] = { 15, 0, 1, 1, 8 } })
   end
   --if key=="e" and spectator then camv=nextinlistroll(camv,{16,24,32,40,48,56,64,72,80}) end
   --if key=="q" and spectator then camv=nextinlistrollreverse(camv,{16,24,32,40,48,56,64,72,80}) end

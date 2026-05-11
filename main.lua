@@ -50,17 +50,19 @@ function love.load()
   -- entity:damage(99)
 
   biomelist = {}
-  world = World(math.random() * 1000000, 10, 100, 150, {}, { "terrain" })
+  world = World(math.random() * 1000000, 10, 100, 150, {}, { "none", "stone", "stone2", "grass", "ores", "deco", "done" })
   generateBaseBiomes()
   
   debugseebiome = false
   lightreach = 5 --cette valeure est importante
+  chunkloaddistance = 8 --celle la aussi
+
   biomesize = 150
   worldseed = math.random() * 100000
   chunksize = 10
   worlddeepnessprogression = 100
   --biomesize=25 worlddeepnessprogression=15
-  chunkloaddistance = 4
+  
   entities = {}
   loadtextures()
   camx = 0
@@ -137,7 +139,7 @@ function love.keypressed(key)
     love.window.setFullscreen(fullscreen)
   end
   if key == "r" then  
-    world = World(math.random() * 1000000, 10, 100, 150, {}, { "terrain" }) 
+    world = World(math.random() * 1000000, 10, 100, 150, {}, { "none", "stone", "stone2", "grass", "ores", "deco", "done"  }) 
     generateBaseBiomes()
   end
   if key == "t" then  

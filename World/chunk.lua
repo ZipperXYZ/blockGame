@@ -126,7 +126,8 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
             end
         end
 
-        self.generationStatus = "stone"
+        --self.generationStatus = "stone"
+        self:advanceGenerationStatus(stepList)
         return
     end
 
@@ -167,7 +168,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                 end
             end
         end
-        self.generationStatus = "stone2"
+        self:advanceGenerationStatus(stepList)
         return
     end
 
@@ -241,7 +242,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                 end
             end
         end
-        self.generationStatus = "grass"
+        self:advanceGenerationStatus(stepList)
         return
     end
 
@@ -275,7 +276,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                 end
             end
         end
-        self.generationStatus = "ores"
+        self:advanceGenerationStatus(stepList)
         return
     end
 
@@ -292,11 +293,29 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                 end
             end
         end
-        world:updateLight(self.chunkX, self.chunkY)
-        self.generationStatus = "done"
+        
+        self:advanceGenerationStatus(stepList)
         return
     end
 
+    if step == "deco" and world:getNeighboringChunks(self.chunkX, self.chunkY, "deco") then
+        for ix = 1, self.chunkSize do
+            for iy = 1, self.chunkSize do
+                local wx, wy  = self:convertChunkPosToWorldPos(ix, iy)
+                local tileRaw = self:getRawTile(ix, iy, "tiles")
+                local topTileUnderRaw = world:getRawTile(wx, wy-1, "topTiles")
+
+                if tiles[tileRaw]:canTileBeOverWritten() and topTileUnderRaw == "purplegrass" then
+                    if love.math.noise(wx / 0.6, wy / 0.6, worldSeed + 152) < 0.2 then
+                        self:placeTile("magicKelp",ix, iy,"tiles",true)
+                    end
+                end
+            end
+        end
+
+        self:advanceGenerationStatus(stepList)
+        return
+    end
 
 
     --pas fini
@@ -304,6 +323,8 @@ end
 
 --advanceGenerationStatus() --comme un setGenerationStatus, mais change vers le prochain, mis à la fin d'une étape de generate
 function Chunk:advanceGenerationStatus(stepList)
+    if nextinlistroll(self.generationStatus,stepList) == "done" then world:updateLight(self.chunkX, self.chunkY) end
+    self.generationStatus = nextinlistroll(self.generationStatus,stepList)
     --pas fini
 end
 

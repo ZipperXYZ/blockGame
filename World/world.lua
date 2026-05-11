@@ -4,7 +4,7 @@ World = SuperClass:extend()
 World.className = "World"
 
 
-local stepOrder = { "none", "stone", "stone2", "grass", "ores", "done" }
+local stepOrder = { "none", "stone", "stone2", "grass", "ores", "deco", "done" }
 local stepIndex = {}
 for i, s in ipairs(stepOrder) do stepIndex[s] = i end
 
@@ -164,7 +164,7 @@ end
 --force va forcer jusqu'à ce que tout les chunks sont au minimum au step
 --devrait être éxécuter chaque seconde à la position de la caméra ainsi que avec force=false
 --pour la gen des structure, force=true pis la taille de la structure
-function World:generate(centerX, centerY, length, heigth, force, step)
+function World:generate(centerX, centerY, length, heigth, force, steps)
     if step == nil then step = self.generationSteps end
     centerX = round(centerX)
     centerY = round(centerY)
@@ -177,7 +177,7 @@ function World:generate(centerX, centerY, length, heigth, force, step)
             local chunkPosY = centerY + iy
             if self:checkIfChunkExists(chunkPosX, chunkPosY) then
                 self.chunks[chunkPosX][chunkPosY]:generate(self.chunks[chunkPosX][chunkPosY]:getGenerationStatus(),
-                    stepOrder, self.worldSeed, self.depthProgression, self.biomeSize, self.biomeList, self)
+                    self.generationSteps, self.worldSeed, self.depthProgression, self.biomeSize, self.biomeList, self)
             else
                 if self.chunks == nil then
                     self.chunks = {}
@@ -255,23 +255,23 @@ end
 
 function World:updateLightTile(chunkX,chunkY,posX,posY)
     local worldPosX, wordPosY =  self:convertChunkPosToWorldPos(chunkX,chunkY,posX,posY)
-    local closest=self:getClosestNonSolidTile(worldPosX, wordPosY,lightreach)
+    local closest=self:getClosestTileWhichLightCanGoThrough(worldPosX, wordPosY,lightreach)
     self:placeTile({1-(closest-1)/lightreach,1-(closest-1)/lightreach,1-(closest-1)/lightreach,1},worldPosX, wordPosY,"lights",true)
 end
 
 --getClosestNonSolidTile(worldPosX,wordPosY) --utilisé dans updateLight
-function World:getClosestNonSolidTile(worldPosX, wordPosY, reach)
+function World:getClosestTileWhichLightCanGoThrough(worldPosX, wordPosY, reach)
     local closest=99
   for il=1,reach do
-    t1=self:getTile(worldPosX+il,wordPosY,"tiles") if t1:getType()~="solid" then closest=il return closest end
-    t1=self:getTile(worldPosX-il,wordPosY,"tiles") if t1:getType()~="solid" then closest=il return closest end
-    t1=self:getTile(worldPosX,wordPosY-il,"tiles") if t1:getType()~="solid" then closest=il return closest end
-    t1=self:getTile(worldPosX,wordPosY+il,"tiles") if t1:getType()~="solid" then closest=il return closest end
+    t1=self:getTile(worldPosX+il,wordPosY,"tiles") if t1:getLightCanGoThrough() then closest=il return closest end
+    t1=self:getTile(worldPosX-il,wordPosY,"tiles") if t1:getLightCanGoThrough() then closest=il return closest end
+    t1=self:getTile(worldPosX,wordPosY-il,"tiles") if t1:getLightCanGoThrough() then closest=il return closest end
+    t1=self:getTile(worldPosX,wordPosY+il,"tiles") if t1:getLightCanGoThrough() then closest=il return closest end
     for il2=0,il do
-      t1=self:getTile(worldPosX+il-il2,wordPosY-il2,"tiles") if t1:getType()~="solid" then closest=il return closest end  --
-      t1=self:getTile(worldPosX-il2,wordPosY-il+il2,"tiles") if t1:getType()~="solid" then closest=il return closest end
-      t1=self:getTile(worldPosX-il+il2,wordPosY+il2,"tiles") if t1:getType()~="solid" then closest=il return closest end
-      t1=self:getTile(worldPosX+il2,wordPosY+il-il2,"tiles") if t1:getType()~="solid" then closest=il return closest end
+      t1=self:getTile(worldPosX+il-il2,wordPosY-il2,"tiles") if t1:getLightCanGoThrough() then closest=il return closest end  --
+      t1=self:getTile(worldPosX-il2,wordPosY-il+il2,"tiles") if t1:getLightCanGoThrough() then closest=il return closest end
+      t1=self:getTile(worldPosX-il+il2,wordPosY+il2,"tiles") if t1:getLightCanGoThrough() then closest=il return closest end
+      t1=self:getTile(worldPosX+il2,wordPosY+il-il2,"tiles") if t1:getLightCanGoThrough() then closest=il return closest end
     end
   end
   return closest
@@ -325,7 +325,7 @@ function World:drawTile(worldPosX, worldPosY, layer, light)
 
             if borderType == "normal" then
                 love.graphics.draw(tile:getTexture(), tile:getQuad(), round(screenPosX), round(screenPosY), 0,
-                    round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
+                    round2(camv / 8, 8), round2(camv / 8, 8), tile:getTextureCenterX(), tile:getTextureCenterY())
             end
 
             if borderType == "non-solid" then
@@ -333,28 +333,28 @@ function World:drawTile(worldPosX, worldPosY, layer, light)
                 if borderingTile then
                     if (backgroundTile:getType() ~= borderingTile:getType()) then
                         love.graphics.draw(tile:getTexture(), tile:getQuad(), round(screenPosX), round(screenPosY), 0,
-                            round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
+                            round2(camv / 8, 8), round2(camv / 8, 8),tile:getTextureCenterX(), tile:getTextureCenterY())
                     end
                 end
                 local borderingTile = self:getTile(worldPosX + 1, worldPosY, "tiles")
                 if borderingTile then
                     if (backgroundTile:getType() ~= borderingTile:getType()) then
                         love.graphics.draw(tile:getTexture(), tile:getQuad(), round(screenPosX), round(screenPosY),
-                            d180topi(90), round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
+                            d180topi(90), round2(camv / 8, 8), round2(camv / 8, 8), tile:getTextureCenterX(), tile:getTextureCenterY())
                     end
                 end
                 local borderingTile = self:getTile(worldPosX, worldPosY - 1, "tiles")
                 if borderingTile then
                     if (backgroundTile:getType() ~= borderingTile:getType()) then
                         love.graphics.draw(tile:getTexture(), tile:getQuad(), round(screenPosX), round(screenPosY),
-                            d180topi(180), round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
+                            d180topi(180), round2(camv / 8, 8), round2(camv / 8, 8),tile:getTextureCenterX(), tile:getTextureCenterY())
                     end
                 end
                 local borderingTile = self:getTile(worldPosX - 1, worldPosY, "tiles")
                 if borderingTile then
                     if (backgroundTile:getType() ~= borderingTile:getType()) then
                         love.graphics.draw(tile:getTexture(), tile:getQuad(), round(screenPosX), round(screenPosY),
-                            d180topi(270), round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
+                            d180topi(270), round2(camv / 8, 8), round2(camv / 8, 8),tile:getTextureCenterX(), tile:getTextureCenterY())
                     end
                 end
             end
@@ -369,7 +369,7 @@ function World:drawTile(worldPosX, worldPosY, layer, light)
 
             --draw la texture principale
             love.graphics.draw(tile:getTexture(), tile:getQuad(), round(screenPosX), round(screenPosY), 0,
-                round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
+                round2(camv / 8, 8), round2(camv / 8, 8), tile:getTextureCenterX(), tile:getTextureCenterY())
 
             local border = tile:getBorder()
             local borderType = tile:getBorderType()
@@ -380,28 +380,28 @@ function World:drawTile(worldPosX, worldPosY, layer, light)
                 if borderingTile then
                     if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then
                         love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY),
-                            0, round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
+                            0, round2(camv / 8, 8), round2(camv / 8, 8), tile:getTextureCenterX(), tile:getTextureCenterY())
                     end
                 end
                 local borderingTile = self:getTile(worldPosX + 1, worldPosY, layer)
                 if borderingTile then
                     if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then
                         love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY),
-                            d180topi(90), round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
+                            d180topi(90), round2(camv / 8, 8), round2(camv / 8, 8), tile:getTextureCenterX(), tile:getTextureCenterY())
                     end
                 end
                 local borderingTile = self:getTile(worldPosX, worldPosY - 1, layer)
                 if borderingTile then
                     if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then
                         love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY),
-                            d180topi(180), round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
+                            d180topi(180), round2(camv / 8, 8), round2(camv / 8, 8), tile:getTextureCenterX(), tile:getTextureCenterY())
                     end
                 end
                 local borderingTile = self:getTile(worldPosX - 1, worldPosY, layer)
                 if borderingTile then
                     if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then
                         love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY),
-                            d180topi(270), round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
+                            d180topi(270), round2(camv / 8, 8), round2(camv / 8, 8), tile:getTextureCenterX(), tile:getTextureCenterY())
                     end
                 end
             end

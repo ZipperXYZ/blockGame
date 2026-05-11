@@ -30,6 +30,11 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
             , self.flags["newQuad"][3] * self.flags["newQuad"][5]
             , self.flags["newQuad"][4] * self.flags["newQuad"][5]
             , textures["textures"][self.textureName])
+        self.textureCenterX = self.flags.textureCenterX or (self.flags["newQuad"][3]*self.flags["newQuad"][5]/2)
+        self.textureCenterY = self.flags.textureCenterY or (self.flags["newQuad"][4]*self.flags["newQuad"][5]/2)
+    else
+        self.textureCenterX = self.flags.textureCenterX or (4)
+        self.textureCenterY = self.flags.textureCenterY or (4)
     end
 
     --flags comprend tout le reste, la pluspart vont être nil, donc assigner des variables pour tout de base
@@ -46,6 +51,8 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.canBeMined = self.flags.canBeMined or true
     self.color = self.flags.color or { 1, 1, 1, 1 }
     self.canbeWall = self.flags.canBeWall or self.type == "solid"
+    self.lightCanGoThrough = self.flags.lightCanGoThrough or self.type ~= "solid"
+    self.canBeOverWritten = self.flags.canBeOverWritten or self.type ~= "solid"
 end
 
 --getName()
@@ -80,12 +87,28 @@ function Tile:getBorderType()
     return self.borderType
 end
 
+function  Tile:getLightCanGoThrough()
+    return self.lightCanGoThrough
+end
+
+function  Tile:canTileBeOverWritten()
+    return self.canBeOverWritten
+end
+
 function Tile:getColor()
     return self.color
 end
 
 function Tile:getBorderQuad()
     return textures["quads"][self.border.quad]
+end
+
+function  Tile:getTextureCenterX()
+    return self.textureCenterX
+end
+
+function  Tile:getTextureCenterY()
+    return self.textureCenterY
 end
 
 --  il s'agit ici de la défénition d'une tuile, est la même pour chaque tiles du même type dans le monde

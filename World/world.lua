@@ -244,13 +244,71 @@ end
 
 
 --updateLight(neighboringChunks) -- (getNeighboringChunks())
-function World:updateLight()
+function World:updateLight(chunkX, chunkY)
+    if self:checkIfChunkExists(chunkX, chunkY) then
+        for ix = 1, self.chunkSize do
+            for iy = 1, self.chunkSize do
+                self:updateLightTile(chunkX, chunkY, ix, iy)
+            end
+        end
+    end
+end
 
+function World:updateLightTile(chunkX, chunkY, posX, posY)
+    local worldPosX, wordPosY = self:convertChunkPosToWorldPos(chunkX, chunkY, posX, posY)
+    local closest = self:getClosestNonSolidTile(worldPosX, wordPosY, lightreach)
+    self:placeTile({ 1 - (closest - 1) / lightreach, 1 - (closest - 1) / lightreach, 1 - (closest - 1) / lightreach, 1 },
+        worldPosX, wordPosY, "lights", true)
 end
 
 --getClosestNonSolidTile(worldPosX,wordPosY) --utilisé dans updateLight
-function World:getClosestNonSolidTile(worldPosX, wordPosY)
-
+function World:getClosestNonSolidTile(worldPosX, wordPosY, reach)
+    local closest = 99
+    for il = 1, reach do
+        t1 = self:getTile(worldPosX + il, wordPosY, "tiles")
+        if t1:getType() ~= "solid" then
+            closest = il
+            return closest
+        end
+        t1 = self:getTile(worldPosX - il, wordPosY, "tiles")
+        if t1:getType() ~= "solid" then
+            closest = il
+            return closest
+        end
+        t1 = self:getTile(worldPosX, wordPosY - il, "tiles")
+        if t1:getType() ~= "solid" then
+            closest = il
+            return closest
+        end
+        t1 = self:getTile(worldPosX, wordPosY + il, "tiles")
+        if t1:getType() ~= "solid" then
+            closest = il
+            return closest
+        end
+        for il2 = 0, il do
+            t1 = self:getTile(worldPosX + il - il2, wordPosY - il2, "tiles")
+            if t1:getType() ~= "solid" then
+                closest = il
+                return closest
+            end                                                                                                          --
+            t1 = self:getTile(worldPosX - il2, wordPosY - il + il2, "tiles")
+            if t1:getType() ~= "solid" then
+                closest = il
+                return closest
+            end
+            t1 = self:getTile(worldPosX - il + il2, wordPosY + il2, "tiles")
+            if t1:getType() ~= "solid" then
+                closest = il
+                return closest
+            end
+            t1 = self:getTile(worldPosX + il2, wordPosY + il - il2, "tiles")
+            if t1:getType() ~= "solid" then
+                closest = il
+                return closest
+            end
+        end
+    end
+    return closest
 end
 
 function World:drawTiles(centerX, centerY, length, heigth, parameters)
@@ -264,7 +322,7 @@ function World:drawTiles(centerX, centerY, length, heigth, parameters)
     for il = 1, #layers do
         for ix = -length, length do
             for iy = -heigth, heigth do
-                self:drawTile(ix + centerX, iy + centerY, layers[il])
+                self:drawTile(ix + centerX, iy + centerY, layers[il], self:getTile(ix + centerX, iy + centerY, "lights"))
                 if showBiomes then
                     local screenPosX, screenPosY
                     screenPosX, screenPosY = positiontoscreen(ix + centerX, iy + centerY)
@@ -281,9 +339,9 @@ function World:drawTiles(centerX, centerY, length, heigth, parameters)
     return true
 end
 
-function World:drawTile(worldPosX, worldPosY, layer)
+function World:drawTile(worldPosX, worldPosY, layer, light)
     local tile = self:getTile(worldPosX, worldPosY, layer)
-
+    if light == nil then light = { 1, 1, 1, 1 } end
     if (tile == nil) then
         return
     end
@@ -293,7 +351,7 @@ function World:drawTile(worldPosX, worldPosY, layer)
         local screenPosY
         screenPosX, screenPosY = positiontoscreen(worldPosX, worldPosY)
         if layer == "topTiles" then
-            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.setColor(1 * light[1], 1 * light[2], 1 * light[3], 1 * light[4])
 
             local border = tile:getBorder()
             local borderType = tile:getBorderType()
@@ -337,9 +395,12 @@ function World:drawTile(worldPosX, worldPosY, layer)
         end
         if layer == "backTiles" or layer == "tiles" then
             local colour = tile:getColor()
-            love.graphics.setColor(colour)
+
+            love.graphics.setColor(colour[1] * light[1], colour[2] * light[2], colour[3] * light[3], colour[4] * light
+            [4])
             if layer == "backTiles" then
-                love.graphics.setColor(colour[1] * 0.4, colour[2] * 0.4, colour[3] * 0.4, colour[4])
+                love.graphics.setColor(colour[1] * 0.4 * light[1], colour[2] * 0.4 * light[2], colour[3] * 0.4 * light
+                [3], colour[4] * light[4])
             end
 
             --draw la texture principale

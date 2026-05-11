@@ -45,8 +45,6 @@ function Chunk:getTile(xInChunk, yInChunk, layer)
     local tile = tiles["none"]
 
     if self.chunkTiles[layer] == nil then return tiles["none"] end
-    if love.keyboard.isDown("space") and (xInChunk <= 1 or xInChunk > self.chunkSize or yInChunk <= 1) then return tiles
-        ["none"] end
     if (xInChunk <= 0 or xInChunk > self.chunkSize or yInChunk <= 0 or yInChunk > self.chunkSize) then
         return tiles["none"]
     end
@@ -80,8 +78,21 @@ function Chunk:placeTile(tile, xInChunk, yInChunk, layer, force)
     if (xInChunk <= 0 or xInChunk > self.chunkSize or yInChunk <= 0 or yInChunk > self.chunkSize) then return false end
     if force or true then
         self.chunkTiles[layer][xInChunk][yInChunk] = tile
+        if layer ~= "lights" then self:updateNeighboringLights() end
         return true
     end
+end
+
+function Chunk:updateNeighboringLights()
+    world:updateLight(self.chunkX, self.chunkY)
+    world:updateLight(self.chunkX + 1, self.chunkY)
+    world:updateLight(self.chunkX - 1, self.chunkY)
+    world:updateLight(self.chunkX, self.chunkY + 1)
+    world:updateLight(self.chunkX + 1, self.chunkY + 1)
+    world:updateLight(self.chunkX - 1, self.chunkY + 1)
+    world:updateLight(self.chunkX, self.chunkY - 1)
+    world:updateLight(self.chunkX - 1, self.chunkY - 1)
+    world:updateLight(self.chunkX + 1, self.chunkY - 1)
 end
 
 function Chunk:destroyTile(xInChunk, yInChunk, layer, force)
@@ -91,6 +102,7 @@ function Chunk:destroyTile(xInChunk, yInChunk, layer, force)
     if (xInChunk <= 0 or xInChunk > self.chunkSize or yInChunk <= 0 or yInChunk > self.chunkSize) then return false end
     if force or true then
         self.chunkTiles[layer][xInChunk][yInChunk] = "none"
+        if layer ~= "lights" then self:updateNeighboringLights() end
         return true
     end
 end
@@ -279,6 +291,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                 end
             end
         end
+        world:updateLight(self.chunkX, self.chunkY)
         self.generationStatus = "done"
         return
     end

@@ -54,7 +54,7 @@ function love.load()
   generateBaseBiomes()
 
   debugseebiome = false
-  lightreach = 5
+  lightreach = 5 --cette valeure est importante
   biomesize = 150
   worldseed = math.random() * 100000
   chunksize = 10

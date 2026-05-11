@@ -211,7 +211,14 @@ function loadtiles()
         ["quad"] = "sand_top",
         ["newQuad"] = { 15, 1, 1, 1, 8 }
       }
-     })
+     }) 
+  tiles["magicKelp"] = Tile("magicKelp", "not-solid", "tiles.png", "magicKelp",
+    {
+      ["newQuad"] = { 16, 0, 1, 2, 8 },
+      ["textureCenterX"] = 4,
+      ["textureCenterY"] = 12,
+      ["border type"] = "none"
+    })
 end
 
 function loadEntities()

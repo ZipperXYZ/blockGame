@@ -1,5 +1,4 @@
 require "class/superClass"
-
 World = SuperClass:extend()
 World.className = "World"
 
@@ -114,14 +113,16 @@ function World:getBiome(worldPosX, worldPosY)
     local biome = "none"
     local nearCenter = 0.5
 
-    local chunkX,chunkY,posX,posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
-    if self:checkIfChunkExists(chunkX,chunkY) then
-        biome,nearCenter = self.chunks[chunkX][chunkY]:getBiome(worldPosX,worldPosY,self.worldSeed,self.depthProgression,self.biomeSize,self.biomeList)
+    local chunkX, chunkY, posX, posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
+    if self:checkIfChunkExists(chunkX, chunkY) then
+        biome, nearCenter = self.chunks[chunkX][chunkY]:getBiome(worldPosX, worldPosY, self.worldSeed,
+            self.depthProgression, self.biomeSize, self.biomeList)
     else
-        local temporaryChunk=Chunk(chunkX,chunkY,1)
-        biome,nearCenter = temporaryChunk:getBiome(worldPosX,worldPosY,self.worldSeed,self.depthProgression,self.biomeSize,self.biomeList)
+        local temporaryChunk = Chunk(chunkX, chunkY, 1)
+        biome, nearCenter = temporaryChunk:getBiome(worldPosX, worldPosY, self.worldSeed, self.depthProgression,
+            self.biomeSize, self.biomeList)
     end
-    return biome,nearCenter
+    return biome, nearCenter
 end
 
 function World:getTile(worldPosX, worldPosY, layer)
@@ -202,16 +203,16 @@ function World:getBiomes()
 end
 
 --addBiome(biome)
-function World:addBiome(biomeName,temperature,wetness,deepnessmin,deepnessmax,deepnesssmooth,likeness)
-    if self.biomeList == nil then self.biomeList={} end
-    local biome={}
-    biome.name=biomeName
-    biome.option1=temperature
-    biome.option2=wetness
-    biome.deepnessmin=deepnessmin
-    biome.deepnessmax=deepnessmax
-    biome.likeness=likeness
-    biome.deepnesssmooth=deepnesssmooth
+function World:addBiome(biomeName, temperature, wetness, deepnessmin, deepnessmax, deepnesssmooth, likeness)
+    if self.biomeList == nil then self.biomeList = {} end
+    local biome = {}
+    biome.name = biomeName
+    biome.option1 = temperature
+    biome.option2 = wetness
+    biome.deepnessmin = deepnessmin
+    biome.deepnessmax = deepnessmax
+    biome.likeness = likeness
+    biome.deepnesssmooth = deepnesssmooth
     table.insert(self.biomeList, biome)
     return true
 end
@@ -256,18 +257,18 @@ function World:drawTiles(centerX, centerY, length, heigth, parameters)
     centerX = round(centerX)
     centerY = round(centerY)
     showBiomes = parameters["showBiomes"] or false
-    local ix=-length
-    local iy=-heigth
-    local il=1
-    local layers={"backTiles","tiles","topTiles"} -- changer tile pour tiles
-    for il=1,#layers do
-        for ix=-length,length do
-            for iy=-heigth,heigth do
-                self:drawTile(ix+centerX, iy+centerY, layers[il])
+    local ix = -length
+    local iy = -heigth
+    local il = 1
+    local layers = { "backTiles", "tiles", "topTiles" } -- changer tile pour tiles
+    for il = 1, #layers do
+        for ix = -length, length do
+            for iy = -heigth, heigth do
+                self:drawTile(ix + centerX, iy + centerY, layers[il])
                 if showBiomes then
-                    local screenPosX,screenPosY
-                    screenPosX,screenPosY=positiontoscreen(ix+centerX,iy+centerY)
-                    love.graphics.print(self:getBiome(ix+centerX,iy+centerY),screenPosX,screenPosY)
+                    local screenPosX, screenPosY
+                    screenPosX, screenPosY = positiontoscreen(ix + centerX, iy + centerY)
+                    love.graphics.print(self:getBiome(ix + centerX, iy + centerY), screenPosX, screenPosY)
                 end
                 --[[local currentLayer=layers[il]
                 tile=self.getTile(ix+centerX, centerY+iy, currentLayer)
@@ -349,7 +350,7 @@ function World:drawTile(worldPosX, worldPosY, layer)
             local borderType = tile:getBorderType()
 
             --draw les border du bloc
-            if borderType ~= "none" and camv>20 then
+            if borderType ~= "none" and camv > 20 then
                 local borderingTile = self:getTile(worldPosX, worldPosY + 1, layer)
                 if borderingTile then
                     if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then
@@ -391,7 +392,7 @@ function World:generateTerrainTile(tileX, tileY)
     if love.math.noise(tileX / 20, tileY / 20, seed) >= 0.25 then
         name = "dirt"
     end
-    if love.math.noise(tileX/40, tileY/40, seed-100) < 0.3 then
+    if love.math.noise(tileX / 40, tileY / 40, seed - 100) < 0.3 then
         name = "none"
     end
     if love.math.noise(tileX / 12, tileY / 12, seed - 500) < 0.35 then
@@ -407,46 +408,46 @@ function World:generateTerrainTile(tileX, tileY)
     end
 
     --specific biomes
-    local biome,distanceFromBiomeEdge = self:getBiome(tileX,tileY)
+    local biome, distanceFromBiomeEdge = self:getBiome(tileX, tileY)
 
-    if biome=="hotland" then
-        if distanceFromBiomeEdge<0.15 then
+    if biome == "hotland" then
+        if distanceFromBiomeEdge < 0.15 then
             name = "dirt"
         else
-            name="dirt"
-            if love.math.noise(tileX / 25, tileY / 15, seed - 225)<0.4 
-            or love.math.noise(tileX / 25, tileY / 15, seed - 225)>0.6 then
-            name = "none"
+            name = "dirt"
+            if love.math.noise(tileX / 25, tileY / 15, seed - 225) < 0.4
+                or love.math.noise(tileX / 25, tileY / 15, seed - 225) > 0.6 then
+                name = "none"
             end
         end
     end
 
-    if biome=="coldland" then
-        if love.math.noise(tileX / 7, tileY / 7, seed - 1055)<0.4*distanceFromBiomeEdge then
-            name="none"
+    if biome == "coldland" then
+        if love.math.noise(tileX / 7, tileY / 7, seed - 1055) < 0.4 * distanceFromBiomeEdge then
+            name = "none"
         end
     end
 
-    if biome=="darkland" then
-        name="dirt"
-        if love.math.noise(tileX / 20, tileY / 20, seed - 805)<0.45 and distanceFromBiomeEdge>0.2 then
-            name="none"
+    if biome == "darkland" then
+        name = "dirt"
+        if love.math.noise(tileX / 20, tileY / 20, seed - 805) < 0.45 and distanceFromBiomeEdge > 0.2 then
+            name = "none"
         end
     end
 
-    if biome=="ancientland" then
-        name="dirt"
-        if love.math.noise(tileX / 15, tileY / 5, seed - 505)<1.3*distanceFromBiomeEdge then
-            name="none"
+    if biome == "ancientland" then
+        name = "dirt"
+        if love.math.noise(tileX / 15, tileY / 5, seed - 505) < 1.3 * distanceFromBiomeEdge then
+            name = "none"
         end
-        if love.math.noise(tileX / 10, tileY / 10, seed - 570)<0.38*distanceFromBiomeEdge then
-            name="dirt"
+        if love.math.noise(tileX / 10, tileY / 10, seed - 570) < 0.38 * distanceFromBiomeEdge then
+            name = "dirt"
         end
     end
 
     --ground
 
-    if love.math.noise(tileX/15, tileY/30, seed+100) > (-tileY/20) then
+    if love.math.noise(tileX / 15, tileY / 30, seed + 100) > (-tileY / 20) then
         name = "none"
     end
 
@@ -457,39 +458,15 @@ function World:getSeed()
     return self.worldSeed
 end
 
-function World:nePasUtiliserCetteFonction(x, y)
-    local biome       = "none"
-    local closestDist = 999999
-    local secondDist  = 999999
-    local nearcenter  = 0
+---function World:spawnEntity(entityName,type,worldPosX,worldPosY)
+--    entities[entityName]:setPos(Vector2(worldPosX, worldPosY))
+--    return true
+--end
 
-    local op1         = love.math.noise(x / self.biomeSize, y / self.biomeSize, self.worldSeed - 5)
-    local op2         = love.math.noise(x / (self.biomeSize * 1.2), y / (self.biomeSize / 1.2), self.worldSeed - 10)
-
-    for ib = 1, #self.biomeList do
-        local bm      = self.biomeList[ib]
-        local d       = dist(op1, op2, bm["option1"], bm["option2"]) ^ bm["likeness"]
-
-        local depth   = -y / self.depthProgression
-        local enter   = math.max(0, math.min(1, (depth - bm["deepnessmin"]) / bm["deepnesssmooth"]))
-        local exitVal = math.max(0, math.min(1, (bm["deepnessmax"] - depth) / bm["deepnesssmooth"]))
-        local ymulti  = math.min(enter, exitVal)
-
-        d             = ymulti <= 0 and 999999 or (d / ymulti)
-
-        if d < closestDist then
-            secondDist  = closestDist
-            closestDist = d
-            biome       = bm["name"]
-        elseif d < secondDist then
-            secondDist = d
-        end
+function World:DrawEntities()
+    for ix = 1, #entities do
+        love.graphics.draw(entities[ix]:getTexture(), entities[ix]:getSprite(), entities[ix]:getPosition():getY(),
+            entities[ix]:getPosition():getX(),
+            0, round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
     end
-
-    nearcenter = math.max(0, math.min(1, 1 - (closestDist / secondDist)))
-    return biome, nearcenter
-end
-
-function World:placeEntity(entityName, worldPosX, worldPosY)
-
 end

@@ -1,34 +1,53 @@
 require "class/superClass"
 require "class/utility/vector2"
 require "class/utility/eventEmitter"
+require "Entities/sprite"
 
 Entity = SuperClass:extend()
 Entity.className = "Entity"
 
 --init()
-function Entity:init(name, type, sprite, health, level, ia, flags)
+function Entity:init(name, type, spriteName, texture, health, level, ia, flags)
     self.name = name or "none"
     self.type = type or "enemy"
     self.health = health or 1
     self.level = level or 0
     self.ia = ia or "none"
     self.flags = flags or {}
-    self.sprite = sprite or "none"
-    self.position = Vector2:new(0, 0)
-    self.velocity = Vector2:new(0, 0)
-    self.deathEvent = EventEmitter:new()
+
+    self.spriteName = spriteName or "none"
+    self.texture = texture or "tiles.png"
+
+    self.texture = "Textures/" .. self.texture
+
+    --self.deathEvent = EventEmitter:new()
     self.state = "alive"
-    self.deathEvent:on(self:death())
+    --self.deathEvent:on(self:death())
 
-    self.animation = flags["animation"] or false
+    self.animation = self.flags["animation"] or false
+    self.position = self.flags["position"] or Vector2:new(0, 0)
+    self.velocity = self.flags["velocity"] or Vector2:new(0, 0)
 
-    if self.sprite ~= "none" and ~sprites[self.sprite] then
-        Sprite(self.name, self.animation, nil, "player", { ["newQuad"] = { 9, 0, 1, 1, 8 } })
+    if self.spriteName ~= "none" and not textures["sprites"][self.spriteName] then
+        textures["sprites"][spriteName] = Sprite(self.name, self.animation, self.texture, self.spriteName,
+            { ["newQuad"] = { 9, 0, 1, 1, 8 } })
     end
 end
 
 function Entity:setType(newType)
     self.type = newType
+end
+
+function Entity:getTexture()
+    return textures["textures"][self.texture]
+end
+
+function Entity:getSprite()
+    return entities[self.spriteName]:getQuad()
+end
+
+function Entity:getPosition()
+    return self.position
 end
 
 function Entity:setHealth(newHealth)
@@ -44,7 +63,7 @@ function Entity:setPosX(posX)
 end
 
 function Entity:setPos(posX, posY)
-    self.position = vector2:new(posX, posY)
+    self.position = Vector2:new(posX, posY)
 end
 
 function Entity:setVelocityX(velocityX)
@@ -59,10 +78,9 @@ function Entity:setLevel(newLevel)
     self.level = newLevel
 end
 
---dans world et non entities
---function Entity:spawnEntity(name, x, y)
---    self.position = vector2:new(x,y)
---end
+function Entity:spawnEntity(name, x, y)
+    self.position = Vector2:new(x, y)
+end
 
 function Entity:damage(damage)
     if (self.health - damage < 0) then

@@ -4,11 +4,10 @@ Sprite = SuperClass:extend()
 Sprite.className = "Sprite"
 
 --init()
-function Sprite:init(name, type, textureName, quadName, flags)
+function Sprite:init(name, spriteData, textureName, flags)
     self.name = name or "none"
-    self.type = type or false
     self.textureName = textureName or "tiles.png"
-    self.quadName = quadName or "none"
+    --self.quadName = quadName or "none"
     self.flags = flags or {}
 
     if not textures["textures"][self.textureName] and self.textureName ~= "none" then

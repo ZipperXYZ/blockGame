@@ -497,6 +497,7 @@ function World:updateEntities(dt)
             entities[i]:collisionUpdate(dt)
             entities[i]:camUpdate(dt)
             if entities[i].type == "player" then entities[i]:playerUpdate(dt) end
+            --allo
         end
     end
     

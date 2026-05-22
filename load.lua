@@ -85,7 +85,8 @@ function loadtiles()
       ["border"] = {
         ["quad"] = "dirt_top",
         ["newQuad"] = { 0, 1, 1, 1, 8 }
-      }
+      },
+      ["health"] = 5
     })
 
   tiles["grass"]         = Tile("grass", "top", "tiles.png", "grass",
@@ -202,7 +203,7 @@ function loadtiles()
         ["newQuad"] = { 14, 1, 1, 1, 8 }
       },
       ["color"] = { 1, 1, 1, 0.4 },
-      ["lightCanGoThrough"]=true
+      ["lightCanGoThrough"] = true
     })
   tiles["sand"]          = Tile("sand", "solid", "tiles.png", "sand",
     {
@@ -211,8 +212,8 @@ function loadtiles()
         ["quad"] = "sand_top",
         ["newQuad"] = { 15, 1, 1, 1, 8 }
       }
-     }) 
-  tiles["magicKelp"] = Tile("magicKelp", "not-solid", "tiles.png", "magicKelp",
+    })
+  tiles["magicKelp"]     = Tile("magicKelp", "not-solid", "tiles.png", "magicKelp",
     {
       ["newQuad"] = { 16, 0, 1, 2, 8 },
       ["textureCenterX"] = 4,

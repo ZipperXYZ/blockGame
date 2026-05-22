@@ -54,7 +54,7 @@ function love.load()
   generateBaseBiomes()
 
   debugseebiome = false
-  lightreach = 5 --cette valeure est importante
+  lightreach = 5        --cette valeure est importante
   chunkloaddistance = 8 --celle la aussi
 
   biomesize = 150
@@ -62,10 +62,10 @@ function love.load()
   chunksize = 10
   worlddeepnessprogression = 100
   --biomesize=25 worlddeepnessprogression=15
-  
+
   entities = {}
   loadtextures()
-  cameraPossibleZooms = {1,2,4,8,16,24,32,40,48,56,64,72,80,96,112,152,188,224,336,448}
+  cameraPossibleZooms = { 1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 96, 112, 152, 188, 224, 336, 448 }
   camx = 0
   realcamx = 0
   realcamy = 0
@@ -125,11 +125,11 @@ end
 
 function love.draw()
   love.graphics.setBackgroundColor(backgroundcolor)
-  
+
   drawgame()
 
-  love.graphics.setColor(1,1,1,1)
-  love.graphics.print(getbooltext(world:getColision(mxworldpos,myworldpos)),mx,my)
+  love.graphics.setColor(1, 1, 1, 1)
+  love.graphics.print(getbooltext(world:getColision(mxworldpos, myworldpos)), mx, my)
 
   clicktick = false
   rightclicktick = false
@@ -141,8 +141,9 @@ function love.keypressed(key)
     fullscreen = not fullscreen
     love.window.setFullscreen(fullscreen)
   end
-  if key == "r" then  
-    world = World(math.random() * 1000000, 10, 100, 150, {}, { "none", "stone", "stone2", "grass", "ores", "deco", "done"  }) 
+  if key == "r" then
+    world = World(math.random() * 1000000, 10, 100, 150, {},
+      { "none", "stone", "stone2", "grass", "ores", "deco", "done" })
     generateBaseBiomes()
   end
   if key == "t" then
@@ -150,15 +151,15 @@ function love.keypressed(key)
     generateRandomBiomeList()
   end
   if key == "space" then
-    if #entities <1 then
-      world:spawnEntity("player",world:getMouseTile(false).x,world:getMouseTile(false).y)
+    if #entities < 1 then
+      world:spawnEntity("player", world:getMouseTile(false).x, world:getMouseTile(false).y)
     else
-      world:spawnEntity("enemy",world:getMouseTile(true).x,world:getMouseTile(true).y)
+      world:spawnEntity("enemy", world:getMouseTile(true).x, world:getMouseTile(true).y)
     end
     --world:spawnEntity("player", "player", "player", "none", 100, 0, "player", { ["newQuad"] = { 15, 0, 1, 1, 8 } })
   end
-  if key=="e" then camv=nextinlistroll(camv,cameraPossibleZooms) end
-  if key=="q" then camv=nextinlistrollreverse(camv,cameraPossibleZooms) end
+  if key == "e" then camv = nextinlistroll(camv, cameraPossibleZooms) end
+  if key == "q" then camv = nextinlistrollreverse(camv, cameraPossibleZooms) end
   --[[if key == "e" and spectator then
     camv = camv + 8
     if camv > 96 then camv = 96 end

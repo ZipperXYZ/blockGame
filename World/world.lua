@@ -25,6 +25,8 @@ end
 --clear() -- vide le monde de tout ses chunks, gardant toutes ses propriétés les mêmes
 function World:clear()
     self.chunks = {}
+    entities={}
+    spectator = true
 end
 
 function World:clearBiomes()
@@ -487,15 +489,35 @@ function World:getSeed()
     return self.worldSeed
 end
 
----function World:spawnEntity(entityName,type,worldPosX,worldPosY)
---    entities[entityName]:setPos(Vector2(worldPosX, worldPosY))
---    return true
---end
+function World:updateEntities(dt)
+    if #entities>0 then 
+        for i=1,#entities do
+            entities[i]:movementUpdate(dt)
+        end
+    end
+    
+end
+
+function World:spawnEntity(type,worldPosX,worldPosY)
+    aiType = "none"
+    if type == "player" then aiType = "human" end
+    table.insert(entities,Entity(type, type, "none", Vector2(worldPosX, worldPosY), 1, 0.425, 0, aiType, {}))
+    
+    return true
+end
+
+function World:getMouseTile(roundedToTile)
+    roundedToTile = roundedToTile or false
+    if (roundedToTile) then
+    return Vector2(round(mxworldpos),round(myworldpos)) else
+    return Vector2(mxworldpos,myworldpos) end
+end
 
 function World:DrawEntities()
-    for ix = 1, #entities do
-        love.graphics.draw(entities[ix]:getTexture(), entities[ix]:getSprite(), entities[ix]:getPosition():getY(),
-            entities[ix]:getPosition():getX(),
-            0, round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
+    for i = 1, #entities do
+        entities[i]:draw()
+        ---love.graphics.draw(entities[ix]:getTexture(), entities[ix]:getSprite(), entities[ix]:getPosition():getY(),
+        --    entities[ix]:getPosition():getX(),
+        --    0, round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
     end
 end

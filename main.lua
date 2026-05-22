@@ -65,6 +65,7 @@ function love.load()
   
   entities = {}
   loadtextures()
+  cameraPossibleZooms = {1,2,4,8,16,24,32,40,48,56,64,72,80,96,112,152,188,224,336,448}
   camx = 0
   realcamx = 0
   realcamy = 0
@@ -147,18 +148,23 @@ function love.keypressed(key)
     generateRandomBiomeList()
   end
   if key == "space" then
-    --world:spawnEntity("player", "player", "player", "tiles.png", 100, 0, "player", { ["newQuad"] = { 15, 0, 1, 1, 8 } })
+    if #entities <1 then
+      world:spawnEntity("player",world:getMouseTile(false).x,world:getMouseTile(false).y)
+    else
+      world:spawnEntity("enemy",world:getMouseTile(true).x,world:getMouseTile(true).y)
+    end
+    --world:spawnEntity("player", "player", "player", "none", 100, 0, "player", { ["newQuad"] = { 15, 0, 1, 1, 8 } })
   end
-  --if key=="e" and spectator then camv=nextinlistroll(camv,{16,24,32,40,48,56,64,72,80}) end
-  --if key=="q" and spectator then camv=nextinlistrollreverse(camv,{16,24,32,40,48,56,64,72,80}) end
-  if key == "e" and spectator then
+  if key=="e" then camv=nextinlistroll(camv,cameraPossibleZooms) end
+  if key=="q" then camv=nextinlistrollreverse(camv,cameraPossibleZooms) end
+  --[[if key == "e" and spectator then
     camv = camv + 8
     if camv > 96 then camv = 96 end
   end
   if key == "q" and spectator then
     camv = camv - 8
     if camv < 8 then camv = 8 end
-  end
+  end]]
 end
 
 function love.mousepressed(x, y, b)

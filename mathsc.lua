@@ -84,7 +84,7 @@ function round(x1)
 function round2(value,precision)
   return (round(value*precision)/precision)
   end
-function directionfluctuate(d,goal,amount)
+function directionChangeTowardsAnotherDirection(d,goal,amount)
   d=d%360
   goal=goal%360
   df=d
@@ -207,6 +207,14 @@ function getrandomside(sides)
   if number<1 then number=1 end
   if number>#sides then number=#sides end
   side=sides[number]
+  
+  return side
+end
+function getRandom(list)
+  number=math.ceil(math.random(#list))
+  if number<1 then number=1 end
+  if number>#list then number=#list end
+  side=list[number]
   
   return side
 end

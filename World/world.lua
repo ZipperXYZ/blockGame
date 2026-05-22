@@ -495,6 +495,8 @@ function World:updateEntities(dt)
             entities[i]:movementUpdate(dt)
             entities[i]:collisionWithEntities(dt)
             entities[i]:collisionUpdate(dt)
+            entities[i]:camUpdate(dt)
+            if entities[i].type == "player" then entities[i]:playerUpdate(dt) end
         end
     end
     
@@ -527,5 +529,13 @@ function World:DrawEntities()
         ---love.graphics.draw(entities[ix]:getTexture(), entities[ix]:getSprite(), entities[ix]:getPosition():getY(),
         --    entities[ix]:getPosition():getX(),
         --    0, round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
+    end
+end
+
+function World:DrawUi()
+    for i = 1, #entities do
+        if entities[i].id == camEntityFollow then
+            entities[i]:DrawUI()
+        end
     end
 end

@@ -354,7 +354,7 @@ function Chunk:getBiome(worldPosX, worldPosY, worldSeed, depthProgression, biome
     local secondDist = math.huge
 
     -- biome noise coordinates
-    local op1 = love.math.noise(
+    local op1 = noise(
         worldPosX / biomeSize,
         worldPosY / biomeSize,
         worldSeed - 5

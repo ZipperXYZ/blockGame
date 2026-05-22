@@ -235,7 +235,7 @@ function generateBaseBiomes()
   world:addBiome("hotland", 0.8, 0.6, 2.5, 30, 8, 1)
   world:addBiome("darkland", 0.5, 0.3, 10, 99999, 1, 1)
   world:addBiome("ancientland", 0.3, 0.9, 5, 50, 8, 0.8)
-  world:addBiome("duneland", 0.7, 0.2, 6, 30, 10, 1.2)
+  world:addBiome("duneland", 0.8, 0.1, 6, 30, 10, 0.5)
   world:addBiome("duneland", 0.7, 0.2, -1, 3, 2, 0.3) --oui, il est en double, une fois à la surface
 
   --[[

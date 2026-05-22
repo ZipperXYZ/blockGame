@@ -135,48 +135,91 @@ end
 
 function Entity:isGrounded()
     local yCheck = self.position.y - self.size -0.05
-    if world:getColision(self.position.x,yCheck) then
-        return true
-    else
-        return false
+    local xCheck
+    for ix=0,math.ceil(self.size*2)+2 do
+        xCheck = self.position.x-self.size+((self.size*2)/(math.ceil(self.size*2)+2)*ix)
+        if world:getColision(xCheck,yCheck) then
+            return true
+        end 
     end
+    return false
 end
 
 function Entity:collisionUpdate(dt)
     --update Y
 
     self.position.y=self.position.y+(self.velocity.y*dt)
-    
 
     if self.hasWorldCollisions then
-        for iCollision=1,24 do
-            local x
-            local y
-            x,y = moveposition180(self.position.x,self.position.y,360/24*iCollision,self.size)
+        local x
+        local y
+        for ix=0,math.ceil(self.size*2)+2 do
+            x = self.position.x-self.size+((self.size*2)/(math.ceil(self.size*2)+2)*ix)
+            y = self.position.y + self.size
+            if self:CollisionDirectionCheck(self.position.y,x,y,"y") then break end
+            y = self.position.y - self.size
             if self:CollisionDirectionCheck(self.position.y,x,y,"y") then break end
         end
     end
+    
+    --if self.hasWorldCollisions then
+    --    for iCollision=1,24 do
+    --        local x
+    --        local y
+    --        x,y = moveposition180(self.position.x,self.position.y,360/24*iCollision,self.size)
+    --        if self:CollisionDirectionCheck(self.position.y,x,y,"y") then break end
+    --    end
+    --end
     --update X
     self.position.x=self.position.x+(self.velocity.x*dt)
-    
 
     if self.hasWorldCollisions then
-        for iCollision=1,24 do
-            local x
-            local y
-            x,y = moveposition180(self.position.x,self.position.y,360/24*iCollision,self.size)
+        local x
+        local y
+        for iy=0,math.ceil(self.size*2)+2 do
+            y = self.position.y-self.size+((self.size*2)/(math.ceil(self.size*2)+2)*iy)
+            x = self.position.x + self.size
+            if self:CollisionDirectionCheck(self.position.x,y,x,"x") then break end
+            x = self.position.x - self.size
             if self:CollisionDirectionCheck(self.position.x,y,x,"x") then break end
         end
     end
-
     
-    if self.cameraFocus then 
+
+    --if self.hasWorldCollisions then
+   --     for iCollision=1,24 do
+   --         local x
+   --         local y
+   --         x,y = moveposition180(self.position.x,self.position.y,360/24*iCollision,self.size)
+   --         if self:CollisionDirectionCheck(self.position.x,y,x,"x") then break end
+   --     end
+    --end
+
+    --s'assurer que le joueur n'est toujours pas coincé dans un block
+    if self.hasWorldCollisions then
+        if world:getColision(self.position.x,self.position.y) then
+            self.position.y=self.position.y+1
+        end
+    end
+end
+
+function Entity:camUpdate()
+    if (camEntityFollow == self.id) then
         realcamx = self.position.x
         realcamy = self.position.y
         camx=realcamx
         camy=realcamy
         spectator = false
     end
+    if self.cameraFocus then 
+        if (camEntityFollow == 0) then
+            camEntityFollow = self.id
+        end
+    end
+end
+
+function Entity:DrawUI()
+    --
 end
 
 function Entity:CollisionDirectionCheck(center,otherAxisPosition,check,axis)

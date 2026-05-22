@@ -48,7 +48,8 @@ function love.load()
   --entity = Entity:new("test", "test", "test", 1, 9)
 
   -- entity:damage(99)
-
+  GlobalNoisePower = calculateNoisePower(0.25)
+  
   biomelist = {}
   world = World(math.random() * 1000000, 10, 100, 150, {}, { "none", "stone", "stone2", "grass", "ores", "deco", "done" })
   generateBaseBiomes()
@@ -66,6 +67,7 @@ function love.load()
   entities = {}
   loadtextures()
   cameraPossibleZooms = {1,2,4,8,16,24,32,40,48,56,64,72,80,96,112,152,188,224,336,448}
+  camEntityFollow = 0
   camx = 0
   realcamx = 0
   realcamy = 0
@@ -94,6 +96,59 @@ function love.load()
   backgroundcolor = { 0.15, 0.15, 0.2, 1 }
   love.window.setFullscreen(fullscreen)
   love.window.setMode(800, 600, { resizable = true, minwidth = 400, minheight = 300 })
+end
+
+--code totalement pas écrit par chatgpt
+
+-- Returns a power value based on how centered the noise distribution is.
+-- Uses 100000 samples.
+
+function calculateNoisePower(targetDistance)
+    local samples = 100000
+    local sum = 0
+
+    for i = 1, samples do
+        local n = love.math.noise(
+            love.math.random() * 100000,
+            love.math.random() * 100000,
+            love.math.random() * 100000,
+            love.math.random() * 100000
+        )
+
+        sum = sum + math.abs(n - 0.5)
+    end
+
+    local averageDistance = sum / samples
+
+    -- Prevent divide-by-zero
+    if averageDistance <= 0 then
+        return 1
+    end
+
+    return targetDistance / averageDistance
+end
+
+
+-- Pushes values toward 0 and 1 smoothly
+function shapeNoise(v, power)
+    local a = v ^ power
+    local b = (1 - v) ^ power
+
+    return a / (a + b)
+end
+
+
+-- Custom 4D noise function
+-- x,y,z,w = coordinates
+-- power:
+--   1   = unchanged
+--   >1  = stronger extremes
+--   <1  = more centered
+
+function noise(x, y, z, w)
+    local n = love.math.noise(x or 0, y or 0, z or 0, w or 0)
+
+    return shapeNoise(n, GlobalNoisePower)
 end
 
 function love.update(dt)

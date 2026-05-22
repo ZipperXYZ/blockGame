@@ -106,7 +106,6 @@ function love.update(dt)
   cy = szy / 2
   math.random()
   tick = tick + 1
-
   cameramove(dt)
   gameupdate(dt)
 end
@@ -126,8 +125,11 @@ end
 
 function love.draw()
   love.graphics.setBackgroundColor(backgroundcolor)
-
+  
   drawgame()
+
+  love.graphics.setColor(1,1,1,1)
+  love.graphics.print(getbooltext(world:getColision(mxworldpos,myworldpos)),mx,my)
 
   clicktick = false
   rightclicktick = false

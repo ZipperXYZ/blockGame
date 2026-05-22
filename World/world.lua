@@ -493,14 +493,22 @@ function World:updateEntities(dt)
     if #entities>0 then 
         for i=1,#entities do
             entities[i]:movementUpdate(dt)
+            entities[i]:collisionWithEntities(dt)
+            entities[i]:collisionUpdate(dt)
         end
     end
     
 end
 
+function World:getColision(worldPosX,worldPosY)
+    tile = self:getTile(worldPosX,worldPosY,"tiles")
+    return tile:getColision()
+end
+
 function World:spawnEntity(type,worldPosX,worldPosY)
     aiType = "none"
     if type == "player" then aiType = "human" end
+    --table.insert(entities,Entity(type, type, "none", Vector2(worldPosX, worldPosY), 1, 0.9, 0, aiType, {}))
     table.insert(entities,Entity(type, type, "none", Vector2(worldPosX, worldPosY), 1, 0.425, 0, aiType, {}))
     
     return true

@@ -48,6 +48,7 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
             , textures["textures"][self.textureName])
     end
     self.isStone = self.flags.isStone or false
+    self.hasCollisions = self.flags.hasCollisions or (self.type == "solid")
     self.canBeMined = self.flags.canBeMined or true
     self.color = self.flags.color or { 1, 1, 1, 1 }
     self.canbeWall = self.flags.canBeWall or self.type == "solid"
@@ -101,6 +102,10 @@ end
 
 function Tile:getBorderQuad()
     return textures["quads"][self.border.quad]
+end
+
+function Tile:getColision()
+    return self.hasCollisions
 end
 
 function  Tile:getTextureCenterX()

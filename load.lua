@@ -223,10 +223,10 @@ end
 
 function loadEntities()
   textures["sprites"] = {}
-  entities["player"] = Entity("Player", "player", "player", "tiles.png", 100, 0, "player",
+  --[[entities["player"] = Entity("Player", "player", "player", "tiles.png", 100, 0, "player",
     {
       ["newQuad"] = { 15, 0, 1, 1, 8 }
-    })
+    })]]
 end
 
 function generateBaseBiomes()

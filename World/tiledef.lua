@@ -30,8 +30,8 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
             , self.flags["newQuad"][3] * self.flags["newQuad"][5]
             , self.flags["newQuad"][4] * self.flags["newQuad"][5]
             , textures["textures"][self.textureName])
-        self.textureCenterX = self.flags.textureCenterX or (self.flags["newQuad"][3]*self.flags["newQuad"][5]/2)
-        self.textureCenterY = self.flags.textureCenterY or (self.flags["newQuad"][4]*self.flags["newQuad"][5]/2)
+        self.textureCenterX = self.flags.textureCenterX or (self.flags["newQuad"][3] * self.flags["newQuad"][5] / 2)
+        self.textureCenterY = self.flags.textureCenterY or (self.flags["newQuad"][4] * self.flags["newQuad"][5] / 2)
     else
         self.textureCenterX = self.flags.textureCenterX or (4)
         self.textureCenterY = self.flags.textureCenterY or (4)
@@ -54,6 +54,7 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.canbeWall = self.flags.canBeWall or self.type == "solid"
     self.lightCanGoThrough = self.flags.lightCanGoThrough or self.type ~= "solid"
     self.canBeOverWritten = self.flags.canBeOverWritten or self.type ~= "solid"
+    self.health = self.flags.health or 1
 end
 
 --getName()
@@ -88,11 +89,11 @@ function Tile:getBorderType()
     return self.borderType
 end
 
-function  Tile:getLightCanGoThrough()
+function Tile:getLightCanGoThrough()
     return self.lightCanGoThrough
 end
 
-function  Tile:canTileBeOverWritten()
+function Tile:canTileBeOverWritten()
     return self.canBeOverWritten
 end
 
@@ -108,11 +109,11 @@ function Tile:getColision()
     return self.hasCollisions
 end
 
-function  Tile:getTextureCenterX()
+function Tile:getTextureCenterX()
     return self.textureCenterX
 end
 
-function  Tile:getTextureCenterY()
+function Tile:getTextureCenterY()
     return self.textureCenterY
 end
 

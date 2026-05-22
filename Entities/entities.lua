@@ -39,6 +39,9 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
 
     self.cameraFocus = self.flags.cameraFocus or (self.ia == "player" or self.ia == "human")
 
+    self.attackDamage = self.flags.attackDamage or 1
+    self.miningList = {}
+
     --if self.spriteName ~= "none" and not textures["sprites"][self.spriteName] then
     --    textures["sprites"][spriteName] = Sprite(self.name, self.animation, self.texture, self.spriteName,
     --        { ["newQuad"] = { 9, 0, 1, 1, 8 } })
@@ -113,24 +116,30 @@ end
 function Entity:movementUpdate(dt)
     --if love.keyboard.isDown("w") then self.velocity.y=self.velocity.y+(8*dt) end
     --if love.keyboard.isDown("s") then self.velocity.y=self.velocity.y-(8*dt) end
-    if love.keyboard.isDown("d") then self.velocity.x=self.velocity.x+(self.movevementSpeed*10*dt/self.movementSlide) end
-    if love.keyboard.isDown("a") then self.velocity.x=self.velocity.x-(self.movevementSpeed*10*dt/self.movementSlide) end
-
-    if love.keyboard.isDown("w") and self:canJump() then 
-        if self.velocity.y < 0 then self.velocity.y = 0 end
-        self.velocity.y = self.velocity.y + (self.jumpStrength*10)
-        if self.velocity.y > (self.jumpStrength*10) then self.velocity.y = (self.jumpStrength*10) end
+    if love.keyboard.isDown("d") then
+        self.velocity.x = self.velocity.x +
+            (self.movevementSpeed * 10 * dt / self.movementSlide)
+    end
+    if love.keyboard.isDown("a") then
+        self.velocity.x = self.velocity.x -
+            (self.movevementSpeed * 10 * dt / self.movementSlide)
     end
 
-    self.velocity.y=self.velocity.y-dt*self.gravity*50
+    if love.keyboard.isDown("w") and self:canJump() then
+        if self.velocity.y < 0 then self.velocity.y = 0 end
+        self.velocity.y = self.velocity.y + (self.jumpStrength * 10)
+        if self.velocity.y > (self.jumpStrength * 10) then self.velocity.y = (self.jumpStrength * 10) end
+    end
 
-    self.velocity.x = k(self.velocity.x,0,dt/self.movementSlide)
-    if self.velocity.y<-(1/dt/2) then self.velocity.y=-(1/dt/2) end
+    self.velocity.y = self.velocity.y - dt * self.gravity * 50
+
+    self.velocity.x = k(self.velocity.x, 0, dt / self.movementSlide)
+    if self.velocity.y < -(1 / dt / 2) then self.velocity.y = -(1 / dt / 2) end
     --self.velocity.y = k(self.velocity.y,0,dt/self.movementSlide)
 end
 
-function  Entity:canJump()
-    return self:isGrounded()--self.velocity.y<0.05
+function Entity:canJump()
+    return self:isGrounded() --self.velocity.y<0.05
 end
 
 function Entity:isGrounded()
@@ -207,8 +216,8 @@ function Entity:camUpdate()
     if (camEntityFollow == self.id) then
         realcamx = self.position.x
         realcamy = self.position.y
-        camx=realcamx
-        camy=realcamy
+        camx = realcamx
+        camy = realcamy
         spectator = false
     end
     if self.cameraFocus then 
@@ -222,31 +231,31 @@ function Entity:DrawUI()
     --
 end
 
-function Entity:CollisionDirectionCheck(center,otherAxisPosition,check,axis)
+function Entity:CollisionDirectionCheck(center, otherAxisPosition, check, axis)
     --local differenceAxis = math.abs(self.position.y-otherAxisPosition)
     --if axis == "y" then differenceAxis = math.abs(self.position.x-otherAxisPosition) end
     local differenceAxis = self.size
     if axis == "x" then
-        local collide = world:getColision(check,otherAxisPosition)
+        local collide = world:getColision(check, otherAxisPosition)
         if collide then
-            if check>center then
-                self.position.x = round(center)+(0.5-differenceAxis-0.005)
+            if check > center then
+                self.position.x = round(center) + (0.5 - differenceAxis - 0.005)
                 if self.velocity.x > 0 then self.velocity.x = 0 end
-                else
-                self.position.x = round(center)-(0.5-differenceAxis-0.005)
+            else
+                self.position.x = round(center) - (0.5 - differenceAxis - 0.005)
                 if self.velocity.x < 0 then self.velocity.x = 0 end
             end
             return true
         end
     end
     if axis == "y" then
-        local collide = world:getColision(otherAxisPosition,check)
+        local collide = world:getColision(otherAxisPosition, check)
         if collide then
-            if check>center then
-                self.position.y = round(center)+(0.5-differenceAxis-0.005)
+            if check > center then
+                self.position.y = round(center) + (0.5 - differenceAxis - 0.005)
                 if self.velocity.y > 0 then self.velocity.y = 0 end
-                else
-                self.position.y = round(center)-(0.5-differenceAxis-0.005)
+            else
+                self.position.y = round(center) - (0.5 - differenceAxis - 0.005)
                 if self.velocity.y < 0 then self.velocity.y = 0 end
             end
             return true
@@ -255,37 +264,72 @@ function Entity:CollisionDirectionCheck(center,otherAxisPosition,check,axis)
     return false
 end
 
-function  Entity:collisionWithEntities(dt)
-    for i2=1,#entities do
+function Entity:collisionWithEntities(dt)
+    for i2 = 1, #entities do
         other = entities[i2]
         if self.id ~= other.id then
-            if dist(self.position.x,self.position.y,other.position.x,other.position.y)<self.size+other.size then
-               local distance = (1-(1/(self.size+other.size)*dist(self.position.x,self.position.y,other.position.x,other.position.y)))^0.5
-                entities[i2].position.x,entities[i2].position.y = 
-                    movetowards(other.position.x,other.position.y,self.position.x,self.position.y,-distance*entities[i2].size*dt*10)
-                self.position.x,self.position.y = 
-                    movetowards(self.position.x,self.position.y,other.position.x,other.position.y,-distance*self.size*dt*10)
+            if dist(self.position.x, self.position.y, other.position.x, other.position.y) < self.size + other.size then
+                local distance = (1 - (1 / (self.size + other.size) * dist(self.position.x, self.position.y, other.position.x, other.position.y))) ^
+                    0.5
+                entities[i2].position.x, entities[i2].position.y =
+                    movetowards(other.position.x, other.position.y, self.position.x, self.position.y,
+                        -distance * entities[i2].size * dt * 10)
+                self.position.x, self.position.y =
+                    movetowards(self.position.x, self.position.y, other.position.x, other.position.y,
+                        -distance * self.size * dt * 10)
             end
         end
     end
 end
 
+function Entity:targetedBlock()
+    local tile = world:getTile(mxworldpos, myworldpos)
+    return tile, mxworldpos, myworldpos
+end
+
+function Entity:mineTarget()
+    local block = self:targetedBlock()
+    for ix = 0, #self.mineList do
+        if self.mineList[ix] == block then
+            if self.mineList.block.tile.health - self.attackDamage > 0 then
+                self.mineList.block.tile.health = -self.attackDamage
+                return
+            else
+                world:destroyTile(self.mineList.block.mxworldpos, self.mineList.block.myworldpos, tiles)
+                table.remove(self.mineList, block)
+                return
+            end
+        end
+    end
+    table.insert(self.mineList, block)
+    if self.mineList.block.tile.health - self.attackDamage > 0 then
+        self.mineList.block.tile.health = -self.attackDamage
+    else
+        world:destroyTile(self.mineList.block.mxworldpos, self.mineList.block.myworldpos, tiles)
+        table.remove(self.mineList, block)
+    end
+end
+
 function Entity:entityUpdate(dt)
-    
+
 end
 
 function Entity:playerUpdate(dt)
-
+    print(self.miningList)
+    if love.mouse.isDown(1) then
+        self:mineTarget()
+        print(self.miningList)
+    end
 end
 
 function Entity:draw()
     local x
     local y
-    x, y=positiontoscreen(self.position:getX(),self.position:getY())
-    love.graphics.setColor(0,0,0,1)
-    love.graphics.circle("fill",x,y,self.size*camv)
-    love.graphics.setColor(1,1,1,1)
-    love.graphics.circle("fill",x,y,self.size*camv*0.8)
+    x, y = positiontoscreen(self.position:getX(), self.position:getY())
+    love.graphics.setColor(0, 0, 0, 1)
+    love.graphics.circle("fill", x, y, self.size * camv)
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.circle("fill", x, y, self.size * camv * 0.8)
 
-    love.graphics.print(self.ia,x,y+100)
+    love.graphics.print(self.ia, x, y + 100)
 end

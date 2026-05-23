@@ -40,7 +40,7 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.cameraFocus = self.flags.cameraFocus or (self.ia == "player" or self.ia == "human")
 
     self.attackDamage = self.flags.attackDamage or 1
-    self.miningList = {}
+    self.mineList = {}
 
     --if self.spriteName ~= "none" and not textures["sprites"][self.spriteName] then
     --    textures["sprites"][spriteName] = Sprite(self.name, self.animation, self.texture, self.spriteName,
@@ -143,13 +143,13 @@ function Entity:canJump()
 end
 
 function Entity:isGrounded()
-    local yCheck = self.position.y - self.size -0.05
+    local yCheck = self.position.y - self.size - 0.05
     local xCheck
-    for ix=0,math.ceil(self.size*2)+2 do
-        xCheck = self.position.x-self.size+((self.size*2)/(math.ceil(self.size*2)+2)*ix)
-        if world:getColision(xCheck,yCheck) then
+    for ix = 0, math.ceil(self.size * 2) + 2 do
+        xCheck = self.position.x - self.size + ((self.size * 2) / (math.ceil(self.size * 2) + 2) * ix)
+        if world:getColision(xCheck, yCheck) then
             return true
-        end 
+        end
     end
     return false
 end
@@ -157,20 +157,20 @@ end
 function Entity:collisionUpdate(dt)
     --update Y
 
-    self.position.y=self.position.y+(self.velocity.y*dt)
+    self.position.y = self.position.y + (self.velocity.y * dt)
 
     if self.hasWorldCollisions then
         local x
         local y
-        for ix=0,math.ceil(self.size*2)+2 do
-            x = self.position.x-self.size+((self.size*2)/(math.ceil(self.size*2)+2)*ix)
+        for ix = 0, math.ceil(self.size * 2) + 2 do
+            x = self.position.x - self.size + ((self.size * 2) / (math.ceil(self.size * 2) + 2) * ix)
             y = self.position.y + self.size
-            if self:CollisionDirectionCheck(self.position.y,x,y,"y") then break end
+            if self:CollisionDirectionCheck(self.position.y, x, y, "y") then break end
             y = self.position.y - self.size
-            if self:CollisionDirectionCheck(self.position.y,x,y,"y") then break end
+            if self:CollisionDirectionCheck(self.position.y, x, y, "y") then break end
         end
     end
-    
+
     --if self.hasWorldCollisions then
     --    for iCollision=1,24 do
     --        local x
@@ -180,34 +180,34 @@ function Entity:collisionUpdate(dt)
     --    end
     --end
     --update X
-    self.position.x=self.position.x+(self.velocity.x*dt)
+    self.position.x = self.position.x + (self.velocity.x * dt)
 
     if self.hasWorldCollisions then
         local x
         local y
-        for iy=0,math.ceil(self.size*2)+2 do
-            y = self.position.y-self.size+((self.size*2)/(math.ceil(self.size*2)+2)*iy)
+        for iy = 0, math.ceil(self.size * 2) + 2 do
+            y = self.position.y - self.size + ((self.size * 2) / (math.ceil(self.size * 2) + 2) * iy)
             x = self.position.x + self.size
-            if self:CollisionDirectionCheck(self.position.x,y,x,"x") then break end
+            if self:CollisionDirectionCheck(self.position.x, y, x, "x") then break end
             x = self.position.x - self.size
-            if self:CollisionDirectionCheck(self.position.x,y,x,"x") then break end
+            if self:CollisionDirectionCheck(self.position.x, y, x, "x") then break end
         end
     end
-    
+
 
     --if self.hasWorldCollisions then
-   --     for iCollision=1,24 do
-   --         local x
-   --         local y
-   --         x,y = moveposition180(self.position.x,self.position.y,360/24*iCollision,self.size)
-   --         if self:CollisionDirectionCheck(self.position.x,y,x,"x") then break end
-   --     end
+    --     for iCollision=1,24 do
+    --         local x
+    --         local y
+    --         x,y = moveposition180(self.position.x,self.position.y,360/24*iCollision,self.size)
+    --         if self:CollisionDirectionCheck(self.position.x,y,x,"x") then break end
+    --     end
     --end
 
     --s'assurer que le joueur n'est toujours pas coincé dans un block
     if self.hasWorldCollisions then
-        if world:getColision(self.position.x,self.position.y) then
-            self.position.y=self.position.y+1
+        if world:getColision(self.position.x, self.position.y) then
+            self.position.y = self.position.y + 1
         end
     end
 end
@@ -220,7 +220,7 @@ function Entity:camUpdate()
         camy = realcamy
         spectator = false
     end
-    if self.cameraFocus then 
+    if self.cameraFocus then
         if (camEntityFollow == 0) then
             camEntityFollow = self.id
         end
@@ -283,31 +283,53 @@ function Entity:collisionWithEntities(dt)
 end
 
 function Entity:targetedBlock()
-    local tile = world:getTile(mxworldpos, myworldpos)
-    return tile, mxworldpos, myworldpos
+    local targetTile = world:getTile(mxworldpos, myworldpos, "tiles")
+
+    if targetTile == tiles["none"] then
+        return nil
+    end
+
+    local tileInfo = {}
+    tileInfo["tile"] = targetTile
+    tileInfo["x"] = mxworldpos
+    tileInfo["y"] = myworldpos
+
+    return tileInfo
 end
 
-function Entity:mineTarget()
-    local block = self:targetedBlock()
-    for ix = 0, #self.mineList do
-        if self.mineList[ix] == block then
-            if self.mineList.block.tile.health - self.attackDamage > 0 then
-                self.mineList.block.tile.health = -self.attackDamage
-                return
-            else
-                world:destroyTile(self.mineList.block.mxworldpos, self.mineList.block.myworldpos, tiles)
-                table.remove(self.mineList, block)
-                return
-            end
+function Entity:mineBlock(tileInfo, index, dt)
+    if tileInfo.tile.health - self.attackDamage * dt > 0 then
+        tileInfo.tile.health =
+            tileInfo.tile.health - self.attackDamage * dt
+        print(tileInfo.tile.name, tileInfo.tile.health)
+    else
+        world:destroyTile(tileInfo.x, tileInfo.y, "tiles")
+        table.remove(self.mineList, index)
+    end
+end
+
+function Entity:mineTarget(dt)
+    local tileInfo = self:targetedBlock()
+
+    if tileInfo == nil then
+        return false
+    end
+
+    for ix = 1, #self.mineList do
+        local target = self.mineList[ix]
+
+        if target.x == tileInfo.x
+            and target.y == tileInfo.y then
+            self:mineBlock(tileInfo, ix, dt)
+            return true
         end
     end
-    table.insert(self.mineList, block)
-    if self.mineList.block.tile.health - self.attackDamage > 0 then
-        self.mineList.block.tile.health = -self.attackDamage
-    else
-        world:destroyTile(self.mineList.block.mxworldpos, self.mineList.block.myworldpos, tiles)
-        table.remove(self.mineList, block)
-    end
+
+    table.insert(self.mineList, tileInfo)
+    self:mineBlock(tileInfo, 1, dt)
+
+
+    return true
 end
 
 function Entity:entityUpdate(dt)
@@ -315,10 +337,8 @@ function Entity:entityUpdate(dt)
 end
 
 function Entity:playerUpdate(dt)
-    print(self.miningList)
     if love.mouse.isDown(1) then
-        self:mineTarget()
-        print(self.miningList)
+        self:mineTarget(dt)
     end
 end
 

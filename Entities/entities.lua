@@ -39,7 +39,8 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
 
     self.cameraFocus = self.flags.cameraFocus or (self.ia == "player" or self.ia == "human")
 
-    self.attackDamage = self.flags.attackDamage or 1
+    self.attackDamage = self.flags.attackDamage or 5
+    self.miningRadius = self.flags.miningRadius or 1
     self.mineList = {}
 
     --if self.spriteName ~= "none" and not textures["sprites"][self.spriteName] then
@@ -282,26 +283,44 @@ function Entity:collisionWithEntities(dt)
     end
 end
 
-function Entity:targetedBlock()
-    local targetTile = world:getTile(mxworldpos, myworldpos, "tiles")
+function Entity:targetedBlock(x, y)
 
+    local posX = x or mxworldpos
+    local posY = y or myworldpos
+    local targetTile = world:getTile(posX, posY, "tiles")
     if targetTile == tiles["none"] then
         return nil
     end
 
     local tileInfo = {}
     tileInfo["tile"] = targetTile
-    tileInfo["x"] = mxworldpos
-    tileInfo["y"] = myworldpos
+    tileInfo["x"] = posX
+    tileInfo["y"] = posY
+    tileInfo["health"] = targetTile.health
 
-    return tileInfo
+    if (world:getChangedTile(posX, posY)) then
+        targetTile = world:getChangedTile(posX, posY)
+    else
+        targetTile = world:addChangedTile(tileInfo)
+    end
+    return targetTile
 end
 
+
+
 function Entity:mineBlock(tileInfo, index, dt)
-    if tileInfo.tile.health - self.attackDamage * dt > 0 then
-        tileInfo.tile.health =
-            tileInfo.tile.health - self.attackDamage * dt
-        print(tileInfo.tile.name, tileInfo.tile.health)
+    local result = "Table: {\n"
+    for k, v in pairs(tileInfo) do
+        if type(v) == "table" then
+            result = result .. "  " .. k .. " = [table]\n" 
+        else
+            result = result .. "  " .. k .. " = " .. tostring(v) .. "\n"
+        end
+    end
+    if tileInfo.health - self.attackDamage * dt > 0 then
+        tileInfo.health =
+            tileInfo.health - self.attackDamage * dt
+        print(result)
     else
         world:destroyTile(tileInfo.x, tileInfo.y, "tiles")
         table.remove(self.mineList, index)
@@ -332,13 +351,43 @@ function Entity:mineTarget(dt)
     return true
 end
 
+--[[function Entity:mineTarget(dt, radius)
+    local worldPosX = round(mxworldpos)
+    local worldPosY = round(myworldpos)
+
+    for y = worldPosY - radius, worldPosY + radius do
+        for x = worldPosX - radius, worldPosX + radius do
+            local tileInfo = self:targetedBlock(x, y)
+
+            if tileInfo ~= nil then
+                for ix = 1, #self.mineList do
+                    local target = self.mineList[ix]
+
+                    if target.x == tileInfo.x
+                        and target.y == tileInfo.y then
+                        self:mineBlock(tileInfo, ix, dt)
+                        return true
+                    end
+                end
+
+                table.insert(self.mineList, tileInfo)
+                self:mineBlock(tileInfo, 1, dt)
+            end
+        end
+    end
+    return true
+end--]]
 function Entity:entityUpdate(dt)
 
 end
 
 function Entity:playerUpdate(dt)
     if love.mouse.isDown(1) then
-        self:mineTarget(dt)
+        if self.mineRadius == 1 then
+            self:mineTarget(dt)
+        else
+            self:mineTarget(dt,self.miningRadius)
+        end
     end
 end
 

@@ -138,6 +138,24 @@ function World:getTile(worldPosX, worldPosY, layer)
     return tile
 end
 
+function World:addChangedTile(tileInfo)
+    local chunkX, chunkY, posX, posY = self:convertWorldPosToChunkPos(tileInfo.x, tileInfo.y)
+    tileInfo.chunkX = posX
+    tileInfo.chunkY = posY
+    if self:checkIfChunkExists(chunkX, chunkY) then
+        return self.chunks[chunkX][chunkY]:addChangedTile(tileInfo)
+    end
+    return nil
+end
+
+function World:getChangedTile(worldPosX, worldPosY)
+    local chunkX, chunkY, posX, posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
+    if self:checkIfChunkExists(chunkX, chunkY) then
+        return self.chunks[chunkX][chunkY]:getChangedTile(posX, posY)
+    end
+    return nil
+end
+
 function World:getRawTile(worldPosX, worldPosY, layer)
     local tile = "none"
 

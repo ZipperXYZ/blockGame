@@ -10,6 +10,7 @@ function Chunk:init(chunkX, chunkY, chunkSize)
     self.chunkX = chunkX -- changer Chunkx pour chunkX
     self.chunkY = chunkY
     self.chunkSize = chunkSize
+    self.changedTiles = {}
     self.generationStatus = "none"
     self.chunkTiles = {}
     self.chunkTiles["tiles"] = {}
@@ -82,6 +83,25 @@ function Chunk:placeTile(tile, xInChunk, yInChunk, layer, force)
         return true
     end
 end
+
+function Chunk:addChangedTile(tileInfo)
+    self.changedTiles[tileInfo.chunkX] = {}
+    self.changedTiles[tileInfo.chunkX][tileInfo.chunkY] = tileInfo
+end
+
+function Chunk:getChangedTile(posX, posY)
+    if self.changedTiles[posX] then
+        if self.changedTiles[posX][posY] then
+            return self.changedTiles[posX][posY]
+        end
+    end
+    return nil
+end
+
+function Chunk: changeTileAttribute(attribute,posX,posY)
+    
+end
+
 
 function Chunk:updateNeighboringLights()
     world:updateLight(self.chunkX, self.chunkY)

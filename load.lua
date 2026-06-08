@@ -1,12 +1,13 @@
 function loadtextures()
   print("loadtextures")
- textures = {}
- textures["textures"] = {}
+  textures = {}
+  textures["textures"] = {}
   textures["textures"]["tiles.png"]=love.graphics.newImage("Textures/tiles.png")
   textures["textures"]["items1.png"]=love.graphics.newImage("Textures/items1.png")
   textures["textures"]["player.png"]=love.graphics.newImage("Textures/player.png")
   textures["quads"] = {}
   textures["sprites"] = {}
+  textures["sprites"]["stick"] = Sprite("stick","items1.png",{["parts"] = {"small","medium","big"}},{["setupItem"] = true,["itemQuadrant"]={0,0}})
   textures["sprites"]["player"] = Sprite("player","player.png",{
     ["parts"] = {"idle","walk","jump","use"},
     ["idle"] ={
@@ -48,6 +49,7 @@ function loadeverything()
   
   loadtextures()
   loadtiles()
+  loadItems()
   --loadbiomes()
   loadEntities()
 end
@@ -216,6 +218,12 @@ function loadEntities()
     {
       ["newQuad"] = { 15, 0, 1, 1, 8 }
     })]]
+end
+
+function loadItems()
+  items = {}
+  items["none"] = Item("none","none",{})
+  items["stick"] = Item("stick","stick",{["category"]="material"})
 end
 
 function generateBaseBiomes()

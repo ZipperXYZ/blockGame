@@ -15,7 +15,6 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.level = level or 0
     self.ia = ia or "none"
     self.id = math.random()
-    self.inventory = {}
     self.flags = flags or {}
 
     self.spriteSize = self.flags["spriteSize"] or 1
@@ -65,6 +64,18 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.controls.mine = false
 
     self.mineList = {}
+
+    if self.ia == "player" then
+        self.inventory = {
+            Inventory("inventory",{0.5,0.6,0.7,1},Vector2(0.5,0.05),7,5,1,100,(9*5),(5),{})
+            ,Inventory("armor",{0.5,0.6,0.7,1},Vector2(0.8,0.05),3,5,1,1,(9*5),(5),{["isEquipmentInventory"]=true})
+        }
+    else
+        self.inventory = {
+            Inventory("inventory",{0.5,0.6,0.7,1},Vector2(0.5,0.05),3,2,1,100,(9*5),(5),{})
+            ,Inventory("armor",{0.5,0.6,0.7,1},Vector2(0.8,0.05),3,5,1,1,(9*5),(5),{["isEquipmentInventory"]=true})
+        }
+    end
 
     --if self.spriteName ~= "none" and not textures["sprites"][self.spriteName] then
     --    textures["sprites"][spriteName] = Sprite(self.name, self.animation, self.texture, self.spriteName,

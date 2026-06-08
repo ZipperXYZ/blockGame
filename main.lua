@@ -9,6 +9,8 @@ function love.load()
   require "load"
   require "Entities/entities"
   require "Entities/sprite"
+  require "items/inventory"
+  require "items/item"
   require "class/childClass"
   require "class/utility/eventEmitter"
   require "class/utility/vector2"
@@ -21,6 +23,7 @@ function love.load()
   -- require "worldv2"
   --love.filesystem.setIdentity("gamename")
   tiles = {}
+  items = {}
   tilelists = {}
   entitiesdefenition = {}
   entities = {}
@@ -56,7 +59,7 @@ function love.load()
   generateBaseBiomes()
 
   debugseebiome = false
-  lightreach = 5        --cette valeure est importante
+  lightreach = 6        --cette valeure est importante
   chunkloaddistance = 8 --celle la aussi
 
   biomesize = 150

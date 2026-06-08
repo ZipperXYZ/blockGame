@@ -14,6 +14,41 @@ function Sprite:init(name, texture, spriteData, flags)
     self.spriteData = spriteData or {["parts"]={}}
     self.quads = {}
     self.parts = self.spriteData["parts"] or {}
+    self.setupItem = self.flags["setupItem"] or false
+
+    if self.setupItem then
+        self.itemQuadrant = self.flags["itemQuadrant"] or {0,0}
+        if checkifinlist("small",self.parts) then
+            self.spriteData["small"] ={
+                ["type"] = "still",
+                ["timePerFrame"] = 1,
+                ["gridMultiplication"] = 8,
+                ["spriteSize"] = {1,1},
+                ["spriteCenter"] = {0.5,0.5},
+                ["quads"] = {{self.itemQuadrant[1],self.itemQuadrant[2]}}
+                }
+        end
+        if checkifinlist("medium",self.parts) then
+            self.spriteData["medium"] ={
+                ["type"] = "still",
+                ["timePerFrame"] = 1,
+                ["gridMultiplication"] = 8,
+                ["spriteSize"] = {2,2},
+                ["spriteCenter"] = {1,1},
+                ["quads"] = {{self.itemQuadrant[1]+1,self.itemQuadrant[2]}}
+                }
+        end
+        if checkifinlist("big",self.parts) then
+            self.spriteData["big"] ={
+                ["type"] = "still",
+                ["timePerFrame"] = 1,
+                ["gridMultiplication"] = 8,
+                ["spriteSize"] = {4,4},
+                ["spriteCenter"] = {2,2},
+                ["quads"] = {{self.itemQuadrant[1]+3,self.itemQuadrant[2]}}
+                }
+        end
+    end
 
     --print("spritecreate : "..self.name)
     --print("spritecreate #parts : "..#self.spriteData["parts"])

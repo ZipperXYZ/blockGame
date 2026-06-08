@@ -19,6 +19,7 @@ function Inventory:init(inventoryName,sizeX,sizeY,maxStack,color,screenPos)
             self.items[ix][iy]={}
             self.items[ix][iy]["amount"]=0
             self.items[ix][iy]["name"]="none"
+            self.items[ix][iy]["attributes"]={}
         end
     end
 end

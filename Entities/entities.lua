@@ -11,13 +11,29 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.name = name or "none"
     self.type = type or "enemy"
     self.health = health or 1
-    self.size = size or 0.85
+    self.size = size or 0.5
     self.level = level or 0
     self.ia = ia or "none"
     self.id = math.random()
     self.inventory = {}
     self.flags = flags or {}
 
+    self.spriteSize = self.flags["spriteSize"] or 1
+    self.spriteOffsetY = self.flags["spriteOffsetY"] or (1 - self.size*2 -1/8)
+
+    if sprite ~= nil and sprite ~= "none" then
+        if textures["sprites"][sprite] ~= nil then
+            self.sprite = textures["sprites"][sprite]
+        else
+            self.sprite = "none"
+        end
+    else
+        self.sprite = "none"
+    end
+    self.animation = "idle"
+    self.animationTime = 0
+    self.animationSpeed = 1
+    self.animationDirection = "right"
     self.spriteName = sprite or "none"
     --self.texture = texture or "tiles.png"
 
@@ -27,7 +43,7 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.state = "alive"
     --self.deathEvent:on(self:death())
 
-    self.animation = self.flags["animation"] or false
+    --self.animation = self.flags["animation"] or false
     self.movementSlide = self.flags["movementSlide"] or 0.25
     self.hasWorldCollisions = self.flags["hasWorldCollisions"] or true
     self.position = position or Vector2:new(0, 0)
@@ -41,6 +57,13 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
 
     self.attackDamage = self.flags.attackDamage or 5
     self.miningRadius = self.flags.miningRadius or 1
+
+    self.controls = {}
+    self.controls.left = false
+    self.controls.right = false
+    self.controls.jump = false
+    self.controls.mine = false
+
     self.mineList = {}
 
     --if self.spriteName ~= "none" and not textures["sprites"][self.spriteName] then
@@ -117,16 +140,23 @@ end
 function Entity:movementUpdate(dt)
     --if love.keyboard.isDown("w") then self.velocity.y=self.velocity.y+(8*dt) end
     --if love.keyboard.isDown("s") then self.velocity.y=self.velocity.y-(8*dt) end
-    if love.keyboard.isDown("d") then
+    if self.ai == "player" or true then
+        self.controls.left = love.keyboard.isDown("a")
+        self.controls.right = love.keyboard.isDown("d")
+        self.controls.jump = love.keyboard.isDown("w")
+         self.controls.mine = love.mouse.isDown(1)
+    end
+    
+    if self.controls.right then
         self.velocity.x = self.velocity.x +
             (self.movevementSpeed * 10 * dt / self.movementSlide)
     end
-    if love.keyboard.isDown("a") then
+    if self.controls.left then
         self.velocity.x = self.velocity.x -
             (self.movevementSpeed * 10 * dt / self.movementSlide)
     end
 
-    if love.keyboard.isDown("w") and self:canJump() then
+    if self.controls.jump and self:canJump() then
         if self.velocity.y < 0 then self.velocity.y = 0 end
         self.velocity.y = self.velocity.y + (self.jumpStrength * 10)
         if self.velocity.y > (self.jumpStrength * 10) then self.velocity.y = (self.jumpStrength * 10) end
@@ -215,8 +245,8 @@ end
 
 function Entity:camUpdate()
     if (camEntityFollow == self.id) then
-        realcamx = self.position.x
-        realcamy = self.position.y
+        realcamx = round(self.position:getX()*8)/8
+        realcamy = round((self.position:getY()+ self.spriteOffsetY)*8)/8
         camx = realcamx
         camy = realcamy
         spectator = false
@@ -382,7 +412,7 @@ function Entity:entityUpdate(dt)
 end
 
 function Entity:playerUpdate(dt)
-    if love.mouse.isDown(1) then
+    if self.controls.mine then
         if self.mineRadius == 1 then
             self:mineTarget(dt)
         else
@@ -391,14 +421,64 @@ function Entity:playerUpdate(dt)
     end
 end
 
+function Entity:animationUpdate(dt)
+    self.animationTime = self.animationTime + dt * self.animationSpeed
+    if self.controls.left then self.animationDirection = "left" end
+    if self.controls.right then self.animationDirection = "right" end
+
+    local newAnimation = "idle"
+
+    if self.controls.left or self.controls.right or math.abs(self.velocity.x)>0.1 then newAnimation = "walk" end
+    if not self:isGrounded() then newAnimation = "jump" end
+    if self.controls.mine then newAnimation = "use" end
+
+    if newAnimation ~= self.animation then self:setAnimation(newAnimation) end
+
+    if self.animation == "idle" then self.animationSpeed = 1 end
+    if self.animation == "walk" then self.animationSpeed = math.abs(self.velocity.x) end
+    if self.animation == "jump" then self.animationSpeed = 1 end
+    if self.animation == "use" then self.animationSpeed = 1 end
+end
+
+function Entity:setAnimation(newAnimation)
+    local canChange = true
+    if self.animation ~= "none" then
+        if self.sprite.spriteData[newAnimation] == nil then canChange = false end
+        if self.sprite.spriteData[self.animation] ~= nil then
+            if self.sprite.spriteData[self.animation]["type"] == "repeat&needsToEnd" then
+                if self.animationTime < #self.sprite.spriteData[self.animation]["quads"] * self.sprite.spriteData[self.animation]["timePerFrame"] then
+                    canChange = false
+                end
+            end
+        end
+    end
+    if canChange then
+        self.animationTime = 0 
+        self.animation = newAnimation
+    end
+end
+
 function Entity:draw()
     local x
     local y
-    x, y = positiontoscreen(self.position:getX(), self.position:getY())
-    love.graphics.setColor(0, 0, 0, 1)
-    love.graphics.circle("fill", x, y, self.size * camv)
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.circle("fill", x, y, self.size * camv * 0.8)
+    x, y = positiontoscreen(round(self.position:getX()*8)/8, round((self.position:getY()+ self.spriteOffsetY)*8)/8-self.spriteOffsetY)
+    local spriteX, spriteY = positiontoscreen(round(self.position:getX()*8)/8, round((self.position:getY()+ self.spriteOffsetY)*8)/8)
+    spriteY = spriteY  
+    --love.graphics.setColor(0, 0, 0, 1)
+    --love.graphics.circle("fill", x, y, self.size * camv)
+    --love.graphics.setColor(1, 1, 1, 1)
+    --love.graphics.circle("fill", x, y, self.size * camv * 0.8)
 
-    love.graphics.print(self.ia, x, y + 100)
+    love.graphics.setColor(1, 1, 1, 0.2)
+    love.graphics.circle("fill", x, y, self.size * camv * 1)
+
+    --print("sprite name : "..self.spriteName)
+    --print("animation : "..self.animation)
+
+    if self.spriteName ~= "none" and self.animation ~= "none" and textures["sprites"][self.spriteName] ~= nil then
+        --print("draw1")
+        self.sprite:draw(self.animation,self.animationTime,self.animationDirection,spriteX,spriteY,camv/8*self.spriteSize,camv/8*self.spriteSize,{1,1,1,1})
+    end
+
+    --love.graphics.print(self.ia, x, y + 100)
 end

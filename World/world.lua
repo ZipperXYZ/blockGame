@@ -553,6 +553,7 @@ function World:updateEntities(dt)
             entities[i]:movementUpdate(dt)
             entities[i]:collisionWithEntities(dt)
             entities[i]:collisionUpdate(dt)
+            entities[i]:animationUpdate(dt)
             entities[i]:camUpdate(dt)
             if entities[i].type == "player" then entities[i]:playerUpdate(dt) end
             --allo
@@ -569,7 +570,7 @@ function World:spawnEntity(type, worldPosX, worldPosY)
     aiType = "none"
     if type == "player" then aiType = "human" end
     --table.insert(entities,Entity(type, type, "none", Vector2(worldPosX, worldPosY), 1, 0.9, 0, aiType, {}))
-    table.insert(entities, Entity(type, type, "none", Vector2(worldPosX, worldPosY), 1, 0.425, 0, aiType, {}))
+    table.insert(entities, Entity(type, type, "player", Vector2(worldPosX, worldPosY), 1, 0.425, 0, aiType, {}))
 
     return true
 end

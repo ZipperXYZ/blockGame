@@ -8,6 +8,7 @@ function love.load()
   require "World/worldgeneration"
   require "load"
   require "Entities/entities"
+  require "Entities/sprite"
   require "class/childClass"
   require "class/utility/eventEmitter"
   require "class/utility/vector2"
@@ -65,7 +66,7 @@ function love.load()
   --biomesize=25 worlddeepnessprogression=15
 
   entities = {}
-  loadtextures()
+  --loadtextures()
   cameraPossibleZooms = {1,2,4,8,16,24,32,40,48,56,64,72,80,96,112,152,188,224,336,448}
   camEntityFollow = 0
   camx = 0

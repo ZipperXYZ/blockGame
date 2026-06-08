@@ -1,35 +1,52 @@
 function loadtextures()
-  --[[textures["textures"]={}
-  textures["textures"]["tileset"]=love.graphics.newImage("tiles.png")
-  --toute les déclarations de texture ici sont pas mal inutile, vue que maintenant on peut les intégrés dans les lignes de création de tiles, items, entitiees
-  textures["quads"]={}
-  textures["quads"]["dirt"]=love.graphics.newQuad(0,0,8,8,textures["textures"]["tileset"])
-  textures["quads"]["dirt_top"]=love.graphics.newQuad(0,8,8,8,textures["textures"]["tileset"])
-  textures["quads"]["dirt_top2"]=love.graphics.newQuad(0,16,8,8,textures["textures"]["tileset"])
-  textures["quads"]["grass"]=love.graphics.newQuad(8,0,8,8,textures["textures"]["tileset"])
-  textures["quads"]["stone"]=love.graphics.newQuad(16,0,8,8,textures["textures"]["tileset"])
-  textures["quads"]["stone_top"]=love.graphics.newQuad(16,8,8,8,textures["textures"]["tileset"])
-  textures["quads"]["darkstone"]=love.graphics.newQuad(24,0,8,8,textures["textures"]["tileset"])
-  textures["quads"]["darkstone_top"]=love.graphics.newQuad(24,8,8,8,textures["textures"]["tileset"])
-  textures["quads"]["purplegrass"]=love.graphics.newQuad(32,0,8,8,textures["textures"]["tileset"])
-  textures["quads"]["palestone"]=love.graphics.newQuad(40,0,8,8,textures["textures"]["tileset"])
-  textures["quads"]["palestone_top"]=love.graphics.newQuad(40,8,8,8,textures["textures"]["tileset"])
-   textures["quads"]["ancientstone"]=love.graphics.newQuad(48,0,8,8,textures["textures"]["tileset"])
-  textures["quads"]["ancientstone_top"]=love.graphics.newQuad(48,8,8,8,textures["textures"]["tileset"])
-   textures["quads"]["coldstone"]=love.graphics.newQuad(56,0,8,8,textures["textures"]["tileset"])
-  textures["quads"]["coldstone_top"]=love.graphics.newQuad(56,8,8,8,textures["textures"]["tileset"])
-   textures["quads"]["lightstone"]=love.graphics.newQuad(64,0,8,8,textures["textures"]["tileset"])
-  textures["quads"]["lightstone_top"]=love.graphics.newQuad(64,8,8,8,textures["textures"]["tileset"])
-   --textures["quads"]["hotstone"]=love.graphics.newQuad(72,0,8,8,textures["textures"]["tileset"])
-  --textures["quads"]["hotstone_top"]=love.graphics.newQuad(72,8,8,8,textures["textures"]["tileset"])
-  textures["quads"]["shadowgrass"]=love.graphics.newQuad(80,0,8,8,textures["textures"]["tileset"])
-  textures["quads"]["wheatgrass"]=love.graphics.newQuad(88,0,8,8,textures["textures"]["tileset"])
-  textures["quads"]["diamond"]=love.graphics.newQuad(96,0,8,8,textures["textures"]["tileset"])]]
+  print("loadtextures")
+ textures = {}
+ textures["textures"] = {}
+  textures["textures"]["tiles.png"]=love.graphics.newImage("Textures/tiles.png")
+  textures["textures"]["items1.png"]=love.graphics.newImage("Textures/items1.png")
+  textures["textures"]["player.png"]=love.graphics.newImage("Textures/player.png")
+  textures["quads"] = {}
+  textures["sprites"] = {}
+  textures["sprites"]["player"] = Sprite("player","player.png",{
+    ["parts"] = {"idle","walk","jump","use"},
+    ["idle"] ={
+      ["type"] = "still",
+      ["timePerFrame"] = 1,
+      ["gridMultiplication"] = 8,
+      ["spriteSize"] = {1,2},
+      ["spriteCenter"] = {0.5,1.5},
+      ["quads"] = {{0,0}}
+    },
+    ["walk"] ={
+      ["type"] = "repeat",
+      ["timePerFrame"] = 1/8*6,
+      ["gridMultiplication"] = 8,
+      ["spriteSize"] = {1,2},
+      ["spriteCenter"] = {0.5,1.5},
+      ["quads"] = {{0,2},{1,2},{2,2},{3,2},{4,2},{5,2}}
+    },
+    ["jump"] ={
+      ["type"] = "hold",
+      ["timePerFrame"] = 0.2,
+      ["gridMultiplication"] = 8,
+      ["spriteSize"] = {1,2},
+      ["spriteCenter"] = {0.5,1.5},
+      ["quads"] = {{0,4},{1,4},{2,4},{3,4},{4,4}}
+    },
+    ["use"] ={
+      ["type"] = "repeat&needsToEnd",
+      ["timePerFrame"] = 0.1,
+      ["gridMultiplication"] = 8,
+      ["spriteSize"] = {1,2},
+      ["spriteCenter"] = {0.5,1.5},
+      ["quads"] = {{0,6},{1,6},{2,6},{2,6},{3,6}}
+    }
+  }, {["mirrorable"] = true})
 end
 
 function loadeverything()
-  textures = {}
-  --loadtextures()
+  
+  loadtextures()
   loadtiles()
   --loadbiomes()
   loadEntities()
@@ -37,36 +54,7 @@ end
 
 function loadtiles()
   tiles = {}
-
-  textures["textures"] = {}
-  textures["quads"] = {}
-  -- textures["textures"]["tiles.png"]=love.graphics.newImage("tiles.png")
-  -- textures["quads"]["dirt"]=love.graphics.newQuad(0,0,8,8,textures["textures"]["tiles.png"])
-  --[[tilelists={}
-  tilelists["all tiles"]={}
-  tilelists["stones"]={}
-  newtile("air","empty","none","none",{})
-  newtile("dirt","solid","tileset","dirt",{["border"]={["quad"]="dirt_top"}})
-  newtile("grass","top","tileset","grass",{["border type"]="non-solid"})
-  newtile("purplegrass","top","tileset","purplegrass",{["border type"]="non-solid"})
-  newtile("shadowgrass","top","tileset","shadowgrass",{["border type"]="non-solid"})
-  newtile("wheatgrass","top","tileset","wheatgrass",{["border type"]="non-solid"})
-
-  newtile("diamond","top","tileset","diamond",{["border type"]="normal"})
-  newtile("stone","solid","tileset","stone",{["border"]={["quad"]="stone_top"},["isastone"]=true})
-  newtile("darkstone","solid","tileset","darkstone",{["border"]={["quad"]="darkstone_top"},["isastone"]=true})
-  newtile("palestone","solid","tileset","palestone",{["border"]={["quad"]="palestone_top"},["isastone"]=true})
-  newtile("ancientstone","solid","tileset","ancientstone",{["border"]={["quad"]="ancientstone_top"},["isastone"]=true})
-  newtile("coldstone","solid","tileset","coldstone",{["border"]={["quad"]="coldstone_top"},["isastone"]=true})
-  newtile("lightstone","solid","tileset","lightstone",{["border"]={["quad"]="lightstone_top"},["isastone"]=true})
-  newtile("hotstone","solid","tileset","hotstone",{["new quad"]={9,0,1,1,8},["border"]={["quad"]="hotstone_top",["new quad"]={9,1,1,1,8}},["isastone"]=true})
-
-  newtile("dirt_wall","wall","tileset","dirt",{["border"]={["quad"]="dirt_top2"},["color"]={0.5,0.5,0.5,1}})
-  newtile("stone_wall","wall","tileset","stone",{["border"]={["quad"]="stone_top"},["color"]={0.5,0.5,0.5,1},["isastone"]=true})
-  newtile("hotstone_wall","wall","tileset","hotstone",{["border"]={["quad"]="hotstone_top"},["color"]={0.5,0.5,0.5,1},["isastone"]=true})
-  newtile("coldstone_wall","wall","tileset","coldstone",{["border"]={["quad"]="coldstone_top"},["color"]={0.5,0.5,0.5,1},["isastone"]=true})
-  ]]
-
+  
   tilelists["stones"]    = {
     "stone", "darkstone", "palestone", "ancientstone",
     "coldstone", "lightstone", "hotstone"
@@ -223,7 +211,7 @@ function loadtiles()
 end
 
 function loadEntities()
-  textures["sprites"] = {}
+  --textures["sprites"] = {}
   --[[entities["player"] = Entity("Player", "player", "player", "tiles.png", 100, 0, "player",
     {
       ["newQuad"] = { 15, 0, 1, 1, 8 }

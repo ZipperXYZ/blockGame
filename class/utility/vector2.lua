@@ -55,6 +55,25 @@ function Vector2:distance(other)
     return (self - other):length()
 end
 
+function Vector2:dist(other)
+    return self:distance(other)
+end
+
+function Vector2:move(direction360,length)
+    self.x = self.x + length * math.cos((direction360*math.pi)/180)
+    self.y = self.y + length * math.sin((direction360*math.pi)/180)
+end
+
+function Vector2:moveTowards(other,length)
+    local direction360 = self:getDirection360Towards(other)
+    self.x = self.x + length * math.cos((direction360*math.pi)/180)
+    self.y = self.y + length * math.sin((direction360*math.pi)/180)
+end
+
+function Vector2:getDirection360Towards(other)
+    return (math.atan2(other.y-self.y,other.x-self.x)*180)/math.pi
+end
+
 function Vector2:__tostring()
     return "X: ".. tostring(self.x).. " Y: " ..tostring(self.y)
 end

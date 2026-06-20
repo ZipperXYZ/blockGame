@@ -20,11 +20,13 @@ function World:init(worldSeed, chunkSize, depthProgression, biomeSize, biomeList
     self.biomeList = biomeList or {}
     self.generationSteps = generationSteps or {}
     self.chunks = {}
+    self.groundItems = {}
 end
 
 --clear() -- vide le monde de tout ses chunks, gardant toutes ses propriétés les mêmes
 function World:clear()
     self.chunks = {}
+    self.groundItems = {}
     entities = {}
     spectator = true
 end
@@ -553,6 +555,7 @@ function World:updateEntities(dt)
             entities[i]:movementUpdate(dt)
             entities[i]:collisionWithEntities(dt)
             entities[i]:collisionUpdate(dt)
+            entities[i]:groundItemsUpdate(dt)
             entities[i]:animationUpdate(dt)
             entities[i]:camUpdate(dt)
             if entities[i].type == "player" then entities[i]:playerUpdate(dt) end
@@ -597,6 +600,26 @@ function World:DrawUi()
     for i = 1, #entities do
         if entities[i].id == camEntityFollow then
             entities[i]:DrawUI()
+        end
+    end
+end
+
+function World:spawnGroundItem(itemName, position, velocity, quantity, attributes, flags)
+    table.insert(self.groundItems, GroundItem(itemName, position, velocity, quantity, attributes, flags) )
+end
+
+function World:groundItemsUpdate(dt)
+    if #self.groundItems > 0 then
+        for i = #self.groundItems, 1, -1 do
+            if self.groundItems[i]:update(dt) then table.insert(self.groundItems,i) end
+        end
+    end
+end
+
+function World:drawGroundItems(dt)
+    if #self.groundItems > 0 then
+        for i = 1, #self.groundItems do
+            self.groundItems[i]:draw()
         end
     end
 end

@@ -18,3 +18,13 @@ function Item:init(itemName,sprite,flags)
     --self.textures = textures or {["groundDisplay"]="none",[""]}
 
 end
+
+function Item:draw(state,posX,posY,size,attributes)
+    if self.itemName ~= "none" then
+        local drawSize = size/8
+        if state == "small" then drawSize = size / 8 end
+        if state == "medium" then drawSize = size / 16 end
+        if state == "big" then drawSize = size / 32 end
+        self.sprite:draw(state,0,"right",posX,posY,drawSize,drawSize,{1,1,1,1})
+    end
+end

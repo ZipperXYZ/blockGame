@@ -11,6 +11,7 @@ function love.load()
   require "Entities/sprite"
   require "items/inventory"
   require "items/item"
+  require "items/groundItem"
   require "class/childClass"
   require "class/utility/eventEmitter"
   require "class/utility/vector2"
@@ -90,6 +91,11 @@ function love.load()
   cx = 50
   cy = 50
   fullscreen = false
+  buttons = {"w","e","tab","click","rclick","shiftclick","shiftrclick"}
+  buttonFramePress = {}
+  for ib = 1, #buttons do
+    buttonFramePress[buttons[ib]] = false
+  end
   clicktick = false
   rightclicktick = false
   middleclicktick = false
@@ -193,6 +199,10 @@ function love.draw()
   clicktick = false
   rightclicktick = false
   middleclicktick = false
+
+  for ib = 1, #buttons do
+    buttonFramePress[buttons[ib]] = false
+  end
 end
 
 function love.keypressed(key)
@@ -219,6 +229,9 @@ function love.keypressed(key)
   end
   if key == "e" then camv = nextinlistroll(camv, cameraPossibleZooms) end
   if key == "q" then camv = nextinlistrollreverse(camv, cameraPossibleZooms) end
+  if checkifinlist(key,buttons) then
+    buttonFramePress[key] = true
+  end
   --[[if key == "e" and spectator then
     camv = camv + 8
     if camv > 96 then camv = 96 end
@@ -233,6 +246,11 @@ function love.mousepressed(x, y, b)
   if b == 1 then clicktick = true end
   if b == 3 then middleclicktick = true end
   if b == 2 then rightclicktick = "none" end
+
+  if b == 1 and not love.keyboard.isDown("lshift") then buttonFramePress["click"] = true end
+  if b == 2 and not love.keyboard.isDown("lshift") then buttonFramePress["rclick"] = true end
+  if b == 1 and love.keyboard.isDown("lshift") then buttonFramePress["shiftclick"] = true end
+  if b == 2 and love.keyboard.isDown("lshift") then buttonFramePress["shiftrclick"] = true end
 end
 
 function love.wheelmoved(x, y)

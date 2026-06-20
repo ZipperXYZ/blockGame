@@ -92,6 +92,7 @@ end
 function Sprite:draw(animation,animationTime,direction,x,y,sx,sy,color)
     --return textures["sprites"][self.quadName]
     if color == nil then color = {1,1,1,1} end
+    if self.baseColor == nil then self.baseColor = {1,1,1,1} end
     if direction == nil then color = "right" end
     if not self.mirrorable then direction = "right" end
     --print("draw2")

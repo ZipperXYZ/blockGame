@@ -61,7 +61,7 @@ function love.load()
 
   debugseebiome = false
   lightreach = 6        --cette valeure est importante
-  chunkloaddistance = 8 --celle la aussi
+  chunkloaddistance = 20 --celle la aussi
 
   biomesize = 150
   worldseed = math.random() * 100000

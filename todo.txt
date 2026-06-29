@@ -1,31 +1,92 @@
 Fonctionnements de l'inventaire: 
 
-clique gauche : 
-    --si aucun item dans la main, sur une case avec qqc : déplacer l'item dans la main
-    --sur une case vide : mettre la main complete dans la case
-    --clique sur un autre case avec un item : switcher l'item de la main avec
+    clique gauche : 
+        --si aucun item dans la main, sur une case avec qqc : déplacer l'item dans la main
+        --sur une case vide : mettre la main complete dans la case
+        --clique sur un autre case avec un item : switcher l'item de la main avec
+        
+        --clique ailleurs que l'inventaire : lancer le stack complet de la main à terre
+
+    clique droit : 
+        --si aucun item dans la main, sur une case avec qqc : prendre la moitié du stack dans la main
+        --clique droit sur une case vide : mettre un item
+        --clique droit sur une case avec le meme item : rajouter + 1
+        clique droit maintenu : rajouter + 1 mais de plus en plus rapide
+        
+        --clique droit ailleurs de l'inventaire : lancer un item du stack à terre
+
+    shift clique gauche : 
+        --sur une case avec qqc : déplacer ce stack dans un autre inventaire : prioritairement, l'inventaire avec le plus haut index
+        sur une case vide : vider la main et tout les items avec le meme nom dans l'inventaire choisis
+        
+        clique ailleurs que l'inventaire : lancer le stack complet de la main et tout les items avec le meme nom à terre
+
+    shift clique droit : 
+        si aucun item dans la main, sur une case avec qqc : prendre un seul de l'item dans la main
+        si aucun item dans la main, sur une case avec qqc, spécefiquement avec un équipement : équipper l'item
+        shift clique droit sur une case vide : mettre la moitié du stack de la main
+        shift clique droit sur une case vide + drag : séparer dans différentes cases
+
+    maximum d'items dans une case
+    certaines cases limités pour certains items (armures, accessoires, etc)
+
+structures
+    type (différents types, unique (une seule structure, genre un arbre), complexe (avec différentes sous-structures comme un dongeon), ou hardcodé pour un génération spéciale)
+    spawn (chance de spawn par bloc, ou bien spawn un certain nombre)
+    condition de spawn (sur un bloc, quel biome, hauteur du monde min/max, besoin d'un certain espace)
+    opération sur les blocs à la fin (érosion, remplacer un certain nombre de blocs par quoi que ce soit)
+
+    génération de coffre
+    loot aléatoire dans coffres
+    inventaire/ouverture de coffre - (les coffres on un attribut ouvert ou closed, quand tu louvre, l'inventaire du coffre se met dans l'objet du joueur et ne peux pas être ouvert par les autres joueurs, et reviens dans l'objet du chunk apres)
+
+enemies
+    types d'ais et comportement:
+    ai d'un enemy qui marche:
+        comportement de base
+        pourchasse
+    ai d'un enemy volant: 
+        comportement de base
+        pourchasse
+    attaques uniques
+    animation/effet d'une attaque
+
+    particules
+    projectiles
+
+    barres de vies (hud joueur et enemies)
+    mort/xp
+
+    carte de spawn
+    directeur de spawn
+
+items utiles
+    attributs
+    items qui peuvent changer d'apparance selon des attributs
+    items qui s'affiche sur le joueur quand équippé/à la main
+    items qui peuvent être utilisé si dans la main (blocs)
+    items qui peuvent être utilisé si dans la main (pioche)
+    items qui peuvent être utilisé si dans la main (arme/épée)
+    fonctionnement d'un item dans l'inventaire dans la bonne case (accessoires, armures)
+    niveau/durabilité d'une arme 
+    génération d'attributs au hasard avec carte d'attribut et système de points
+    génération de l'info de l'item avec attributs
     
-    --clique ailleurs que l'inventaire : lancer le stack complet de la main à terre
+menu principal :
+    start/continue/quit
+    start > paramètres modulaires de game:
+        taille des biomes   : x0.5,x1,x2,x3
+        progression de la profondeure   : x0.5,x1,x2,x3
+        spawn des mobs  : x0.5, x1, x2, x3
+        attributs des items : x0.5, x1, x2, x3, x10
+        challenges  : aucun (pour l'instant)
 
-clique droit : 
-    --si aucun item dans la main, sur une case avec qqc : prendre la moitié du stack dans la main
-    --clique droit sur une case vide : mettre un item
-    --clique droit sur une case avec le meme item : rajouter + 1
-    clique droit maintenu : rajouter + 1 mais de plus en plus rapide
+menu pause :
+    reprendre
+    sauvegarde
+    loader la dernière sauvegarde
+    retourner au menu principal
     
-    --clique droit ailleurs de l'inventaire : lancer un item du stack à terre
-
-shift clique gauche : 
-    --sur une case avec qqc : déplacer ce stack dans un autre inventaire : prioritairement, l'inventaire avec le plus haut index
-    sur une case vide : vider la main et tout les items avec le meme nom dans l'inventaire choisis
-    
-    clique ailleurs que l'inventaire : lancer le stack complet de la main et tout les items avec le meme nom à terre
-
-shift clique droit : 
-    si aucun item dans la main, sur une case avec qqc : prendre un seul de l'item dans la main
-    si aucun item dans la main, sur une case avec qqc, spécefiquement avec un équipement : équipper l'item
-    shift clique droit sur une case vide : mettre la moitié du stack de la main
-    shift clique droit sur une case vide + drag : séparer dans différentes cases
-
-item tile locks
-item max amounts
+bosses  :
+    gros méchant
+    méchant méchant

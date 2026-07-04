@@ -6,6 +6,7 @@ function resetworld()
   realcamy=0
   realcamx=0
   worldseed=math.random()*100000]]
+  world:spawnEntity("player", 0, 0)
 end
 function generateworldupdate(dt)
   local totalChunkLoadDistanceX=(chunkloaddistance+(math.ceil(szx/camv/2/chunksize)))

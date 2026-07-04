@@ -51,6 +51,10 @@ function Vector2:normalize()
     return Vector2:new(self.x / len, self.y / len)
 end
 
+function Vector2:copy()
+    return Vector2(self.x,self.y)
+end
+
 function Vector2:distance(other)
     return (self - other):length()
 end
@@ -68,6 +72,19 @@ function Vector2:moveTowards(other,length)
     local direction360 = self:getDirection360Towards(other)
     self.x = self.x + length * math.cos((direction360*math.pi)/180)
     self.y = self.y + length * math.sin((direction360*math.pi)/180)
+end
+
+function Vector2:movePredict(direction360,length)
+    local x = self.x + length * math.cos((direction360*math.pi)/180)
+    local y = self.y + length * math.sin((direction360*math.pi)/180)
+    return Vector2(x,y)
+end
+
+function Vector2:moveTowardsPredict(other,length)
+    local direction360 = self:getDirection360Towards(other)
+    local x = self.x + length * math.cos((direction360*math.pi)/180)
+    local y = self.y + length * math.sin((direction360*math.pi)/180)
+    return Vector2(x,y)
 end
 
 function Vector2:getDirection360Towards(other)

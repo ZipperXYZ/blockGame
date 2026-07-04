@@ -1,6 +1,6 @@
 function drawgame()
   local drawdistanceX = math.ceil(szx / camv / 2)
-  local drawdistanceY = math.ceil(szx / camv / 2)
+  local drawdistanceY = math.ceil(szy / camv / 2)
   if love.keyboard.isDown("n") or love.keyboard.isDown("b") then
     drawBiomeMap()
   else

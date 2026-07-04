@@ -55,6 +55,9 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.lightCanGoThrough = self.flags.lightCanGoThrough or self.type ~= "solid"
     self.canBeOverWritten = self.flags.canBeOverWritten or self.type ~= "solid"
     self.health = self.flags.health or 1
+
+    table.insert(tilelists["all tiles"],self.name)
+    if self.isStone then table.insert(tilelists["stones"],self.name) end
 end
 
 --getName()

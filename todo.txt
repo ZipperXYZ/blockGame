@@ -27,7 +27,6 @@ Fonctionnements de l'inventaire:
         shift clique droit sur une case vide : mettre la moitié du stack de la main
         shift clique droit sur une case vide + drag : séparer dans différentes cases
 
-    maximum d'items dans une case
     certaines cases limités pour certains items (armures, accessoires, etc)
 
 structures
@@ -48,6 +47,9 @@ enemies
     ai d'un enemy volant: 
         comportement de base
         pourchasse
+        
+        fuite
+
     attaques uniques
     animation/effet d'une attaque
 

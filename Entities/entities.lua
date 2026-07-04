@@ -57,25 +57,28 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.miningRadius = self.flags.miningRadius or 1
 
     self.controls = {}
-    self.controls.left = false
-    self.controls.right = false
-    self.controls.jump = false
-    self.controls.mine = false
-    self.controls.openInventory = false
-
+    self:resetControls()
     self.mineList = {}
+    self.inventorySpaceHighlights = {}
+    self.cursorColor = {1,1,1,1}
+
 
     self.inventoryOpened = false
     self.inventoryCursor = {["amount"]=0,["name"]="none",["attributes"]={}}
     if (self.type == "player") then
         self.inventory = { --(inventoryName,color,screenPos,sizeX,sizeY,sizeZ,maxStack,tileSize,itemSize,flags)
-            Inventory("inventory",{0.5,0.6,0.7,1},Vector2(0.5,0.05),7,5,1,100,(0.065),(0.065/8),{})
+            Inventory("inventory",{0.5,0.6,0.7,1},Vector2(0.5,0.05),7,5,1,100,(0.065),(0.065/8),{["isMainInventory"]=true})
             ,Inventory("armor",{0.5,0.6,0.7,1},Vector2(0.95,0.05),3,4,1,1,(0.065),(0.065/8),{["isEquipmentInventory"]=true,["anchorX"]="right",["anchorY"]="top"})
             ,Inventory("chest test",{0.7,0.5,0.5,1},Vector2(0.5,0.95),8,3,1,100,(0.065),(0.065/8),{["anchorX"]="middle",["anchorY"]="bottom"})
         }
+        self.inventory[1]:setupMainInventory()
+        if CheatMode then
+            table.insert(self.inventory,Inventory("cheat inventory, press arrows to scroll",{0.5,0.5,0.7,1},Vector2(0.5,0.5),12,3,1,100,(0.065),(0.065/8),{["anchorY"]="top",["cheat"]=true}))
+        end
+        
     else
         self.inventory = {
-            Inventory("inventory",{0.5,0.6,0.7,1},Vector2(0.5,0.05),3,2,1,100,(0.065),(0.065/8),{})
+            Inventory("inventory",{0.5,0.6,0.7,1},Vector2(0.5,0.05),7,2,1,100,(0.065),(0.065/8),{["isMainInventory"]=true})
             ,Inventory("armor",{0.5,0.6,0.7,1},Vector2(0.95,0.05),3,4,1,1,(0.065),(0.065/8),{["isEquipmentInventory"]=true,["anchorX"]="right",["anchorY"]="top"})
         }
     end
@@ -152,9 +155,48 @@ function Entity:death()
     self.state = "death"
 end
 
-function Entity:movementUpdate(dt)
-    --if love.keyboard.isDown("w") then self.velocity.y=self.velocity.y+(8*dt) end
-    --if love.keyboard.isDown("s") then self.velocity.y=self.velocity.y-(8*dt) end
+function Entity:resetControls()
+
+    self.controls = {}
+
+    self.controls.invClick = false
+    self.controls.invClickHold = false
+    self.controls.invRightClick = false
+    self.controls.invRightClickHold = false
+    self.controls.invShiftClick = false
+    self.controls.invShiftClickHold = false
+    self.controls.invShiftRightClick = false
+    self.controls.invShiftRightClickHold = false
+    
+    self.controls.mine = false
+
+    self.controls.leftClick = false
+    self.controls.rightClick = false
+    self.controls.space = false
+    self.controls.shift = false
+    self.controls.r = false
+    self.controls.x = false
+    self.controls.c = false
+
+end
+
+function Entity:getAim(axis)
+
+    if self.ai == "player" or true then
+
+        if axis == nil then
+            return world:getMouseTile(false)
+            else
+            local returnValue = world:getMouseTile(false)
+            return returnValue[axis]
+        end
+
+    end
+    
+end
+
+function Entity:controlsUpdate(dt)
+    
     if self.ai == "player" or true then
 
 
@@ -170,7 +212,16 @@ function Entity:movementUpdate(dt)
             self.controls.invShiftClickHold = love.mouse.isDown(1) and (love.keyboard.isDown("lshift")) and (not buttonFramePress["shiftclick"])
             self.controls.invRightClickHold = love.mouse.isDown(2) and (not love.keyboard.isDown("lshift")) and (not buttonFramePress["rclick"])
             self.controls.invShiftRightClickHold = love.mouse.isDown(2) and (love.keyboard.isDown("lshift")) and (not buttonFramePress["shiftrclick"])
+
             self.controls.mine = false
+
+            self.controls.leftClick = false
+            self.controls.rightClick = false
+            self.controls.space = false
+            self.controls.shift = false
+            self.controls.r = false
+            self.controls.x = false
+            self.controls.c = false
         else
             self.controls.invClick = false
             self.controls.invClickHold = false
@@ -180,10 +231,40 @@ function Entity:movementUpdate(dt)
             self.controls.invShiftClickHold = false
             self.controls.invShiftRightClick = false
             self.controls.invShiftRightClickHold = false
-            self.controls.mine = love.mouse.isDown(1)
+
+            self.controls.mine = false -- love.mouse.isDown(1)
+
+            self.controls.leftClick = love.mouse.isDown(1)
+            self.controls.rightClick = love.mouse.isDown(2)
+            self.controls.space = love.keyboard.isDown("space")
+            self.controls.shift = love.keyboard.isDown("lshift")
+            self.controls.r = love.keyboard.isDown("r")
+            self.controls.x = love.keyboard.isDown("x")
+            self.controls.c = love.keyboard.isDown("c")
         end
         self.controls.openInventory = buttonFramePress["tab"]
     end
+
+end
+
+function Entity:InventoryItemsUpdate(dt)
+    
+    if #self.inventory > 0 then
+        for i = 1,#self.inventory do
+            local page = self.inventory[i].currentPage
+            for ix = 1, self.inventory[i].sizeX do
+                for iy = 1, self.inventory[i].sizeY do
+                    self.inventory[i]:slotUpdate(dt,self,ix,iy,page)
+                end
+            end
+        end
+    end
+
+end
+
+function Entity:movementUpdate(dt)
+    --if love.keyboard.isDown("w") then self.velocity.y=self.velocity.y+(8*dt) end
+    --if love.keyboard.isDown("s") then self.velocity.y=self.velocity.y-(8*dt) end
     
     if self.controls.right then
         self.velocity.x = self.velocity.x +
@@ -266,6 +347,14 @@ end
 
 function Entity:camUpdate()
     if (camEntityFollow == self.id) then
+
+        camv = math.sqrt(szy*szx) / 30
+        
+        camv = round(camv/8)*8
+
+        if camv <= 8 then camv = 8 end
+        if camv >= 128 then camv = 128 end
+
         realcamx = round(self.position:getX()*8)/8
         realcamy = round((self.position:getY()+ self.spriteOffsetY)*8)/8
         camx = realcamx
@@ -279,7 +368,31 @@ function Entity:camUpdate()
     end
 end
 
+function Entity:drawBlocPreview()
+    for ix=1,self.inventory[1].sizeX do
+        for iy=1,self.inventory[1].sizeY do
+            local item = items[self.inventory[1]:getItemName(ix,iy)]
+
+            if item.placeBlock ~= "none" and checkifinlist(self.inventory[1]:getSlotAttribute("button",ix,iy),item.desiredInventorySpots) then
+
+                local color = {self.cursorColor[1],self.cursorColor[2],self.cursorColor[3],0.3}
+                if self.inventory[1]:getSlotAttribute("cooldown",ix,iy) > 0 then color = {self.cursorColor[1],self.cursorColor[2],self.cursorColor[3],0.10} end
+
+                local place = world:rayTrace({item.blockPlaceLayer},self.position:copy(),Vector2(self:getAim("x"),self:getAim("y")),item.rangeLimit,true)
+
+                local x,y,size = world:getTileScreenPosition(round(place.x),round(place.y))
+
+                textures["sprites"]["placementPreview"]:drawSI("right",x,y,size,size,color)
+            end
+    
+            
+        end
+    end
+end
+
 function Entity:DrawUI()
+    self:drawBlocPreview()
+
     if self.controls.openInventory then
         self.inventoryOpened = not self.inventoryOpened
     end
@@ -287,16 +400,17 @@ function Entity:DrawUI()
     if self.inventoryOpened then
         if #self.inventory > 0 then
             for i = 1, #self.inventory do
-                self.inventory[i]:draw("complete")
+                self.inventory[i]:draw("complete",self,{["hightlights"]=self.inventorySpaceHighlights})
             end
-        end
-        if self.inventoryCursor.name ~= "none" then
-            self:drawCursorItem()
         end
     else
         if #self.inventory > 0 then
-            self.inventory[1]:draw("firstLine")
+            self.inventory[1]:draw("firstLine",self)
         end
+    end
+
+    if self.inventoryCursor.name ~= "none" then
+        self:drawCursorItem()
     end
 end
 
@@ -403,7 +517,7 @@ function Entity:mineBlock(tileInfo, index, dt)
     if tileInfo.health - self.attackDamage * dt > 0 then
         tileInfo.health =
             tileInfo.health - self.attackDamage * dt
-        print(result)
+        --print(result)
     else
         world:destroyTile(tileInfo.x, tileInfo.y, "tiles")
         table.remove(self.mineList, index)
@@ -465,6 +579,7 @@ function Entity:entityUpdate(dt)
 end
 
 function Entity:playerUpdate(dt)
+    
     self:inventoryUpdate(dt)
     if self.controls.mine then
         if self.mineRadius == 1 then
@@ -482,6 +597,7 @@ function Entity:inventoryUpdate(dt)
     --self.controls.invShiftRightClick
 
     --self.inventoryCursor = {["amount"]=0,["name"]="none",["attributes"]={}}
+    self.inventorySpaceHighlights = {}
 
     local tileInteraction = {}
     tileInteraction.insideInventory = false
@@ -499,10 +615,22 @@ function Entity:inventoryUpdate(dt)
             for iy = 1, #self.inventory[inv]["items"][self.inventory[inv]["currentPage"]][ix] do
                 tileX,tileY,size = self.inventory[inv]:getTilePosAndSize(ix,iy)
                 if mx > tileX and mx < tileX + size and my > tileY and my < tileY + size then
-                    tileInteraction.x = ix
-                    tileInteraction.y = iy
-                    tileInteraction.page = self.inventory[inv]["currentPage"]
-                    tileInteraction.inventory = inv
+                    if not self.inventory[inv]:getSlotAttribute("disabled",ix,iy) then
+                        tileInteraction.x = ix
+                        tileInteraction.y = iy
+                        tileInteraction.page = self.inventory[inv]["currentPage"]
+                        tileInteraction.inventory = inv
+
+                        local itemName, itemAmount, itemAttributes = self.inventory[tileInteraction.inventory]:getItem(tileInteraction.x,tileInteraction.y,tileInteraction.page)
+
+                        if items[itemName] ~= nil then
+                            local item = items[itemName]
+
+                            self.inventorySpaceHighlights = item.desiredInventorySpots
+                        end
+
+                    end
+                    
                 end
             end
        end
@@ -577,43 +705,50 @@ function Entity:throwItemOffInventory(type)
 end
 
 function Entity:inventorySwitchHand(inventoryIndex,page,x,y)
-    if self.inventoryCursor.name == self.inventory[inventoryIndex]["items"][page][x][y]["name"]
+    local maxS = items[self.inventory[inventoryIndex]:getItemName(x,y,page)].maxStack
+
+    if self.inventoryCursor.name == self.inventory[inventoryIndex]:getItemName(x,y,page)
     --and self.inventoryCursor.attributes == self.inventory[inventoryIndex]["items"][page][x][y]["attributes"]
     then
-        self.inventory[inventoryIndex]["items"][page][x][y]["amount"] = self.inventory[inventoryIndex]["items"][page][x][y]["amount"] + self.inventoryCursor.amount
+        local add = maximum(self.inventoryCursor.amount,maxS - self.inventory[inventoryIndex]:getItemAmount(x,y,page))
 
-        self.inventoryCursor.amount = 0
-        self.inventoryCursor.name = "none"
-        self.inventoryCursor.attributes = {}
+        self.inventory[inventoryIndex]:itemAmountAdd(add,x,y,page)
+
+        self.inventoryCursor.amount = self.inventoryCursor.amount - add
+
+        if self.inventoryCursor.amount <=0 then
+            self.inventoryCursor.name = "none"
+            self.inventoryCursor.attributes = {}
+        end
     else
         local buffer = {}
         buffer.amount = self.inventoryCursor.amount
         buffer.name = self.inventoryCursor.name
         buffer.attributes = self.inventoryCursor.attributes
 
-        self.inventoryCursor.amount = self.inventory[inventoryIndex]["items"][page][x][y]["amount"]
-        self.inventoryCursor.name = self.inventory[inventoryIndex]["items"][page][x][y]["name"]
-        self.inventoryCursor.attributes = self.inventory[inventoryIndex]["items"][page][x][y]["attributes"]
+        self.inventoryCursor.amount = self.inventory[inventoryIndex]:getItemAmount(x,y,page)
+        self.inventoryCursor.name = self.inventory[inventoryIndex]:getItemName(x,y,page)
+        self.inventoryCursor.attributes = self.inventory[inventoryIndex]:getItemAttributes(x,y,page)
 
-        self.inventory[inventoryIndex]["items"][page][x][y]["amount"] = buffer.amount
-        self.inventory[inventoryIndex]["items"][page][x][y]["name"] = buffer.name
-        self.inventory[inventoryIndex]["items"][page][x][y]["attributes"] = buffer.attributes
+        self.inventory[inventoryIndex]:setItemAmount(buffer.amount,x,y,page)
+        self.inventory[inventoryIndex]:setItemName(buffer.name,x,y,page)
+        self.inventory[inventoryIndex]:setItemAttributes(buffer.attributes,x,y,page)
 
     end
 end
 
 function Entity:inventoryTakeHalfHand(inventoryIndex,page,x,y)
 
-    self.inventoryCursor.amount = math.ceil(self.inventory[inventoryIndex]["items"][page][x][y]["amount"]/2)
-    self.inventoryCursor.name = self.inventory[inventoryIndex]["items"][page][x][y]["name"]
-    self.inventoryCursor.attributes = self.inventory[inventoryIndex]["items"][page][x][y]["attributes"]
+    self.inventoryCursor.amount = math.ceil(self.inventory[inventoryIndex]:getItemAmount(x,y,page)/2)
+    self.inventoryCursor.name = self.inventory[inventoryIndex]:getItemName(x,y,page)
+    self.inventoryCursor.attributes = self.inventory[inventoryIndex]:getItemAttributes(x,y,page)
 
-    self.inventory[inventoryIndex]["items"][page][x][y]["amount"] = self.inventory[inventoryIndex]["items"][page][x][y]["amount"] - math.ceil(self.inventory[inventoryIndex]["items"][page][x][y]["amount"]/2)
+    self.inventory[inventoryIndex]:itemAmountAdd(-math.ceil(self.inventory[inventoryIndex]:getItemAmount(x,y,page)/2),x,y,page) 
 end
 
 function Entity:inventoryShiftItemToNewInventory(inventoryIndex,page,x,y)
 
-    if self.inventory[inventoryIndex]["items"][page][x][y]["name"] ~= "none" then
+    if self.inventory[inventoryIndex]:getItemName(x,y,page) ~= "none" then
 
         local targetInventory = #self.inventory
         if inventoryIndex == targetInventory then
@@ -621,42 +756,53 @@ function Entity:inventoryShiftItemToNewInventory(inventoryIndex,page,x,y)
         end
 
         local targetInventoryPage = self.inventory[targetInventory]["currentPage"]
-        for ix = 1, #self.inventory[targetInventory]["items"][targetInventoryPage] do 
-            for iy = 1, #self.inventory[targetInventory]["items"][targetInventoryPage][ix] do 
-                if self.inventory[inventoryIndex]["items"][page][x][y]["amount"] > 0 then
-                    if self.inventory[targetInventory]["items"][targetInventoryPage][ix][iy]["name"] == "none" then
-                        self.inventory[targetInventory]["items"][targetInventoryPage][ix][iy]["name"] = self.inventory[inventoryIndex]["items"][page][x][y]["name"]
-                        self.inventory[targetInventory]["items"][targetInventoryPage][ix][iy]["attributes"] = self.inventory[inventoryIndex]["items"][page][x][y]["attributes"]
-                        self.inventory[targetInventory]["items"][targetInventoryPage][ix][iy]["amount"] = self.inventory[inventoryIndex]["items"][page][x][y]["amount"]
-                        self.inventory[inventoryIndex]["items"][page][x][y]["amount"] = self.inventory[inventoryIndex]["items"][page][x][y]["amount"] - self.inventory[inventoryIndex]["items"][page][x][y]["amount"]
+        for ix = 1, self.inventory[targetInventory].sizeX do 
+            for iy = 1, self.inventory[targetInventory].sizeY do 
+                if self.inventory[inventoryIndex]:getItemAmount(x,y,page) > 0 then
+
+                    local itemName, itemAmount, itemAttributes = self.inventory[inventoryIndex]:getItem(x,y,page)
+                    local targetItemName, targetItemAmount, targetItemAttributes = self.inventory[targetInventory]:getItem(ix,iy,targetInventoryPage)
+                    local maxS = items[itemName].maxStack
+
+                    if targetItemName == "none" then
+                        
+                        self.inventory[targetInventory]:setItemName(itemName,ix,iy,targetInventoryPage)
+                        self.inventory[targetInventory]:setItemAttributes(itemAttributes,ix,iy,targetInventoryPage)
+                        self.inventory[targetInventory]:setItemAmount(maximum(itemAmount,maxS),ix,iy,targetInventoryPage)
+                        self.inventory[inventoryIndex]:itemAmountAdd(-maximum(itemAmount,maxS),x,y,page)
+                        
+                        self.inventory[targetInventory]:setSlotAttribute("useAnimation",0.5,ix,iy,targetInventoryPage)
+                        self.inventory[targetInventory]:setSlotAttribute("useAnimationMax",0.5,ix,iy,targetInventoryPage)
                     end
-                    if self.inventory[targetInventory]["items"][targetInventoryPage][ix][iy]["name"] == self.inventory[inventoryIndex]["items"][page][x][y]["name"] then
-                        self.inventory[targetInventory]["items"][targetInventoryPage][ix][iy]["amount"] = 
-                            self.inventory[targetInventory]["items"][targetInventoryPage][ix][iy]["amount"]
-                            + self.inventory[inventoryIndex]["items"][page][x][y]["amount"]
-                        self.inventory[inventoryIndex]["items"][page][x][y]["amount"] = self.inventory[inventoryIndex]["items"][page][x][y]["amount"] - self.inventory[inventoryIndex]["items"][page][x][y]["amount"]
+                    if targetItemName == itemName and targetItemAmount < maxS then
+
+                        self.inventory[targetInventory]:itemAmountAdd(maximum(itemAmount,maxS),ix,iy,targetInventoryPage)
+                        self.inventory[inventoryIndex]:itemAmountAdd(-maximum(itemAmount,maxS),x,y,page)
+
+                        self.inventory[targetInventory]:setSlotAttribute("useAnimation",0.5,ix,iy,page)
+                        self.inventory[targetInventory]:setSlotAttribute("useAnimationMax",0.5,ix,iy,page)
+
                     end
                 end
             end
         end
-        if self.inventory[inventoryIndex]["items"][page][x][y]["amount"] <= 0 then
-            self.inventory[inventoryIndex]["items"][page][x][y]["name"] = "none"
-            self.inventory[inventoryIndex]["items"][page][x][y]["attributes"] = {}
-            self.inventory[inventoryIndex]["items"][page][x][y]["amount"] = 0
+        if self.inventory[inventoryIndex]:getItemAmount(x,y,page) <= 0 then
+            self.inventory[inventoryIndex]:resetItem(x,y,page)
         end
     end
 end
 
 function Entity:inventoryLeaveOneItem(inventoryIndex,page,x,y)
 
-    if self.inventory[inventoryIndex]["items"][page][x][y]["name"] == self.inventoryCursor.name
-    or self.inventory[inventoryIndex]["items"][page][x][y]["name"] == "none" 
+    if self.inventory[inventoryIndex]:getItemName(x,y,page) == self.inventoryCursor.name
+    or self.inventory[inventoryIndex]:getItemName(x,y,page) == "none" 
     then
 
-    self.inventoryCursor.amount = self.inventoryCursor.amount - 1 
-    self.inventory[inventoryIndex]["items"][page][x][y]["amount"] = self.inventory[inventoryIndex]["items"][page][x][y]["amount"] + 1
-    self.inventory[inventoryIndex]["items"][page][x][y]["name"] = self.inventoryCursor.name
-    self.inventory[inventoryIndex]["items"][page][x][y]["attributes"] = self.inventoryCursor.attributes
+    if self.inventory[inventoryIndex]:getItemAmount(x,y,page) < items[self.inventoryCursor.name].maxStack then
+        self.inventoryCursor.amount = self.inventoryCursor.amount - 1 
+        self.inventory[inventoryIndex]:itemAmountAdd(1,x,y,page)
+        self.inventory[inventoryIndex]:setItem(self.inventoryCursor.name, nil, self.inventoryCursor.attributes, x, y, page )
+    end
 
     end
 end
@@ -698,26 +844,34 @@ function Entity:setAnimation(newAnimation)
     end
 end
 
-function Entity:draw()
+function Entity:draw(inInventory,customX,customY,customSize)
     local x
     local y
     x, y = positiontoscreen(round(self.position:getX()*8)/8, round((self.position:getY()+ self.spriteOffsetY)*8)/8-self.spriteOffsetY)
     local spriteX, spriteY = positiontoscreen(round(self.position:getX()*8)/8, round((self.position:getY()+ self.spriteOffsetY)*8)/8)
     spriteY = spriteY  
+    if customX ~= nil then spriteX = customX end
+    if customY ~= nil then spriteY = customY end
+    if inInventory == nil then inInventory = false end
+    
     --love.graphics.setColor(0, 0, 0, 1)
     --love.graphics.circle("fill", x, y, self.size * camv)
     --love.graphics.setColor(1, 1, 1, 1)
     --love.graphics.circle("fill", x, y, self.size * camv * 0.8)
 
-    love.graphics.setColor(1, 1, 1, 0.2)
-    love.graphics.circle("fill", x, y, self.size * camv * 1)
+    if not inInventory then
+        love.graphics.setColor(1, 1, 1, 0.2)
+        love.graphics.circle("fill", x, y, self.size * camv * 1)
+    end
 
     --print("sprite name : "..self.spriteName)
     --print("animation : "..self.animation)
 
     if self.spriteName ~= "none" and self.animation ~= "none" and textures["sprites"][self.spriteName] ~= nil then
         --print("draw1")
-        self.sprite:draw(self.animation,self.animationTime,self.animationDirection,spriteX,spriteY,camv/8*self.spriteSize,camv/8*self.spriteSize,{1,1,1,1})
+        local size = camv/8*self.spriteSize
+        if customSize ~= nil then size = customSize end
+        self.sprite:draw(self.animation,self.animationTime,self.animationDirection,spriteX,spriteY,size,size,{1,1,1,1})
     end
 
     --love.graphics.print(self.ia, x, y + 100)
@@ -728,8 +882,13 @@ function Entity:groundItemsUpdate(dt)
         for g = #world.groundItems, 1, -1 do
             if self.inventory[1]:checkIfEmptySpacesAvailable() then
                 if world.groundItems[g]:moveEntityUpdate(dt,self.position, self.size + 5) then
-                    self.inventory[1]:addItem(world.groundItems[g]["name"],world.groundItems[g]["amount"],world.groundItems[g]["attributes"])
-                    table.remove(world.groundItems, g)
+                    local success,amountLeft = self.inventory[1]:addItem(world.groundItems[g]["name"],world.groundItems[g]["amount"],world.groundItems[g]["attributes"])
+                    
+                    if success then
+                        table.remove(world.groundItems, g)
+                    else
+                        world.groundItems[g].amount = amountLeft
+                    end
                 end
             end
         end

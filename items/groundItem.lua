@@ -18,6 +18,10 @@ function GroundItem:init(itemName, position, velocity, amount, attributes, flags
     self.disableGravityTime = 0
     self.pickupTimer = self.flags.pickupTimer or 0
     
+    if items[self.name] ~= nil then
+        local item = items[self.name]
+        self.size = item.groundSize
+    end
 end
 
 function GroundItem:moveEntityUpdate(dt,entityPosition, distanceTreshold)
@@ -58,6 +62,7 @@ function GroundItem:update(dt)
         if self.velocity.y < -(1 / dt / 2) then self.velocity.y = -(1 / dt / 2) end
     else
         self.velocity.y = k(self.velocity.y, 0, dt / 0.2)
+        self.velocity.y = 0
     end
 
 

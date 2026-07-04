@@ -21,6 +21,8 @@ function World:init(worldSeed, chunkSize, depthProgression, biomeSize, biomeList
     self.generationSteps = generationSteps or {}
     self.chunks = {}
     self.groundItems = {}
+
+    
 end
 
 --clear() -- vide le monde de tout ses chunks, gardant toutes ses propriétés les mêmes
@@ -98,10 +100,11 @@ end
 ----peut être placer une tile fait aussi un updateLight(?)
 function World:placeTile(tile, worldPosX, worldPosY, layer, force)
     local chunkX, chunkY, posX, posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
+    local placeSuccess = false
     if self:checkIfChunkExists(chunkX, chunkY) then
-        self.chunks[chunkX][chunkY]:placeTile(tile, posX, posY, layer, force)
+        placeSuccess = self.chunks[chunkX][chunkY]:placeTile(tile, posX, posY, layer, force)
     end
-    return true
+    return placeSuccess
 end
 
 --destroyTile(worldPosX,worldPosY,layer) --supprime une tile pour laisser 'none' à la place, supprimer aussi certaines properties
@@ -193,29 +196,55 @@ function World:generate(centerX, centerY, length, heigth, force, steps)
     centerX = round(centerX)
     centerY = round(centerY)
 
-    local ix = 1
-    local iy = 1
-    for ix = -length, length do
-        for iy = -heigth, heigth do
-            local chunkPosX = centerX + ix
-            local chunkPosY = centerY + iy
-            if self:checkIfChunkExists(chunkPosX, chunkPosY) then
-                self.chunks[chunkPosX][chunkPosY]:generate(self.chunks[chunkPosX][chunkPosY]:getGenerationStatus(),
-                    self.generationSteps, self.worldSeed, self.depthProgression, self.biomeSize, self.biomeList, self)
-            else
-                if self.chunks == nil then
-                    self.chunks = {}
-                end
-                if self.chunks[chunkPosX] == nil then
-                    self.chunks[chunkPosX] = {}
-                end
-                if self.chunks[chunkPosX][chunkPosY] == nil then
-                    self.chunks[chunkPosX][chunkPosY] = Chunk(chunkPosX, chunkPosY, self.chunkSize)
+    local chunksGenerated = 0
+
+    self:generateChunk(centerX, centerY,force,steps)
+
+    local x, y = 0, 0
+    local dx, dy = 1, 0
+    local steps = 1
+
+    while math.max(math.abs(x), math.abs(y)) <= math.max(length, heigth) do
+        for _ = 1, 2 do
+            for _ = 1, steps do
+                x = x + dx
+                y = y + dy
+
+                if math.abs(x) <= length and math.abs(y) <= heigth then
+                    if chunksGenerated <= MaxChunkLoadedPerFrame then
+                        if self:generateChunk(centerX + x, centerY + y,force,steps) then
+                            chunksGenerated = chunksGenerated + 1 
+                        end
+                    end
                 end
             end
+            dx, dy = -dy, dx 
+        end
+        steps = steps + 1
+    end
+end
+
+function World:generateChunk(chunkPosX,chunkPosY,force,steps)
+    if self:checkIfChunkExists(chunkPosX, chunkPosY) then
+        self.chunks[chunkPosX][chunkPosY]:generate(self.chunks[chunkPosX][chunkPosY]:getGenerationStatus(),
+            self.generationSteps, self.worldSeed, self.depthProgression, self.biomeSize, self.biomeList, self)
+
+        if not self.chunks[chunkPosX][chunkPosY]:getGenerationStatus() == "done" then
+            return true
+        end
+        else
+        if self.chunks == nil then
+            self.chunks = {}
+        end
+        if self.chunks[chunkPosX] == nil then
+            self.chunks[chunkPosX] = {}
+        end
+        if self.chunks[chunkPosX][chunkPosY] == nil then
+            self.chunks[chunkPosX][chunkPosY] = Chunk(chunkPosX, chunkPosY, self.chunkSize)
+            return true
         end
     end
-    return true
+    return false
 end
 
 -->biomes:
@@ -552,14 +581,15 @@ end
 function World:updateEntities(dt)
     if #entities > 0 then
         for i = 1, #entities do
+            entities[i]:controlsUpdate(dt)
             entities[i]:movementUpdate(dt)
             entities[i]:collisionWithEntities(dt)
             entities[i]:collisionUpdate(dt)
+            entities[i]:InventoryItemsUpdate(dt)
             entities[i]:groundItemsUpdate(dt)
             entities[i]:animationUpdate(dt)
             entities[i]:camUpdate(dt)
             if entities[i].type == "player" then entities[i]:playerUpdate(dt) end
-            --allo
         end
     end
 end
@@ -587,6 +617,63 @@ function World:getMouseTile(roundedToTile)
     end
 end
 
+function World:rayTrace(hitLayers,startPos,targetPos,distanceLimit,endBeforeColliding,continueAfterTarget,radius,checkFrequency)
+    if radius == nil then radius = 0 end
+    if checkFrequency == nil then checkFrequency = 1/startPos:dist(targetPos)/radius end-- end 
+    if checkFrequency < 0.1 or true then checkFrequency = 0.1 end
+    if endBeforeColliding == nil then endBeforeColliding = true end
+    if distanceLimit == nil then distanceLimit = 99 end
+    if continueAfterTarget == nil then continueAfterTarget = false end
+    
+    local hardLimit = 2000
+    local currentPos = startPos:copy()
+    local nextPos = startPos:copy()
+    local hitEnd = true
+    local hitNegativeFirst = false
+    local count = 1
+
+    while (hitEnd) do
+        count = count + 1
+        
+        if hitEnd then
+            nextPos =  currentPos:moveTowardsPredict(targetPos,checkFrequency)
+            if #hitLayers >0 then
+                for ilayer = 1, #hitLayers do
+                    local layer2 = hitLayers[ilayer]
+                    local tile = self:getTile(nextPos.x,nextPos.y,layer2)
+                    local middleTile = self:getTile(nextPos.x,nextPos.y,"tiles")
+
+                    if (tile.name == "none" and layer2 == "backTiles") then hitNegativeFirst = true end
+                    if (tile.name == "none" and layer2 == "backTiles") then hitNegativeFirst = true end
+
+                    if (tile.type == "solid" and layer2 == "tiles")  or
+                        (tile.name ~= "none" and layer2 == "backTiles" and hitNegativeFirst) or
+                        ((middleTile.type == "solid" and tile.name ~= "none") and (layer2 == "topTiles" or layer2 == "top")) 
+                    then
+                        --if layer2 == (layer2 == "topTiles" or layer2 == "top") then currentPos:moveTowards(targetPos,checkFrequency) end
+                        hitEnd = false
+                    end
+
+                end
+            end
+
+        end
+
+        if nextPos:dist(startPos) > distanceLimit then
+            hitEnd = false
+        end
+
+        if count > hardLimit then
+            hitEnd = false
+        end
+
+        if hitEnd or (not endBeforeColliding) then currentPos:moveTowards(targetPos,checkFrequency) end
+        
+    end
+
+    return currentPos
+end
+
 function World:DrawEntities()
     for i = 1, #entities do
         entities[i]:draw()
@@ -611,7 +698,7 @@ end
 function World:groundItemsUpdate(dt)
     if #self.groundItems > 0 then
         for i = #self.groundItems, 1, -1 do
-            if self.groundItems[i]:update(dt) then table.insert(self.groundItems,i) end
+            if self.groundItems[i]:update(dt) then table.remove(self.groundItems,i) end
         end
     end
 end
@@ -622,4 +709,10 @@ function World:drawGroundItems(dt)
             self.groundItems[i]:draw()
         end
     end
+end
+
+function World:getTileScreenPosition(tileX,tileY)
+    local size = camv/8
+    local x,y = positiontoscreen(tileX,tileY)
+    return x,y,size
 end

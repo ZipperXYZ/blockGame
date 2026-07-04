@@ -6,6 +6,8 @@ function love.load()
   require "drawudp" --là ou tout le code de dessins
   require "mathsc"  --math comprend plusieurs truc bien qui sont pas dans lua de base
   require "World/worldgeneration"
+  require "World/structureList"
+  require "World/structure"
   require "load"
   require "Entities/entities"
   require "Entities/sprite"
@@ -25,7 +27,9 @@ function love.load()
   --love.filesystem.setIdentity("gamename")
   tiles = {}
   items = {}
+  MainStructureList = {}
   tilelists = {}
+  ItemList = {}
   entitiesdefenition = {}
   entities = {}
   sprites = {}
@@ -62,6 +66,10 @@ function love.load()
   debugseebiome = false
   lightreach = 6        --cette valeure est importante
   chunkloaddistance = 20 --celle la aussi
+  MaxChunkLoadedPerFrame = 3
+
+  CheatMode = true
+  CheatInventoryScroll = 0
 
   biomesize = 150
   worldseed = math.random() * 100000
@@ -84,7 +92,7 @@ function love.load()
   camy = 0
   gametime = 0
   realtime = 0
-  gamestate = 0
+  gamestate = "game"
   tick = 0
   szx = 100
   szy = 100
@@ -162,6 +170,7 @@ function noise(x, y, z, w)
 end
 
 function love.update(dt)
+  if dt > 0.15 then dt = 0.15 end
   delta = dt
   realtime = realtime + dt
   mx, my = love.mouse.getPosition()
@@ -193,9 +202,10 @@ function love.draw()
 
   drawgame()
 
-  love.graphics.setColor(1, 1, 1, 1)
-  love.graphics.print(getbooltext(world:getColision(mxworldpos, myworldpos)), mx, my)
+  ResetButtonTicks()
+end
 
+function ResetButtonTicks()
   clicktick = false
   rightclicktick = false
   middleclicktick = false
@@ -211,24 +221,32 @@ function love.keypressed(key)
     love.window.setFullscreen(fullscreen)
   end
   if key == "r" then
-    world = World(math.random() * 1000000, 10, 100, 150, {},
+   --[[ world = World(math.random() * 1000000, 10, 100, 150, {},
       { "none", "stone", "stone2", "grass", "ores", "deco", "done" })
-    generateBaseBiomes()
+    generateBaseBiomes()]]
   end
   if key == "t" then
-    world:clear()
-    generateRandomBiomeList()
+    --world:clear()
+    --generateRandomBiomeList()
   end
   if key == "space" then
-    if #entities < 1 then
+    --[[if #entities < 1 then
       world:spawnEntity("player", world:getMouseTile(false).x, world:getMouseTile(false).y)
     else
       world:spawnEntity("enemy", world:getMouseTile(true).x, world:getMouseTile(true).y)
-    end
+    end]]
     --world:spawnEntity("player", "player", "player", "none", 100, 0, "player", { ["newQuad"] = { 15, 0, 1, 1, 8 } })
   end
-  if key == "e" then camv = nextinlistroll(camv, cameraPossibleZooms) end
-  if key == "q" then camv = nextinlistrollreverse(camv, cameraPossibleZooms) end
+
+  if spectator then
+    if key == "e" then 
+      camv = nextinlistroll(camv, cameraPossibleZooms) 
+    end
+    if key == "q" then 
+      camv = nextinlistrollreverse(camv, cameraPossibleZooms) 
+    end
+  end
+  
   if checkifinlist(key,buttons) then
     buttonFramePress[key] = true
   end

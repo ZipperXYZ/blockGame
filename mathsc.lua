@@ -106,6 +106,14 @@ if distanticlock<distclock then
 
   return df
   end
+  function maximum(value,m)
+    if value > m then value = m end
+    return value
+  end
+    function minimum(value,m)
+    if value < m then value = m end
+    return value
+  end
 function distancea(xi1,yi1,xi2,yi2,distance1)
   if math.sqrt(((xi1-xi2)^2)+((yi1-yi2)^2))<=distance1 then return 1 else return 0 end
     

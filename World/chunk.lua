@@ -77,11 +77,35 @@ function Chunk:placeTile(tile, xInChunk, yInChunk, layer, force)
     if layer == "back" then layer = "backTiles" end
     if self.chunkTiles[layer] == nil then return false end
     if (xInChunk <= 0 or xInChunk > self.chunkSize or yInChunk <= 0 or yInChunk > self.chunkSize) then return false end
-    if force or true then
+    if force or self:canTileBePlaced(tile, xInChunk, yInChunk, layer) then
         self.chunkTiles[layer][xInChunk][yInChunk] = tile
         if layer ~= "lights" then self:updateNeighboringLights() end
         return true
     end
+    return false
+end
+
+function Chunk:canTileBePlaced(newTile, xInChunk, yInChunk, layer)
+    local canBePlaced = false
+
+    local tile = self:getRawTile(xInChunk, yInChunk, layer)
+    
+    if layer == "topTiles" or layer == "top" then
+
+        local middleTile = self:getRawTile(xInChunk, yInChunk, "tiles")
+        if tile == "none" then 
+            if tiles[middleTile] ~= nil then
+                if tiles[middleTile].type == "solid" then
+                    canBePlaced = true
+                end
+            end
+        end
+
+    else
+        if tile == "none" then canBePlaced = true end
+    end
+
+    return canBePlaced
 end
 
 function Chunk:addChangedTile(tileInfo)
@@ -147,7 +171,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
 
         --self.generationStatus = "stone"
         self:advanceGenerationStatus(stepList)
-        return
+        return (self.generationStatus == "done")
     end
 
 
@@ -188,7 +212,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
             end
         end
         self:advanceGenerationStatus(stepList)
-        return
+        return (self.generationStatus == "done")
     end
 
     if step == "stone2" and world:getNeighboringChunks(self.chunkX, self.chunkY, "stone2") then
@@ -262,7 +286,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
             end
         end
         self:advanceGenerationStatus(stepList)
-        return
+        return (self.generationStatus == "done")
     end
 
     if step == "grass" and world:getNeighboringChunks(self.chunkX, self.chunkY, "grass") then
@@ -296,7 +320,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
             end
         end
         self:advanceGenerationStatus(stepList)
-        return
+        return (self.generationStatus == "done")
     end
 
     if step == "ores" and world:getNeighboringChunks(self.chunkX, self.chunkY, "ores") then
@@ -314,7 +338,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
         end
         
         self:advanceGenerationStatus(stepList)
-        return
+        return (self.generationStatus == "done")
     end
 
     if step == "deco" and world:getNeighboringChunks(self.chunkX, self.chunkY, "deco") then
@@ -333,18 +357,14 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
         end
 
         self:advanceGenerationStatus(stepList)
-        return
+        return (self.generationStatus == "done")
     end
-
-
-    --pas fini
 end
 
 --advanceGenerationStatus() --comme un setGenerationStatus, mais change vers le prochain, mis à la fin d'une étape de generate
 function Chunk:advanceGenerationStatus(stepList)
     if nextinlistroll(self.generationStatus,stepList) == "done" then world:updateLight(self.chunkX, self.chunkY) end
     self.generationStatus = nextinlistroll(self.generationStatus,stepList)
-    --pas fini
 end
 
 --getTerrain(worldPosX,wordPosY,worldSeed,depthProgression,biomeSize,biomeList) -- retourne soit 'air', ou 'dirt' (peut être false or true?)

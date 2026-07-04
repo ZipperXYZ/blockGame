@@ -324,15 +324,18 @@ function Inventory:draw(mode,entity,flags)
                 local x,y,size = self:getTilePosAndSize(ix,iy)
 
                 --draw slot icon
-                if self:getSlotAttribute("icon",ix,iy).."" ~= "0" and itemName == "none" then
+                if self:getSlotAttribute("icon",ix,iy).."" ~= "0" then
                     
-                    textures["sprites"]["inventoryIcons"]:draw(self:getSlotAttribute("icon",ix,iy),0,"right",
-                    x + size/2,
-                    y + size/2,
-                    size/16 * 0.85,
-                    size/16 * 0.85,
-                    {1,1,1,0.5})
+                    if itemName == "none" then
+                        textures["sprites"]["inventoryIcons"]:draw(self:getSlotAttribute("icon",ix,iy),0,"right",
+                        x + size/2,
+                        y + size/2,
+                        size/16 * 0.85,
+                        size/16 * 0.85,
+                        {1,1,1,0.5})
+                    end
 
+                    --draw highligts
                     if checkifinlist(self:getSlotAttribute("icon",ix,iy),flags.hightlights) then
                         love.graphics.setColor(1,1,0,0.1+gettimeloop(1,0.3,true))
                         love.graphics.rectangle("fill"

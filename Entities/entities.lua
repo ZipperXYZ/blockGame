@@ -378,7 +378,7 @@ function Entity:drawBlocPreview()
                 local color = {self.cursorColor[1],self.cursorColor[2],self.cursorColor[3],0.3}
                 if self.inventory[1]:getSlotAttribute("cooldown",ix,iy) > 0 then color = {self.cursorColor[1],self.cursorColor[2],self.cursorColor[3],0.10} end
 
-                local place = world:rayTrace({item.blockPlaceLayer},self.position:copy(),Vector2(self:getAim("x"),self:getAim("y")),item.rangeLimit,true)
+                local place = world:rayTrace({item.blockPlaceLayer},self.position:copy(),Vector2(round(self:getAim("x")),round(self:getAim("y"))),item.rangeLimit,true)
 
                 local x,y,size = world:getTileScreenPosition(round(place.x),round(place.y))
 

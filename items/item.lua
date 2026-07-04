@@ -36,7 +36,9 @@ function Item:init(itemName,sprite,flags)
     self.groundSize = self.flags.groundSize or 0.45
     self.rangeLimit = self.flags.rangeLimit or 8
 
-    self.cooldown = self.flags.cooldown or 0.25
+    self.cooldown = 0.2
+    if self.subCategory == "wall" then self.cooldown = 0.05 end
+    if self.flags.cooldown ~= nil then self.cooldown = self.flags.cooldown end
     self.desiredInventorySpots = self.flags.desiredInventorySpots or {"none"}
     if self.placeBlock ~= "none" then self.desiredInventorySpots = {"space","x","c"} end
     if self.category == "tool" then self.desiredInventorySpots = {"space"} end
@@ -59,7 +61,7 @@ function Item:use(entity,attributes,cursorX,cursorY,slot)
 
         if self.placeBlock ~= "none" then
 
-            local place = world:rayTrace({self.blockPlaceLayer},entity.position:copy(),Vector2(cursorX,cursorY),self.rangeLimit,true)
+            local place = world:rayTrace({self.blockPlaceLayer},entity.position:copy(),Vector2(round(cursorX),round(cursorY)),self.rangeLimit,true)
 
             if place:dist(entity.position)>1 or self.blockPlaceLayer ~= "tiles" then
                 if world:placeTile(self.placeBlock, round(place.x), round(place.y), self.blockPlaceLayer, false) then

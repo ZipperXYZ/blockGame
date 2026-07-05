@@ -17,6 +17,7 @@ function love.load()
   require "class/childClass"
   require "class/utility/eventEmitter"
   require "class/utility/vector2"
+  require "particles/particles"
   love.graphics.setDefaultFilter("nearest", "nearest")
 
   require "World/tiledef"
@@ -246,7 +247,7 @@ function love.keypressed(key)
       camv = nextinlistrollreverse(camv, cameraPossibleZooms) 
     end
   end
-  
+
   if checkifinlist(key,buttons) then
     buttonFramePress[key] = true
   end

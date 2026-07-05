@@ -8,6 +8,7 @@ function drawgame()
       drawWorldMap()
     else
       world:drawTiles(camx, camy, drawdistanceX, drawdistanceY, {})
+      world:drawParticles()
       world:DrawEntities()
       world:drawGroundItems()
       world:DrawUi()

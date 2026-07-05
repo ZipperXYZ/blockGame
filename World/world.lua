@@ -21,6 +21,7 @@ function World:init(worldSeed, chunkSize, depthProgression, biomeSize, biomeList
     self.generationSteps = generationSteps or {}
     self.chunks = {}
     self.groundItems = {}
+    self.particles = {}
 
     
 end
@@ -173,18 +174,100 @@ end
 
 --getTilePropreties(worldPosX,worldPosY) --retourne une liste, il n'y a pas de layer pour les propriétés, cela peut être mélangeant mais est bcp plus simple
 
-function World:getTilePropreties(worldPosX, worldPosY)
-    return {}
+function World:getTileProprety(worldPosX, worldPosY, property)
+    local value = 0
+    local chunkX, chunkY, posX, posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
+
+    if self:checkIfChunkExists(chunkX, chunkY) then
+        value = self.chunks[chunkX][chunkY]:getTileProperty(posX, posY, property)
+    end
+
+    return value
 end
 
 --setTilePropriety(worldPosX,worldPosY,propriety, value)
-function World:setTilePropreties(worldPosX, worldPosY, propriety, value)
-    return true
+function World:setTileProprety(worldPosX, worldPosY, property, value)
+    local success = false
+    local chunkX, chunkY, posX, posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
+
+    if self:checkIfChunkExists(chunkX, chunkY) then
+        success = self.chunks[chunkX][chunkY]:setTileProperty(posX, posY, property, value)
+    end
+
+    return success
+end
+
+function World:tilePropretyAdd(worldPosX, worldPosY, property, value)
+    local success = false
+    local chunkX, chunkY, posX, posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
+
+    if self:checkIfChunkExists(chunkX, chunkY) then
+        success = self.chunks[chunkX][chunkY]:setTileProperty(posX, posY, property, (self:getTileProprety(worldPosX, worldPosY, property)) + value)
+    end
+
+    return success
+end
+
+function World:doesTilePropretyExists(worldPosX, worldPosY, property)
+    local exists = false
+    local chunkX, chunkY, posX, posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
+
+    if self:checkIfChunkExists(chunkX, chunkY) then
+        exists = self.chunks[chunkX][chunkY]:DoesTilePropertyExists(posX, posY, property)
+    end
+
+    return exists
 end
 
 --clearTileProprieties(worldPosX,worldPosY)
-function World:clearTileProprieties(worldPosX, worldPosY, propriety, value)
-    return true
+function World:clearTileProprerties(worldPosX, worldPosY, property)
+    local success = false
+    local chunkX, chunkY, posX, posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
+
+    if self:checkIfChunkExists(chunkX, chunkY) then
+        success = self.chunks[chunkX][chunkY]:clearTileProprerties(posX, posY, property)
+    end
+
+    return success
+end
+
+function World:damageBlock(worldPosX, worldPosY, damage,layer,destroyTopAsWell)
+    if layer == nil then layer = "tiles" end
+    if destroyTopAsWell == nil then destroyTopAsWell = true end
+    if layer == "top" then layer = "topTiles" end
+    if layer == "back" then layer = "backTiles" end
+
+    if self:doesTilePropretyExists(worldPosX, worldPosY, "health"..layer) then
+        self:tilePropretyAdd(worldPosX, worldPosY, "health"..layer, -damage)
+        self:setTileProprety(worldPosX, worldPosY, "healthMineTimer"..layer, 5)
+    else
+        self:setTileProprety(worldPosX, worldPosY, "health"..layer, self:getTile(worldPosX, worldPosY,layer).health)
+        self:tilePropretyAdd(worldPosX, worldPosY, "health"..layer, -damage)
+        self:setTileProprety(worldPosX, worldPosY, "healthMineTimer"..layer, 5)
+    end
+
+    local tile = self:getTile(worldPosX, worldPosY,layer)
+
+    self:spawnParticles(5,"stoneDust",Vector2(worldPosX, worldPosY),0.5,
+        {tile.particleColor[1],tile.particleColor[2],tile.particleColor[3],tile.particleColor[4]}
+        , {0.05,0.05,0.05,0.5}, 1, 3,tile.particleType, 5, 0, 360, {})
+
+
+    self:setTileProprety(worldPosX,worldPosY,"size",1.35)
+
+    if self:doesTilePropretyExists(worldPosX, worldPosY, "health"..layer) and self:getTileProprety(worldPosX, worldPosY,"health"..layer)<=0 then
+        self:destroyTile(worldPosX, worldPosY,layer)
+        self:clearTileProprerties(worldPosX, worldPosY,"health"..layer)
+        self:clearTileProprerties(worldPosX, worldPosY,"healthMineTimer"..layer)
+        tile:tileDestroyed(worldPosX, worldPosY)
+        if layer == "tiles" and destroyTopAsWell then 
+            self:destroyTile(worldPosX, worldPosY,"topTiles")
+            self:clearTileProprerties(worldPosX, worldPosY,"health".."topTiles")
+            self:clearTileProprerties(worldPosX, worldPosY,"healthMineTimer".."topTiles")
+            tile:tileDestroyed(worldPosX, worldPosY)
+        end
+    end
+    
 end
 
 --generate(centerX,centerY,length,heigth,biomeList, boolean: force, step) --génére (ou essaille) de générer tout les chunks à l'écran, ou de progresser la génération
@@ -363,6 +446,55 @@ function World:getClosestTileWhichLightCanGoThrough(worldPosX, wordPosY, reach)
     return closest
 end
 
+function World:updateTiles(dt,centerX, centerY,length, heigth, parameters)
+    centerX = round(centerX)
+    centerY = round(centerY)
+    local ix = -length
+    local iy = -heigth
+    local il = 1
+    local layers = { "backTiles", "tiles", "topTiles" }
+    for il = 1, #layers do
+        for ix = -length, length do
+            for iy = -heigth, heigth do
+                self:updateHealth(ix + centerX, iy + centerY, layers[il], dt)
+                self:updateSize(ix + centerX, iy + centerY, dt)
+            end
+        end
+    end
+end
+
+function World:updateSize(worldPosX,worldPosY, dt)
+    if self:doesTilePropretyExists(worldPosX,worldPosY,"size") then
+
+        self:setTileProprety(worldPosX,worldPosY,"size",k(self:getTileProprety(worldPosX,worldPosY,"size"),1,dt*2.5))
+
+        if self:getTileProprety(worldPosX,worldPosY,"size") > 0.95 and self:getTileProprety(worldPosX,worldPosY,"size") < 1.05 then
+            self:clearTileProprerties(worldPosX, worldPosY,"size")
+        end
+
+    end
+end
+
+function World:updateHealth(worldPosX,worldPosY,layer, dt)
+    if self:doesTilePropretyExists(worldPosX,worldPosY,"health"..layer) then
+
+        self:tilePropretyAdd(worldPosX,worldPosY,"healthMineTimer"..layer,-dt) 
+
+
+        if self:getTileProprety(worldPosX,worldPosY,"healthMineTimer"..layer) <= 0 then
+            
+            self:tilePropretyAdd(worldPosX,worldPosY,"health"..layer,dt/4)
+
+            if self:getTileProprety(worldPosX,worldPosY,"health"..layer) >= self:getTile(worldPosX,worldPosY,layer).health then
+                self:clearTileProprerties(worldPosX, worldPosY,"health"..layer)
+                self:clearTileProprerties(worldPosX, worldPosY,"healthMineTimer"..layer)
+            end
+
+        end
+    end
+    
+end
+
 function World:drawTiles(centerX, centerY, length, heigth, parameters)
     centerX = round(centerX)
     centerY = round(centerY)
@@ -375,6 +507,16 @@ function World:drawTiles(centerX, centerY, length, heigth, parameters)
         for ix = -length, length do
             for iy = -heigth, heigth do
                 self:drawTile(ix + centerX, iy + centerY, layers[il], self:getTile(ix + centerX, iy + centerY, "lights"))
+
+                if self:doesTilePropretyExists(ix + centerX, iy + centerY, "health"..layers[il])
+                    and self:getTile(ix + centerX, iy + centerY,layers[il]).canBeMined
+                then
+                    self:drawMineAnimation(ix + centerX, iy + centerY,
+                        self:getTileProprety(ix + centerX, iy + centerY,"health"..layers[il])
+                        / self:getTile(ix + centerX, iy + centerY,layers[il]).health
+                    )
+                end
+
                 if showBiomes then
                     local screenPosX, screenPosY
                     screenPosX, screenPosY = positiontoscreen(ix + centerX, iy + centerY)
@@ -391,8 +533,25 @@ function World:drawTiles(centerX, centerY, length, heigth, parameters)
     return true
 end
 
+function World:drawMineAnimation(worldPosX, worldPosY, value)
+    local screenPosX, screenPosY, screenSize = self:getTileScreenPosition(worldPosX,worldPosY)
+
+    local sizeMultiplyer = 1
+    if self:doesTilePropretyExists(worldPosX, worldPosY,"size") then
+        sizeMultiplyer = self:getTileProprety(worldPosX, worldPosY,"size")
+    end
+    local size = sizeMultiplyer * screenSize
+
+    textures["sprites"]["destroyAnimation"]:drawSA(1-value,"right",screenPosX, screenPosY,size,size,{0,0,0,0.5})
+end
+
 function World:drawTile(worldPosX, worldPosY, layer, light)
     local tile = self:getTile(worldPosX, worldPosY, layer)
+    local sizeMultiplyer = 1
+    if self:doesTilePropretyExists(worldPosX, worldPosY,"size") then
+        sizeMultiplyer = self:getTileProprety(worldPosX, worldPosY,"size")
+    end
+    local size = sizeMultiplyer * round2(camv / 8, 8)
     if light == nil then light = { 1, 1, 1, 1 } end
     if (tile == nil) then
         return
@@ -409,9 +568,11 @@ function World:drawTile(worldPosX, worldPosY, layer, light)
             local borderType = tile:getBorderType()
             local backgroundTile = self:getTile(worldPosX, worldPosY, "tiles")
 
-            if borderType == "normal" then
+            
+
+            if borderType == "normal" then 
                 love.graphics.draw(tile:getTexture(), tile:getQuad(), round(screenPosX), round(screenPosY), 0,
-                    round2(camv / 8, 8), round2(camv / 8, 8), tile:getTextureCenterX(), tile:getTextureCenterY())
+                    size, size, tile:getTextureCenterX(), tile:getTextureCenterY())
             end
 
             if borderType == "non-solid" then
@@ -419,14 +580,14 @@ function World:drawTile(worldPosX, worldPosY, layer, light)
                 if borderingTile then
                     if (backgroundTile:getType() ~= borderingTile:getType()) then
                         love.graphics.draw(tile:getTexture(), tile:getQuad(), round(screenPosX), round(screenPosY), 0,
-                            round2(camv / 8, 8), round2(camv / 8, 8), tile:getTextureCenterX(), tile:getTextureCenterY())
+                            size, size, tile:getTextureCenterX(), tile:getTextureCenterY())
                     end
                 end
                 local borderingTile = self:getTile(worldPosX + 1, worldPosY, "tiles")
                 if borderingTile then
                     if (backgroundTile:getType() ~= borderingTile:getType()) then
                         love.graphics.draw(tile:getTexture(), tile:getQuad(), round(screenPosX), round(screenPosY),
-                            d180topi(90), round2(camv / 8, 8), round2(camv / 8, 8), tile:getTextureCenterX(),
+                            d180topi(90), size, size, tile:getTextureCenterX(),
                             tile:getTextureCenterY())
                     end
                 end
@@ -434,7 +595,7 @@ function World:drawTile(worldPosX, worldPosY, layer, light)
                 if borderingTile then
                     if (backgroundTile:getType() ~= borderingTile:getType()) then
                         love.graphics.draw(tile:getTexture(), tile:getQuad(), round(screenPosX), round(screenPosY),
-                            d180topi(180), round2(camv / 8, 8), round2(camv / 8, 8), tile:getTextureCenterX(),
+                            d180topi(180), size, size, tile:getTextureCenterX(),
                             tile:getTextureCenterY())
                     end
                 end
@@ -442,7 +603,7 @@ function World:drawTile(worldPosX, worldPosY, layer, light)
                 if borderingTile then
                     if (backgroundTile:getType() ~= borderingTile:getType()) then
                         love.graphics.draw(tile:getTexture(), tile:getQuad(), round(screenPosX), round(screenPosY),
-                            d180topi(270), round2(camv / 8, 8), round2(camv / 8, 8), tile:getTextureCenterX(),
+                            d180topi(270), size, size, tile:getTextureCenterX(),
                             tile:getTextureCenterY())
                     end
                 end
@@ -460,7 +621,7 @@ function World:drawTile(worldPosX, worldPosY, layer, light)
 
             --draw la texture principale
             love.graphics.draw(tile:getTexture(), tile:getQuad(), round(screenPosX), round(screenPosY), 0,
-                round2(camv / 8, 8), round2(camv / 8, 8), tile:getTextureCenterX(), tile:getTextureCenterY())
+                size, size, tile:getTextureCenterX(), tile:getTextureCenterY())
 
             local border = tile:getBorder()
             local borderType = tile:getBorderType()
@@ -471,7 +632,7 @@ function World:drawTile(worldPosX, worldPosY, layer, light)
                 if borderingTile then
                     if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then
                         love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY),
-                            0, round2(camv / 8, 8), round2(camv / 8, 8), tile:getTextureCenterX(),
+                            0, size, size, tile:getTextureCenterX(),
                             tile:getTextureCenterY())
                     end
                 end
@@ -479,7 +640,7 @@ function World:drawTile(worldPosX, worldPosY, layer, light)
                 if borderingTile then
                     if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then
                         love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY),
-                            d180topi(90), round2(camv / 8, 8), round2(camv / 8, 8), tile:getTextureCenterX(),
+                            d180topi(90), size, size, tile:getTextureCenterX(),
                             tile:getTextureCenterY())
                     end
                 end
@@ -487,7 +648,7 @@ function World:drawTile(worldPosX, worldPosY, layer, light)
                 if borderingTile then
                     if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then
                         love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY),
-                            d180topi(180), round2(camv / 8, 8), round2(camv / 8, 8), tile:getTextureCenterX(),
+                            d180topi(180), size, size, tile:getTextureCenterX(),
                             tile:getTextureCenterY())
                     end
                 end
@@ -495,7 +656,7 @@ function World:drawTile(worldPosX, worldPosY, layer, light)
                 if borderingTile then
                     if (borderType == "same block" and tile:getName() ~= borderingTile:getName()) then
                         love.graphics.draw(tile:getTexture(), tile:getBorderQuad(), round(screenPosX), round(screenPosY),
-                            d180topi(270), round2(camv / 8, 8), round2(camv / 8, 8), tile:getTextureCenterX(),
+                            d180topi(270), size, size, tile:getTextureCenterX(),
                             tile:getTextureCenterY())
                     end
                 end
@@ -624,6 +785,8 @@ function World:rayTrace(hitLayers,startPos,targetPos,distanceLimit,endBeforeColl
     if endBeforeColliding == nil then endBeforeColliding = true end
     if distanceLimit == nil then distanceLimit = 99 end
     if continueAfterTarget == nil then continueAfterTarget = false end
+
+    if continueAfterTarget then targetPos:moveTowards(startPos,-999) end
     
     local hardLimit = 2000
     local currentPos = startPos:copy()
@@ -687,6 +850,40 @@ function World:DrawUi()
     for i = 1, #entities do
         if entities[i].id == camEntityFollow then
             entities[i]:DrawUI()
+        end
+    end
+end
+
+function World:spawnParticles(count,name,position,radius,color, colorNoise, timer, timerNoise,motion, motionStrength, motionArcAngle, motionArcSpread, flags)
+    if count>0 then
+        for ip =1, math.ceil(count) do
+            local spawnPos = position:copy()
+            spawnPos:move(math.random(360),math.random()*radius)
+            local spawnColor = {color[1]+math.random()*colorNoise[1], color[2]+math.random()*colorNoise[2], color[3]+math.random()*colorNoise[3], color[4]+math.random()*colorNoise[4]}
+            local spawnFlags = {}
+            spawnFlags.velocity = Vector2(0,0)
+            spawnFlags.velocity:move(motionArcAngle+(math.random()-0.5)*2*motionArcSpread,math.random()*motionStrength)
+
+            table.insert(self.particles,Particle(name,spawnPos, spawnColor,timer + math.random()*timerNoise,motion,spawnFlags))
+        end
+    end
+end
+
+function World:updateParticles(dt)
+    if #self.particles > 0 then
+        for i=#self.particles,1,-1 do
+            local die = self.particles[i]:update(dt)
+            if die then
+                table.remove(self.particles,i)
+            end
+        end
+    end
+end
+
+function World:drawParticles()
+    if #self.particles > 0 then
+        for i=1, #self.particles do
+            self.particles[i]:draw()
         end
     end
 end

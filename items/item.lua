@@ -11,6 +11,7 @@ function Item:init(itemName,sprite,flags)
 
 
     self.placeBlock = self.flags.placeBlock or "none"
+    self.placeBlockCost = self.flags.placeBlockCost or 1
     self.blockPlaceLayer = self.flags.blockPlaceLayer or "tiles"
 
     self.fullName = self.flags.fullName or (self.itemName)
@@ -31,6 +32,8 @@ function Item:init(itemName,sprite,flags)
     
     self.mineDamage = self.flags.mineDamage or 0
     self.blockDamageAmount = self.flags.blockDamageAmount or 0
+    self.mineArcAngle = self.flags.mineArcAngle or 180
+    self.mineForwardWeight = self.flags.mineForwardWeight or 2
     self.damage = self.flags.damage or 0
 
     self.groundSize = self.flags.groundSize or 0.45
@@ -52,21 +55,66 @@ function Item:init(itemName,sprite,flags)
     table.insert(ItemList,itemName)
 end
 
-function Item:use(entity,attributes,cursorX,cursorY,slot)
-    local removeStacks = 0
+function Item:getPickaxeTargets(entity,attributes,cursorX,cursorY)
+
+    local targetList = {}
+
+    local place = world:rayTrace({"tiles"},entity.position:copy(true),Vector2(round(cursorX),round(cursorY)),self.rangeLimit,false,true)
+
+    if world:getTile(place.x,place.y,"tiles").canBeMined and world:getTile(place.x,place.y,"tiles").name ~= "none" then
+        table.insert(targetList,Vector2(round(place.x),round(place.y)))
+
+        local baseDirection = entity.position:getDirection360Towards(Vector2(round(cursorX),round(cursorY)))
+        
+        for advance = 1, (self.rangeLimit*2)*math.ceil(math.sqrt(self.blockDamageAmount)+3) do
+            for angle = 0, 1 + math.ceil(self.mineArcAngle / 40) do
+                for side = -1,1,2 do
+                    local angleValue = (self.mineArcAngle/2)/(1 + math.ceil(self.mineArcAngle / 40))*angle
+                    local forwardValue = (1/(self.mineArcAngle*angleValue))
+
+                    if #targetList < self.blockDamageAmount then
+                        local bloc = place:copy()
+                        bloc:move(baseDirection + angleValue * side, (advance/2)*self.mineForwardWeight*(k(1,self.mineForwardWeight,forwardValue)))
+                        bloc.x = round(bloc.x)
+                        bloc.y = round(bloc.y)
+                        
+                        if bloc:dist(entity.position:copy()) <= self.rangeLimit then
+                            if world:getTile(bloc.x,bloc.y,"tiles").canBeMined and world:getTile(bloc.x,bloc.y,"tiles").name ~= "none" then
+                                if not checkIfVectorInList(Vector2(bloc.x,bloc.y),targetList,true) then
+                                    table.insert(targetList,Vector2(bloc.x,bloc.y))
+                                end
+                            end
+                        end
+
+                    end
+                end
+            end
+        end
+
+    end
+
+    return targetList
+    
+end
+
+function Item:use(entity,attributes,cursorX,cursorY,slot,stacks)
+    local stacksRemove = 0
     local setCooldown = self.cooldown
     local useSuccess = false
 
-    if slot == "space" or slot == "x" or slot == "c" then
+    if checkifinlist(slot,self.desiredInventorySpots)then
 
         if self.placeBlock ~= "none" then
 
             local place = world:rayTrace({self.blockPlaceLayer},entity.position:copy(),Vector2(round(cursorX),round(cursorY)),self.rangeLimit,true)
 
             if place:dist(entity.position)>1 or self.blockPlaceLayer ~= "tiles" then
-                if world:placeTile(self.placeBlock, round(place.x), round(place.y), self.blockPlaceLayer, false) then
-                    removeStacks = removeStacks + 1
-                    useSuccess = true
+                if stacks >= self.placeBlockCost then
+                    if world:placeTile(self.placeBlock, round(place.x), round(place.y), self.blockPlaceLayer, false) then
+                        world:setTileProprety(round(place.x), round(place.y),"size",0)
+                        stacksRemove = stacksRemove + self.placeBlockCost
+                        useSuccess = true
+                    end
                 end
             end
 
@@ -74,7 +122,15 @@ function Item:use(entity,attributes,cursorX,cursorY,slot)
 
     end
 
-    if slot == "space" and self.category == "tool" then
+
+    if checkifinlist(slot,self.desiredInventorySpots) and self.category == "tool" then
+
+        local targets = self:getPickaxeTargets(entity,attributes,cursorX,cursorY)
+        if #targets > 0 then
+            for targ= 1,#targets do
+                world:damageBlock(targets[targ].x, targets[targ].y, self.mineDamage,"tiles",true)
+            end
+        end
 
         useSuccess = true
 
@@ -83,7 +139,7 @@ function Item:use(entity,attributes,cursorX,cursorY,slot)
 
 
 
-    return useSuccess, setCooldown, removeStacks
+    return useSuccess, setCooldown, stacksRemove
 end
 
 function Item:draw(state,posX,posY,size,attributes)

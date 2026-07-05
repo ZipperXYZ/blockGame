@@ -87,8 +87,8 @@ function Inventory:setupMainInventory()
 
     print("pourquoi ce fucking code est ignoré please someone fix this")
 
-    self:setItem("lamePickaxe",999,{},1,1)
-    --self:addItem("lamePickaxe",1,{})
+    self:setItem("crudePickaxe",999,{},1,1)
+    --self:addItem("crudePickaxe",1,{})
 
 end
 
@@ -171,13 +171,13 @@ function Inventory:slotUpdate(dt,entity,ix,iy,page)
                 
                 if items[itemName] ~= nil and itemName ~= "none" and entity.controls[button] and self:getSlotAttribute("cooldown",ix,iy,page) <= 0 then
                     local item = items[itemName]
-                    local useSuccess, setCooldown, removeStacks = item:use(entity,itemAttributes,entity:getAim().x,entity:getAim().y,button)
+                    local useSuccess, setCooldown, stacksRemove = item:use(entity,itemAttributes,entity:getAim().x,entity:getAim().y,button,itemAmount)
                     if useSuccess then
 
                         self:setSlotAttribute("cooldown",setCooldown,ix,iy,page)
                         self:setSlotAttribute("cooldownMax",setCooldown,ix,iy,page)
 
-                        self:setItem(nil,itemAmount - removeStacks,nil,ix,iy,page)
+                        self:setItem(nil,itemAmount-stacksRemove,nil,ix,iy,page)
 
                         self:setSlotAttribute("useAnimation",minimum(maximum(setCooldown,1),0.25),ix,iy,page)
                         self:setSlotAttribute("useAnimationMax",minimum(maximum(setCooldown,1),0.25),ix,iy,page)

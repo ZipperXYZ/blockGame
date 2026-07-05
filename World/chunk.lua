@@ -40,6 +40,52 @@ end
 
 --getTile(xinchunk,yinchunk,layer) --retourne un objet tile selon le nom de la tile
 --vue que lua est bien, on pourrait metre comme layer 'light' pis ça donnerait le tableau lumière ({1,1,1,1}) d'une tile au lieu d'un objet tile
+function Chunk:getTileProperty(xInChunk, yInChunk, property)
+    local layer = "tiles"
+
+    --if self.chunkTiles[layer] == nil then return 0 end
+    if (xInChunk <= 0 or xInChunk > self.chunkSize or yInChunk <= 0 or yInChunk > self.chunkSize) then
+        return 0
+    end
+
+    if self.chunkTiles["properties"][xInChunk][yInChunk][property] ~= nil then
+        return self.chunkTiles["properties"][xInChunk][yInChunk][property]
+    end
+
+    return 0
+end
+
+function Chunk:DoesTilePropertyExists(xInChunk, yInChunk, property)
+    local layer = "tiles"
+    if (xInChunk <= 0 or xInChunk > self.chunkSize or yInChunk <= 0 or yInChunk > self.chunkSize) then
+        return false
+    end
+
+    return self.chunkTiles["properties"][xInChunk][yInChunk][property] ~= nil
+end
+
+function Chunk:setTileProperty(xInChunk, yInChunk, property, value)
+    local layer = "tiles"
+    if (xInChunk <= 0 or xInChunk > self.chunkSize or yInChunk <= 0 or yInChunk > self.chunkSize) then
+        return false
+    end
+
+    self.chunkTiles["properties"][xInChunk][yInChunk][property] = value
+    return true
+
+end
+
+function Chunk:clearTileProprerties(xInChunk, yInChunk, property)
+    local layer = "tiles"
+    if (xInChunk <= 0 or xInChunk > self.chunkSize or yInChunk <= 0 or yInChunk > self.chunkSize) then
+        return false
+    end
+
+    self.chunkTiles["properties"][xInChunk][yInChunk][property] = nil
+    return true
+
+end
+
 function Chunk:getTile(xInChunk, yInChunk, layer)
     if layer == "top" then layer = "topTiles" end
     if layer == "back" then layer = "backTiles" end

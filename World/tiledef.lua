@@ -13,6 +13,7 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.properties = {}
     self.borderType = self.flags["border type"] or "same block"
     self.border = self.flags["border"] or {}
+    self.actualName = self.flags.actualName or self.name
     if self.border == {} then self.borderType = "none" end
 
     self.textureName = ("Textures/" .. self.textureName)
@@ -49,15 +50,39 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     end
     self.isStone = self.flags.isStone or false
     self.hasCollisions = self.flags.hasCollisions or (self.type == "solid")
-    self.canBeMined = self.flags.canBeMined or true
+    self.canBeMined = self.flags.canBeMined or ((self.type == "solid") or (self.textureName ~= "none"))
     self.color = self.flags.color or { 1, 1, 1, 1 }
     self.canbeWall = self.flags.canBeWall or self.type == "solid"
     self.lightCanGoThrough = self.flags.lightCanGoThrough or self.type ~= "solid"
     self.canBeOverWritten = self.flags.canBeOverWritten or self.type ~= "solid"
+
+    self.particleColor = self.flags.particleColor or {0.45,0.45,0.45,0.5}
+    self.particleType = self.flags.particleType or "dust"
+
+    self.actualDropeRate = self.flags.actualDropeRate or 0.1
+    self.secondaryDropAmount = self.flags.secondaryDropAmount or 1
+    self.secondaryDrop = self.flags.secondaryDrop or "rock"
+
+
     self.health = self.flags.health or 1
 
     table.insert(tilelists["all tiles"],self.name)
     if self.isStone then table.insert(tilelists["stones"],self.name) end
+end
+
+function Tile:tileDestroyed(x,y)
+    if math.random()< self.actualDropeRate then
+        world:spawnGroundItem(self.name, Vector2(x,y), Vector2(0,0), 1, {}, {})
+    else
+        if self.secondaryDrop ~= "none" and self.secondaryDrop ~= nil and self.secondaryDropAmount > 0 then
+            local quantity = math.ceil(math.random()*self.secondaryDropAmount)
+            if quantity>0  then
+                world:spawnGroundItem(self.secondaryDrop, Vector2(x,y), Vector2(0,0), quantity, {}, {})
+            end
+            
+        end
+    end
+    
 end
 
 --getName()

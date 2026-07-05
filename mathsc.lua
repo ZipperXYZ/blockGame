@@ -298,6 +298,16 @@ function checkifinlist(value1, list1)
     end
     return inside
 end
+function checkIfVectorInList(value1, vectorList,rounded)
+    if vectorList == nil then return false end  -- ← ajout
+    local inside = false
+    if #vectorList > 0 then
+        for j6 = 1, #vectorList do
+            if round(vectorList[j6].x) == round(value1.x) and round(vectorList[j6].y) == round(value1.y) then inside = true end
+        end
+    end
+    return inside
+end
 function pickrandomvalued(values)
   table1={}
   for iv=1,#values do

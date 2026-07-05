@@ -88,8 +88,13 @@ function loadtextures()
     }
   }, {})
   textures["sprites"]["stick"] = Sprite("stick","items1.png",{["parts"] = {"small","medium","large"}},{["setupItem"] = true,["itemQuadrant"]={0,0}})
-  textures["sprites"]["lamePickaxe"] = Sprite("lamePickaxe","items1.png",{["parts"] = {"small","medium","large"}},{["setupItem"] = true,["itemQuadrant"]={0,4}})
+  textures["sprites"]["rock"] = Sprite("rock","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,8}})
+  textures["sprites"]["crudePickaxe"] = Sprite("crudePickaxe","items1.png",{["parts"] = {"small","medium","large"}},{["setupItem"] = true,["itemQuadrant"]={0,4}})
+  
   textures["sprites"]["placementPreview"] = Sprite("placementPreview","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {0,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
+  textures["sprites"]["destroyPreviewReady"] = Sprite("destroyPreviewReady","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {2,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
+  textures["sprites"]["destroyPreview"] = Sprite("destroyPreview","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {1,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
+  textures["sprites"]["destroyAnimation"] = Sprite("destroyAnimation","miscTiles.png",{["type"] = "hold", ["timePerFrame"] = 1/8, ["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {{0,1},{1,1},{2,1},{3,1},{4,1},{5,1},{6,1},{7,1}}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleAnimation"})
   textures["sprites"]["player"] = Sprite("player","player.png",{
     ["parts"] = {"idle","walk","jump","use"},
     ["idle"] ={
@@ -141,7 +146,7 @@ function loadtiles()
     "ancientstone", "coldstone", "lightstone", "hotstone",
     "dirt_wall", "stone_wall", "hotstone_wall", "coldstone_wall"
   }]]
-  tiles["none"]          = Tile("none")
+  tiles["none"]          = Tile("none",nil,nil,nil,{["canBeMined"] = false})
 
   tiles["dirt"]          = Tile("dirt", "solid", "tiles.png", "dirt",
     {
@@ -150,37 +155,42 @@ function loadtiles()
         ["quad"] = "dirt_top",
         ["newQuad"] = { 0, 1, 1, 1, 8 }
       },
-      ["health"] = 5
+      ["health"] = 2.5
     })
 
   tiles["grass"]         = Tile("grass", "top", "tiles.png", "grass",
     {
       ["newQuad"] = { 1, 0, 1, 1, 8 },
-      ["border type"] = "non-solid"
+      ["border type"] = "non-solid",
+      ["health"] = 0
     })
 
   tiles["purplegrass"]   = Tile("purplegrass", "top", "tiles.png", "purplegrass",
     {
       ["newQuad"] = { 4, 0, 1, 1, 8 },
-      ["border type"] = "non-solid"
+      ["border type"] = "non-solid",
+      ["health"] = 0
     })
 
   tiles["shadowgrass"]   = Tile("shadowgrass", "top", "tiles.png", "shadowgrass",
     {
       ["newQuad"] = { 10, 0, 1, 1, 8 },
-      ["border type"] = "non-solid"
+      ["border type"] = "non-solid",
+      ["health"] = 0
     })
 
   tiles["wheatgrass"]    = Tile("wheatgrass", "top", "tiles.png", "wheatgrass",
     {
       ["newQuad"] = { 11, 0, 1, 1, 8 },
-      ["border type"] = "non-solid"
+      ["border type"] = "non-solid",
+      ["health"] = 0
     })
 
   tiles["diamond"]       = Tile("diamond", "top", "tiles.png", "diamond",
     {
       ["newQuad"] = { 12, 0, 1, 1, 8 },
-      ["border type"] = "normal"
+      ["border type"] = "normal",
+      ["health"] = 1
     })
 
   tiles["stone"]         = Tile("stone", "solid", "tiles.png", "stone", {
@@ -189,7 +199,8 @@ function loadtiles()
       ["quad"] = "stone_top",
       ["newQuad"] = { 2, 1, 1, 1, 8 }
     },
-    ["isastone"] = true
+    ["isStone"] = true,
+    ["health"] = 4
   })
 
   tiles["darkstone"]     = Tile("darkstone", "solid", "tiles.png", "darkstone",
@@ -199,7 +210,8 @@ function loadtiles()
         ["quad"] = "darkstone_top",
         ["newQuad"] = { 3, 1, 1, 1, 8 }
       },
-      ["isastone"] = true
+      ["isStone"] = true,
+      ["health"] = 8
     })
 
   tiles["palestone"]     = Tile("palestone", "solid", "tiles.png", "palestone",
@@ -209,7 +221,8 @@ function loadtiles()
         ["quad"] = "palestone_top",
         ["newQuad"] = { 5, 1, 1, 1, 8 }
       },
-      ["isastone"] = true
+      ["isStone"] = true,
+      ["health"] = 3.5
     })
   tiles["ancientstone"]  = Tile("ancientstone", "solid", "tiles.png", "ancientstone",
     {
@@ -218,7 +231,8 @@ function loadtiles()
         ["quad"] = "ancientstone_top",
         ["newQuad"] = { 6, 1, 1, 1, 8 }
       },
-      ["isastone"] = true
+      ["isStone"] = true,
+      ["health"] = 5.5
     })
 
   tiles["coldstone"]     = Tile("coldstone", "solid", "tiles.png", "coldstone",
@@ -228,7 +242,8 @@ function loadtiles()
         ["quad"] = "coldstone_top",
         ["newQuad"] = { 7, 1, 1, 1, 8 }
       },
-      ["isastone"] = true
+      ["isStone"] = true,
+      ["health"] = 3.5
     })
 
   tiles["lightstone"]    = Tile("lightstone", "solid", "tiles.png", "lightstone",
@@ -238,7 +253,8 @@ function loadtiles()
         ["quad"] = "lightstone_top",
         ["newQuad"] = { 8, 1, 1, 1, 8 }
       },
-      ["isastone"] = true
+      ["isStone"] = true,
+      ["health"] = 5
     })
 
   tiles["hotstone"]      = Tile("hotstone", "solid", "tiles.png", "hotstone",
@@ -248,7 +264,8 @@ function loadtiles()
         ["quad"] = "hotstone_top",
         ["newQuad"] = { 9, 1, 1, 1, 8 }
       },
-      ["isastone"] = true
+      ["isStone"] = true,
+      ["health"] = 6
     })
   tiles["shadowStone"]   = Tile("shadowStone", "solid", "tiles.png", "shadowStone",
     {
@@ -257,7 +274,8 @@ function loadtiles()
         ["quad"] = "shadowStone_top",
         ["newQuad"] = { 13, 1, 1, 1, 8 }
       },
-      ["isastone"] = true
+      ["isStone"] = true,
+      ["health"] = 10
     })
   tiles["ice"]           = Tile("ice", "solid", "tiles.png", "ice",
     {
@@ -267,7 +285,8 @@ function loadtiles()
         ["newQuad"] = { 14, 1, 1, 1, 8 }
       },
       ["color"] = { 1, 1, 1, 0.4 },
-      ["lightCanGoThrough"] = true
+      ["lightCanGoThrough"] = true,
+      ["health"] = 2
     })
   tiles["sand"]          = Tile("sand", "solid", "tiles.png", "sand",
     {
@@ -275,14 +294,28 @@ function loadtiles()
       ["border"] = {
         ["quad"] = "sand_top",
         ["newQuad"] = { 15, 1, 1, 1, 8 }
-      }
+      },
+      ["health"] = 1.5
     })
   tiles["magicKelp"]     = Tile("magicKelp", "not-solid", "tiles.png", "magicKelp",
     {
       ["newQuad"] = { 16, 0, 1, 2, 8 },
       ["textureCenterX"] = 4,
       ["textureCenterY"] = 12,
-      ["border type"] = "none"
+      ["border type"] = "none",
+      ["health"] = 0.5
+    })
+  tiles["scrapBlock"]          = Tile("scrapBlock", "solid", "tiles.png", "scrapBlock",
+    {
+      ["newQuad"] = { 17, 0, 1, 1, 8 },
+      ["border"] = {
+        ["quad"] = "scrapBlock_top",
+        ["newQuad"] = { 17, 1, 1, 1, 8 }
+      },
+      ["actualName"] = "scrap block",
+      ["health"] = 2.2,
+      ["actualDropeRate"] = 0,
+      ["secondaryDropAmount"] = 4,
     })
 end
 
@@ -299,10 +332,13 @@ function loadItems()
   items = {}
   items["none"] = Item("none","none",{})
   items["stick"] = Item("stick","stick",{["category"]="material"})
-  items["lamePickaxe"] = Item("lamePickaxe","lamePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Lame pickaxe",
-  ["cooldown"] = 0.8,
-  ["mineDamage"] = 0.4,
-  ["blockDamageAmount"] = 4
+  items["rock"] = Item("rock","rock",{["category"]="material",["placeBlock"] = "scrapBlock", ["placeBlockCost"] = 4, ["maxStack"] = 300})
+  items["crudePickaxe"] = Item("crudePickaxe","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude pickaxe",
+  ["cooldown"] = 0.5,
+  ["mineDamage"] = 1,
+  ["blockDamageAmount"] = 6,
+  ["rangeLimit"] = 6,
+  ["mineArcAngle"] = 130
   })
 end
 

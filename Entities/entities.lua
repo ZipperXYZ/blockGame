@@ -375,12 +375,13 @@ function Entity:drawBlocPreview()
 
             if item.placeBlock ~= "none" and checkifinlist(self.inventory[1]:getSlotAttribute("button",ix,iy),item.desiredInventorySpots) then
 
-                local color = {self.cursorColor[1],self.cursorColor[2],self.cursorColor[3],0.3}
-                if self.inventory[1]:getSlotAttribute("cooldown",ix,iy) > 0 then color = {self.cursorColor[1],self.cursorColor[2],self.cursorColor[3],0.10} end
+                local color = {self.cursorColor[1],self.cursorColor[2],self.cursorColor[3],0.4}
+                if self.inventory[1]:getSlotAttribute("cooldown",ix,iy) > 0.1 then color = {self.cursorColor[1],self.cursorColor[2],self.cursorColor[3],0.18} end
 
                 local place = world:rayTrace({item.blockPlaceLayer},self.position:copy(),Vector2(round(self:getAim("x")),round(self:getAim("y"))),item.rangeLimit,true)
 
                 local x,y,size = world:getTileScreenPosition(round(place.x),round(place.y))
+
 
                 textures["sprites"]["placementPreview"]:drawSI("right",x,y,size,size,color)
             end
@@ -390,8 +391,45 @@ function Entity:drawBlocPreview()
     end
 end
 
+function Entity:drawMinePreview()
+    for ix=1,self.inventory[1].sizeX do
+        for iy=1,self.inventory[1].sizeY do
+            local item = items[self.inventory[1]:getItemName(ix,iy)]
+
+            if item.mineDamage > 0 and checkifinlist(self.inventory[1]:getSlotAttribute("button",ix,iy),item.desiredInventorySpots) then
+                
+
+                local targets = item:getPickaxeTargets(self,self.inventory[1]:getItemAttributes(ix,iy),self:getAim("x"),self:getAim("y"))
+
+                if #targets > 0 then
+                    for targ=1,#targets do
+                        local x,y,size = world:getTileScreenPosition(round(targets[targ].x),round(targets[targ].y))
+
+                        if self.inventory[1]:getSlotAttribute("cooldown",ix,iy) > 0.1 then
+
+                            local color = {0.8,0.4,0,0.5}
+                            textures["sprites"]["destroyPreview"]:drawSI("right",x,y,size,size,color)
+
+                        else
+
+                            local color = {0.8,0.4,0,0.8}
+                            textures["sprites"]["destroyPreviewReady"]:drawSI("right",x,y,size,size,color)
+
+                        end
+                    end
+                end
+                
+
+            end
+    
+            
+        end
+    end
+end
+
 function Entity:DrawUI()
     self:drawBlocPreview()
+    self:drawMinePreview()
 
     if self.controls.openInventory then
         self.inventoryOpened = not self.inventoryOpened

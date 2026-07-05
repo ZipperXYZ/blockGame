@@ -51,7 +51,11 @@ function Vector2:normalize()
     return Vector2:new(self.x / len, self.y / len)
 end
 
-function Vector2:copy()
+function Vector2:copy(rounded)
+    if rounded == nil then rounded = false end
+    if rounded then
+         return Vector2(round(self.x),round(self.y))
+    end
     return Vector2(self.x,self.y)
 end
 

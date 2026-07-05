@@ -344,6 +344,15 @@ function loadItems()
     ["mineArcAngle"] = 130,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
+  items["coolPickaxe"] = Item("coolPickaxe","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Cool pickaxe",
+    ["cooldown"] = 0.3,
+    ["mineDamage"] = 2.5,
+    ["blockDamageAmount"] = 15,
+    ["rangeLimit"] = 20,
+    ["mineArcAngle"] = 360,
+    ["holdAnimation"] = "crudePickaxe_Hold",
+    ["baseColor"] = {1,0,0,1},
+  })
 end
 
 function GenerateTileItems()

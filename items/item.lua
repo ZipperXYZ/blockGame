@@ -173,7 +173,7 @@ end
 function Item:drawHolding(entity,spriteX,spriteY,size,attributes,quantity)
     if self.holdAnimation ~= nil then
         
-        self.holdAnimation:draw(entity.animation,entity.animationTime,entity.animationDirection,spriteX,spriteY,size,size,{1,1,1,1})
+        self.holdAnimation:draw(entity.animation,entity.animationTime,entity.animationDirection,spriteX,spriteY,size,size,self.baseColor)
 
     end
 end

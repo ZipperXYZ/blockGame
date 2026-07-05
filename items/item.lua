@@ -18,6 +18,10 @@ function Item:init(itemName,sprite,flags)
     self.category = self.flags.category or "none"
     self.subCategory = self.flags.subCategory or "none"
 
+    if self.flags.holdAnimation ~= nil then
+        self.holdAnimation = textures["sprites"][self.flags.holdAnimation]
+    end
+
 
     self.unique = self.flags.unique or false
 
@@ -125,11 +129,19 @@ function Item:use(entity,attributes,cursorX,cursorY,slot,stacks)
 
     if checkifinlist(slot,self.desiredInventorySpots) and self.category == "tool" then
 
+        local destroyedAtLeastATile = false
+
         local targets = self:getPickaxeTargets(entity,attributes,cursorX,cursorY)
         if #targets > 0 then
             for targ= 1,#targets do
-                world:damageBlock(targets[targ].x, targets[targ].y, self.mineDamage,"tiles",true)
+                if world:damageBlock(targets[targ].x, targets[targ].y, self.mineDamage,"tiles",true) then
+                    destroyedAtLeastATile = true
+                end
             end
+        end
+
+        if destroyedAtLeastATile then
+            world:updateLights(cursorX,cursorY)
         end
 
         useSuccess = true
@@ -139,7 +151,31 @@ function Item:use(entity,attributes,cursorX,cursorY,slot,stacks)
 
 
 
+    if useSuccess then
+
+        entity:setAnimation("use",1/setCooldown)
+        
+        if self.holdAnimation ~= nil then
+            entity.itemHold.name = self.itemName
+            entity.itemHold.attributes = attributes
+            entity.itemHold.quantity = stacks
+        end
+
+    end
+
+
     return useSuccess, setCooldown, stacksRemove
+end
+
+
+
+
+function Item:drawHolding(entity,spriteX,spriteY,size,attributes,quantity)
+    if self.holdAnimation ~= nil then
+        
+        self.holdAnimation:draw(entity.animation,entity.animationTime,entity.animationDirection,spriteX,spriteY,size,size,{1,1,1,1})
+
+    end
 end
 
 function Item:draw(state,posX,posY,size,attributes)

@@ -30,7 +30,9 @@ function GroundItem:moveEntityUpdate(dt,entityPosition, distanceTreshold)
     if self.pickupTimer <= 0 then
         
         if dist(self.position.x, self.position.y, entityPosition.x, entityPosition.y) < distanceTreshold then
-            self.disableGravityTime = 1.5
+            if dist(self.position.x, self.position.y, entityPosition.x, entityPosition.y) < distanceTreshold/2 then
+                self.disableGravityTime = 0.75
+            end
             self.position:moveTowards(entityPosition, dt * 10 * (1- (self.position:dist(entityPosition)/distanceTreshold)) )
         end
 

@@ -95,7 +95,10 @@ function loadtextures()
   textures["sprites"]["destroyPreviewReady"] = Sprite("destroyPreviewReady","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {2,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
   textures["sprites"]["destroyPreview"] = Sprite("destroyPreview","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {1,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
   textures["sprites"]["destroyAnimation"] = Sprite("destroyAnimation","miscTiles.png",{["type"] = "hold", ["timePerFrame"] = 1/8, ["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {{0,1},{1,1},{2,1},{3,1},{4,1},{5,1},{6,1},{7,1}}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleAnimation"})
-  textures["sprites"]["player"] = Sprite("player","player.png",{
+  
+  textures["sprites"]["player"] = Sprite("player","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,0},["spriteSizes"]={1,2},["spriteCenters"]={0.5,1.5}})
+  textures["sprites"]["crudePickaxe_Hold"] = Sprite("crudePickaxe_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,1},["spriteSizes"]={1.5,2},["spriteCenters"]={0.75,1.5}})
+  --[[textures["sprites"]["player"] = Sprite("player","player.png",{
     ["parts"] = {"idle","walk","jump","use"},
     ["idle"] ={
       ["type"] = "still",
@@ -129,7 +132,7 @@ function loadtextures()
       ["spriteCenter"] = {0.5,1.5},
       ["quads"] = {{0,6},{1,6},{2,6},{2,6},{3,6}}
     }
-  }, {["mirrorable"] = true})
+  }, {["mirrorable"] = true})]]
 end
 
 function loadtiles()
@@ -334,11 +337,12 @@ function loadItems()
   items["stick"] = Item("stick","stick",{["category"]="material"})
   items["rock"] = Item("rock","rock",{["category"]="material",["placeBlock"] = "scrapBlock", ["placeBlockCost"] = 4, ["maxStack"] = 300})
   items["crudePickaxe"] = Item("crudePickaxe","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude pickaxe",
-  ["cooldown"] = 0.5,
-  ["mineDamage"] = 1,
-  ["blockDamageAmount"] = 6,
-  ["rangeLimit"] = 6,
-  ["mineArcAngle"] = 130
+    ["cooldown"] = 0.5,
+    ["mineDamage"] = 1,
+    ["blockDamageAmount"] = 6,
+    ["rangeLimit"] = 6,
+    ["mineArcAngle"] = 130,
+    ["holdAnimation"] = "crudePickaxe_Hold",
   })
 end
 

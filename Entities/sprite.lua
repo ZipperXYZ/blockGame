@@ -15,7 +15,8 @@ function Sprite:init(name, texture, spriteData, flags)
     self.spriteData = spriteData or {["parts"]={}}
     self.quads = {}
     self.parts = self.spriteData["parts"] or {}
-    self.setupItem = self.flags["setupItem"] or false
+    self.setupItem = self.flags.setupItem or false 
+    self.setupCharacterAnimation = self.flags.setupCharacterAnimation or false 
 
 
     if self.type == "singleImage" then
@@ -99,6 +100,76 @@ function Sprite:init(name, texture, spriteData, flags)
                     ["spriteSize"] = {4,4},
                     ["spriteCenter"] = {2,2},
                     ["quads"] = {{self.itemQuadrant[1]+3,self.itemQuadrant[2]}}
+                    }
+            end
+        end
+
+        if self.setupCharacterAnimation then
+            self.mirrorable = true
+            self.animationQuadrant = self.flags.animationQuadrant or {0,0}
+            self.spriteSizes = self.flags.spriteSizes or {1,2}
+            self.spriteCenters = self.flags.spriteCenters or {0.5,1.5}
+            self.quadrantOffset = self.animationQuadrant or {0,0}
+            self.quadrantOffset[1]= self.quadrantOffset[1] * 6
+            self.quadrantOffset[2]= self.quadrantOffset[2] * 8
+
+            if checkifinlist("idle",self.parts) then
+                self.spriteData["idle"] ={
+                    ["type"] = "still",
+                    ["timePerFrame"] = 1,
+                    ["gridMultiplication"] = 8,
+                    ["spriteSize"] = {self.spriteSizes[1],self.spriteSizes[2]},
+                    ["spriteCenter"] = {self.spriteCenters[1],self.spriteCenters[2]},
+                    ["quads"] = {{self.quadrantOffset[1],self.quadrantOffset[2]}}
+                    }
+            end
+            if checkifinlist("walk",self.parts) then
+                self.spriteData["walk"] ={
+                    ["type"] = "repeat",
+                    ["timePerFrame"] = 1/8*6,
+                    ["gridMultiplication"] = 8,
+                    ["spriteSize"] = {self.spriteSizes[1],self.spriteSizes[2]},
+                    ["spriteCenter"] = {self.spriteCenters[1],self.spriteCenters[2]},
+                    ["quads"] = {
+                        {self.quadrantOffset[1]+self.spriteSizes[1]*0,self.quadrantOffset[2]+self.spriteSizes[2]*1},
+                        {self.quadrantOffset[1]+self.spriteSizes[1]*1,self.quadrantOffset[2]+self.spriteSizes[2]*1},
+                        {self.quadrantOffset[1]+self.spriteSizes[1]*2,self.quadrantOffset[2]+self.spriteSizes[2]*1},
+                        {self.quadrantOffset[1]+self.spriteSizes[1]*3,self.quadrantOffset[2]+self.spriteSizes[2]*1},
+                        {self.quadrantOffset[1]+self.spriteSizes[1]*4,self.quadrantOffset[2]+self.spriteSizes[2]*1},
+                        {self.quadrantOffset[1]+self.spriteSizes[1]*5,self.quadrantOffset[2]+self.spriteSizes[2]*1},
+                    }
+                    }
+            end
+            if checkifinlist("jump",self.parts) then
+                self.spriteData["jump"] ={
+                    ["type"] = "hold",
+                    ["timePerFrame"] = 0.2,
+                    ["gridMultiplication"] = 8,
+                    ["spriteSize"] = {self.spriteSizes[1],self.spriteSizes[2]},
+                    ["spriteCenter"] = {self.spriteCenters[1],self.spriteCenters[2]},
+                    ["quads"] = {
+                        {self.quadrantOffset[1]+self.spriteSizes[1]*0,self.quadrantOffset[2]+self.spriteSizes[2]*2},
+                        {self.quadrantOffset[1]+self.spriteSizes[1]*1,self.quadrantOffset[2]+self.spriteSizes[2]*2},
+                        {self.quadrantOffset[1]+self.spriteSizes[1]*2,self.quadrantOffset[2]+self.spriteSizes[2]*2},
+                        {self.quadrantOffset[1]+self.spriteSizes[1]*3,self.quadrantOffset[2]+self.spriteSizes[2]*2},
+                        {self.quadrantOffset[1]+self.spriteSizes[1]*4,self.quadrantOffset[2]+self.spriteSizes[2]*2},
+                    }
+                    }
+            end
+            if checkifinlist("use",self.parts) then
+                self.spriteData["use"] ={
+                    ["type"] = "repeat&needsToEnd",
+                    ["timePerFrame"] = 0.14,
+                    ["gridMultiplication"] = 8,
+                    ["spriteSize"] = {self.spriteSizes[1],self.spriteSizes[2]},
+                    ["spriteCenter"] = {self.spriteCenters[1],self.spriteCenters[2]},
+                    ["quads"] = {
+                        {self.quadrantOffset[1]+self.spriteSizes[1]*0,self.quadrantOffset[2]+self.spriteSizes[2]*3},
+                        {self.quadrantOffset[1]+self.spriteSizes[1]*1,self.quadrantOffset[2]+self.spriteSizes[2]*3},
+                        {self.quadrantOffset[1]+self.spriteSizes[1]*2,self.quadrantOffset[2]+self.spriteSizes[2]*3},
+                        {self.quadrantOffset[1]+self.spriteSizes[1]*2,self.quadrantOffset[2]+self.spriteSizes[2]*3},
+                        {self.quadrantOffset[1]+self.spriteSizes[1]*3,self.quadrantOffset[2]+self.spriteSizes[2]*3},
+                    }
                     }
             end
         end

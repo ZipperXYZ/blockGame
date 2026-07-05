@@ -34,6 +34,8 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.animationSpeed = 1
     self.animationDirection = "right"
     self.spriteName = sprite or "none"
+
+    self.itemHold = {["name"]="none",["quantity"]=0,["attributes"]={}}
     --self.texture = texture or "tiles.png"
 
     --self.texture = "Textures/" .. self.texture
@@ -861,10 +863,10 @@ function Entity:animationUpdate(dt)
     if self.animation == "idle" then self.animationSpeed = 1 end
     if self.animation == "walk" then self.animationSpeed = math.abs(self.velocity.x) end
     if self.animation == "jump" then self.animationSpeed = 1 end
-    if self.animation == "use" then self.animationSpeed = 1 end
+    --if self.animation == "use" then self.animationSpeed = 1 end
 end
 
-function Entity:setAnimation(newAnimation)
+function Entity:setAnimation(newAnimation,newSpeed)
     local canChange = true
     if self.animation ~= "none" then
         if self.sprite.spriteData[newAnimation] == nil then canChange = false end
@@ -879,6 +881,13 @@ function Entity:setAnimation(newAnimation)
     if canChange then
         self.animationTime = 0 
         self.animation = newAnimation
+        if newSpeed ~= nil then self.animationSpeed = newSpeed end
+    end
+end
+
+function Entity:drawHoldItem(spriteX,spriteY,size)
+    if self.itemHold.name ~= "none" then
+        items[self.itemHold.name]:drawHolding(self,spriteX,spriteY,size,self.itemHold.attributes,self.itemHold.quantity)
     end
 end
 
@@ -891,6 +900,10 @@ function Entity:draw(inInventory,customX,customY,customSize)
     if customX ~= nil then spriteX = customX end
     if customY ~= nil then spriteY = customY end
     if inInventory == nil then inInventory = false end
+
+    local size = camv/8*self.spriteSize
+
+    self:drawHoldItem(spriteX,spriteY,size)
     
     --love.graphics.setColor(0, 0, 0, 1)
     --love.graphics.circle("fill", x, y, self.size * camv)
@@ -907,7 +920,7 @@ function Entity:draw(inInventory,customX,customY,customSize)
 
     if self.spriteName ~= "none" and self.animation ~= "none" and textures["sprites"][self.spriteName] ~= nil then
         --print("draw1")
-        local size = camv/8*self.spriteSize
+        
         if customSize ~= nil then size = customSize end
         self.sprite:draw(self.animation,self.animationTime,self.animationDirection,spriteX,spriteY,size,size,{1,1,1,1})
     end

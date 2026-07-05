@@ -118,14 +118,15 @@ end --placeTile(xinchunk,yinchunk,layer,bool:force)
 --layer peut etre soit tile, back et top, usually faudrait checker si une tile peut être placé en top (comme gazon ou les ores)
 --la pluspart des tiles peuvent être placé dans tile, mais seulement certaines peuvent être placé dans back (peut être faire une
 --fonction canBeWall dans tileDef)
-function Chunk:placeTile(tile, xInChunk, yInChunk, layer, force)
+function Chunk:placeTile(tile, xInChunk, yInChunk, layer, force,updateLight)
     if layer == "top" then layer = "topTiles" end
     if layer == "back" then layer = "backTiles" end
     if self.chunkTiles[layer] == nil then return false end
+    if updateLight == nil then updateLight = true end
     if (xInChunk <= 0 or xInChunk > self.chunkSize or yInChunk <= 0 or yInChunk > self.chunkSize) then return false end
     if force or self:canTileBePlaced(tile, xInChunk, yInChunk, layer) then
         self.chunkTiles[layer][xInChunk][yInChunk] = tile
-        if layer ~= "lights" then self:updateNeighboringLights() end
+        if layer ~= "lights" and updateLight then self:updateNeighboringLights() end
         return true
     end
     return false
@@ -185,14 +186,15 @@ function Chunk:updateNeighboringLights()
     world:updateLight(self.chunkX + 1, self.chunkY - 1)
 end
 
-function Chunk:destroyTile(xInChunk, yInChunk, layer, force)
+function Chunk:destroyTile(xInChunk, yInChunk, layer, force,updateLights)
     if layer == "top" then layer = "topTiles" end
     if layer == "back" then layer = "backTiles" end
+    if updateLights == nil then updateLights = true end
     if self.chunkTiles[layer] == nil then return false end
     if (xInChunk <= 0 or xInChunk > self.chunkSize or yInChunk <= 0 or yInChunk > self.chunkSize) then return false end
     if force or true then
         self.chunkTiles[layer][xInChunk][yInChunk] = "none"
-        if layer ~= "lights" then self:updateNeighboringLights() end
+        if layer ~= "lights" and updateLights then self:updateNeighboringLights() end
         return true
     end
 end

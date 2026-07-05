@@ -30,6 +30,7 @@ end
 function World:clear()
     self.chunks = {}
     self.groundItems = {}
+    self.particles = {}
     entities = {}
     spectator = true
 end
@@ -99,18 +100,18 @@ end
 
 --placeTile(tile,worldPosX,worldPosY,layer,force) --return true/false si ça l'a marcher, force activé pour la genération du monde, force désactivé pour le joueur
 ----peut être placer une tile fait aussi un updateLight(?)
-function World:placeTile(tile, worldPosX, worldPosY, layer, force)
+function World:placeTile(tile, worldPosX, worldPosY, layer, force,updateLight)
     local chunkX, chunkY, posX, posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
     local placeSuccess = false
     if self:checkIfChunkExists(chunkX, chunkY) then
-        placeSuccess = self.chunks[chunkX][chunkY]:placeTile(tile, posX, posY, layer, force)
+        placeSuccess = self.chunks[chunkX][chunkY]:placeTile(tile, posX, posY, layer, force,updateLight)
     end
     return placeSuccess
 end
 
 --destroyTile(worldPosX,worldPosY,layer) --supprime une tile pour laisser 'none' à la place, supprimer aussi certaines properties
-function World:destroyTile(worldPosX, worldPosY, layer)
-    self:placeTile("none", worldPosX, worldPosY, layer, true)
+function World:destroyTile(worldPosX, worldPosY, layer,updateLight)
+    self:placeTile("none", worldPosX, worldPosY, layer, true,updateLight)
     return true
 end
 
@@ -232,6 +233,8 @@ function World:clearTileProprerties(worldPosX, worldPosY, property)
 end
 
 function World:damageBlock(worldPosX, worldPosY, damage,layer,destroyTopAsWell)
+    local destroyed
+
     if layer == nil then layer = "tiles" end
     if destroyTopAsWell == nil then destroyTopAsWell = true end
     if layer == "top" then layer = "topTiles" end
@@ -256,18 +259,20 @@ function World:damageBlock(worldPosX, worldPosY, damage,layer,destroyTopAsWell)
     self:setTileProprety(worldPosX,worldPosY,"size",1.35)
 
     if self:doesTilePropretyExists(worldPosX, worldPosY, "health"..layer) and self:getTileProprety(worldPosX, worldPosY,"health"..layer)<=0 then
-        self:destroyTile(worldPosX, worldPosY,layer)
+        destroyed = true
+        self:destroyTile(worldPosX, worldPosY,layer,false)
         self:clearTileProprerties(worldPosX, worldPosY,"health"..layer)
         self:clearTileProprerties(worldPosX, worldPosY,"healthMineTimer"..layer)
         tile:tileDestroyed(worldPosX, worldPosY)
         if layer == "tiles" and destroyTopAsWell then 
-            self:destroyTile(worldPosX, worldPosY,"topTiles")
+            self:destroyTile(worldPosX, worldPosY,"topTiles",false)
             self:clearTileProprerties(worldPosX, worldPosY,"health".."topTiles")
             self:clearTileProprerties(worldPosX, worldPosY,"healthMineTimer".."topTiles")
             tile:tileDestroyed(worldPosX, worldPosY)
         end
     end
     
+    return destroyed
 end
 
 --generate(centerX,centerY,length,heigth,biomeList, boolean: force, step) --génére (ou essaille) de générer tout les chunks à l'écran, ou de progresser la génération
@@ -379,6 +384,11 @@ end
 
 
 --updateLight(neighboringChunks) -- (getNeighboringChunks())
+function World:updateLights(worldPosX, worldPosY)
+    local chunkx, chunky = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
+    self.chunks[chunkx][chunky]:updateNeighboringLights()
+end
+
 function World:updateLight(chunkX, chunkY)
     if self:checkIfChunkExists(chunkX, chunkY) then
         for ix = 1, self.chunkSize do

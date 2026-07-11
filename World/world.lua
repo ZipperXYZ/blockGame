@@ -468,6 +468,9 @@ function World:updateTiles(dt,centerX, centerY,length, heigth, parameters)
             for iy = -heigth, heigth do
                 self:updateHealth(ix + centerX, iy + centerY, layers[il], dt)
                 self:updateSize(ix + centerX, iy + centerY, dt)
+
+                local tile = self:getTile(ix + centerX, iy + centerY,"tiles")
+                tile:emitParticles(ix + centerX, iy + centerY)
             end
         end
     end
@@ -869,8 +872,8 @@ function World:spawnParticles(count,name,position,radius,color, colorNoise, time
         for ip =1, math.ceil(count) do
             local spawnPos = position:copy()
             spawnPos:move(math.random(360),math.random()*radius)
-            local spawnColor = {color[1]+math.random()*colorNoise[1], color[2]+math.random()*colorNoise[2], color[3]+math.random()*colorNoise[3], color[4]+math.random()*colorNoise[4]}
-            local spawnFlags = {}
+            local spawnColor = CopyAll({color[1]+math.random()*colorNoise[1], color[2]+math.random()*colorNoise[2], color[3]+math.random()*colorNoise[3], color[4]+math.random()*colorNoise[4]})
+            local spawnFlags = CopyAll(flags)
             spawnFlags.velocity = Vector2(0,0)
             spawnFlags.velocity:move(motionArcAngle+(math.random()-0.5)*2*motionArcSpread,math.random()*motionStrength)
 

@@ -50,7 +50,7 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     end
     self.isStone = self.flags.isStone or false
     self.hasCollisions = self.flags.hasCollisions or (self.type == "solid")
-    self.canBeMined = self.flags.canBeMined or ((self.type == "solid") or (self.textureName ~= "none"))
+    self.canBeMined = self.flags.canBeMined or ((self.type == "not-solid") or (self.type == "solid") or (self.textureName ~= "none"))
     self.color = self.flags.color or { 1, 1, 1, 1 }
     self.canbeWall = self.flags.canBeWall or self.type == "solid"
     self.lightCanGoThrough = self.flags.lightCanGoThrough or self.type ~= "solid"
@@ -64,10 +64,48 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.secondaryDrop = self.flags.secondaryDrop or "rock"
 
 
+    self.particleEmit = self.flags.particleEmit or "none"
+    self.particleEmitData = self.flags.particleEmitData or {}
+    self.particleEmitData.amount = self.particleEmitData.amount or 1
+    self.particleEmitData.motion = self.particleEmitData.motion or self.particleEmit
+    self.particleEmitData.motionStrength = self.particleEmitData.motionStrength or 1
+    self.particleEmitData.motionArcAngle = self.particleEmitData.motionArcAngle or 0
+    self.particleEmitData.motionArcSpread = self.particleEmitData.motionArcSpread or 360
+    self.particleEmitData.radius = self.particleEmitData.radius or 0.5
+    self.particleEmitData.timer = self.particleEmitData.timer or 1
+    self.particleEmitData.timerNoise = self.particleEmitData.timerNoise or (self.particleEmitData.timer*0.5)
+    self.particleEmitData.color = self.particleEmitData.color or {1,0,1,1}
+    self.particleEmitData.colorNoise = self.particleEmitData.colorNoise or {0.05,0.05,0.05,0.05}
+    self.particleEmitData.flags = self.particleEmitData.flags or {}
+    self.particleEmitData.hasCollisions = self.particleEmitData.hasCollisions or false
+
+
     self.health = self.flags.health or 1
 
     table.insert(tilelists["all tiles"],self.name)
     if self.isStone then table.insert(tilelists["stones"],self.name) end
+end
+
+function Tile:emitParticles(x,y,dt)
+    if self.particleEmit ~= "none" and self.particleEmit ~= nil then
+        if math.random()>0.92 then
+            
+            world:spawnParticles(
+                self.particleEmitData.amount,
+                self.particleEmitData.name,
+                Vector2(x,y):copy(),
+                self.particleEmitData.radius,
+                self.particleEmitData.color, 
+                self.particleEmitData.colorNoise, 
+                self.particleEmitData.timer, 
+                self.particleEmitData.timerNoise,
+                self.particleEmitData.motion, 
+                self.particleEmitData.motionStrength, 
+                self.particleEmitData.motionArcAngle, 
+                self.particleEmitData.motionArcSpread, 
+                CopyAll(self.particleEmitData.flags))
+        end
+    end
 end
 
 function Tile:tileDestroyed(x,y)

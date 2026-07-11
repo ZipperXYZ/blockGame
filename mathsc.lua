@@ -175,6 +175,21 @@ function k(v1,v2,f)
   v=(v1*(1-f))+(v2*f)
   return v
 end
+function CopyAll(tbl)
+    local copy = {}
+
+    if tbl ~= nil then
+      for key, value in pairs(tbl) do
+          if type(value) == "table" then
+              copy[key] = CopyAll(value)
+          else
+              copy[key] = value
+          end
+      end
+    end
+
+    return copy
+end
 function getk(v1,v2,f)
   v=1/(v2-v1)*(f-v1)
   return v

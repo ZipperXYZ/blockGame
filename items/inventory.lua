@@ -45,6 +45,7 @@ function Inventory:init(inventoryName,color,screenPos,sizeX,sizeY,sizeZ,maxStack
 
     if self.isMainInventory then
         self:setupIcons()
+        self:setupMainInventory()
     end
 end
 
@@ -80,14 +81,18 @@ function Inventory:setupIcons()
     self:setSlotAttribute("disableItemPickup",true,5,1)
     self:setSlotAttribute("disableItemPickup",true,6,1)
     self:setSlotAttribute("disableItemPickup",true,7,1)
-
+    --self:setItem("crudePickaxe",999,{},1,1,1)
 end
 
 function Inventory:setupMainInventory()
 
     print("pourquoi ce fucking code est ignoré please someone fix this")
 
-    self:setItem("crudePickaxe",999,{},1,1)
+    self:setItem("crudePickaxe",1,{},1,1)
+    --self:setItemName("crudePickaxe",1,1)
+    --self:setItemAmount(1,1,1)
+    ---self.items[1][1][1]["amount"] = 1
+    --self.items[1][1][1]["name"] = "crudePickaxe"
     --self:addItem("crudePickaxe",1,{})
 
 end
@@ -162,7 +167,7 @@ function Inventory:slotUpdate(dt,entity,ix,iy,page)
         end
 
 
-        if not self:getSlotAttribute("disabled",ix,iy,page) then
+        if (not self:getSlotAttribute("disabled",ix,iy,page)) or (self:getSlotAttribute("disabled",ix,iy,page) == 0) then
 
             local button = self:getSlotAttribute("button",ix,iy,page)..""
 
@@ -264,7 +269,7 @@ function Inventory:draw(mode,entity,flags)
     for ix=1, self.sizeX do
         for iy=1, actualSizeY do
 
-            if not self:getSlotAttribute("disabled",ix,iy,page) then
+            if (not self:getSlotAttribute("disabled",ix,iy,page)) or (self:getSlotAttribute("disabled",ix,iy,page) == 0) then
 
                 --draw base slots + lighter for mouse hover
                 love.graphics.setColor(self.color[1],self.color[2],self.color[3],self.color[4])
@@ -357,7 +362,7 @@ function Inventory:draw(mode,entity,flags)
     for ix=1, self.sizeX do
         for iy=1, actualSizeY do
 
-            if not self:getSlotAttribute("disabled",ix,iy,page) then
+            if (not self:getSlotAttribute("disabled",ix,iy,page)) or (self:getSlotAttribute("disabled",ix,iy,page) == 0) then
                     
                 love.graphics.setColor(1,1,1,1)
 
@@ -477,7 +482,7 @@ function Inventory:checkIfEmptySpacesAvailable()
     local available = false
     for ix=1 ,self.sizeX do
         for iy=1 ,self.sizeY do
-            if not self:getSlotAttribute("disabled",ix,iy) then
+            if (not self:getSlotAttribute("disabled",ix,iy)) or (self:getSlotAttribute("disabled",ix,iy) == 0) then
                 if not self:getSlotAttribute("disableItemPickup",ix,iy) then
                     if self.items[self.currentPage][ix][iy]["name"] == "none" then
                         available = true
@@ -588,7 +593,7 @@ end
 function Inventory:resetItem(ix,iy,page)
     if page == nil then page = self.currentPage end
     if ix <= self.sizeX and ix >= 1 and iy >= 1 and iy <= self.sizeY then
-        if not self:getSlotAttribute("disabled",ix,iy,page) then
+        if (not self:getSlotAttribute("disabled",ix,iy,page)) or (self:getSlotAttribute("disabled",ix,iy,page) == 0) then
             self.items[page][ix][iy]["name"] = ""
             self.items[page][ix][iy]["amount"] = 0
             self.items[page][ix][iy]["attributes"] = {}
@@ -599,7 +604,7 @@ end
 function Inventory:setItem(name,amount,attributes,ix,iy,page)
     if page == nil then page = self.currentPage end
     if ix <= self.sizeX and ix >= 1 and iy >= 1 and iy <= self.sizeY then
-        if not self:getSlotAttribute("disabled",ix,iy,page) then
+        if (not self:getSlotAttribute("disabled",ix,iy,page)) or (self:getSlotAttribute("disabled",ix,iy,page) == 0) then
             if name ~= nil then self.items[page][ix][iy]["name"] = name end
             if amount ~= nil then self.items[page][ix][iy]["amount"] = amount end
             if attributes ~= nil then self.items[page][ix][iy]["attributes"] = attributes end
@@ -610,7 +615,7 @@ end
 function Inventory:setItemName(name,ix,iy,page)
     if page == nil then page = self.currentPage end
     if ix <= self.sizeX and ix >= 1 and iy >= 1 and iy <= self.sizeY then
-        if not self:getSlotAttribute("disabled",ix,iy,page) then
+        if (not self:getSlotAttribute("disabled",ix,iy,page)) or (self:getSlotAttribute("disabled",ix,iy,page) == 0) then
             if name ~= nil then self.items[page][ix][iy]["name"] = name end
         end
     end
@@ -619,7 +624,7 @@ end
 function Inventory:setItemAmount(amount,ix,iy,page)
     if page == nil then page = self.currentPage end
     if ix <= self.sizeX and ix >= 1 and iy >= 1 and iy <= self.sizeY then
-        if not self:getSlotAttribute("disabled",ix,iy,page) then
+        if (not self:getSlotAttribute("disabled",ix,iy,page)) or (self:getSlotAttribute("disabled",ix,iy,page) == 0) then
             if amount ~= nil then self.items[page][ix][iy]["amount"] = amount end
         end
     end
@@ -628,7 +633,7 @@ end
 function Inventory:itemAmountAdd(amount,ix,iy,page)
     if page == nil then page = self.currentPage end
     if ix <= self.sizeX and ix >= 1 and iy >= 1 and iy <= self.sizeY then
-        if not self:getSlotAttribute("disabled",ix,iy,page) then
+        if (not self:getSlotAttribute("disabled",ix,iy,page)) or (self:getSlotAttribute("disabled",ix,iy,page) == 0) then
             if amount ~= nil then self.items[page][ix][iy]["amount"] = self.items[page][ix][iy]["amount"] + amount end
         end
     end
@@ -637,7 +642,7 @@ end
 function Inventory:setItemAttributes(attributes,ix,iy,page)
     if page == nil then page = self.currentPage end
     if ix <= self.sizeX and ix >= 1 and iy >= 1 and iy <= self.sizeY then
-        if not self:getSlotAttribute("disabled",ix,iy,page) then
+        if (not self:getSlotAttribute("disabled",ix,iy,page)) or (self:getSlotAttribute("disabled",ix,iy,page) == 0) then
             if attributes ~= nil then self.items[page][ix][iy]["attributes"] = attributes end
         end
     end
@@ -650,7 +655,7 @@ function Inventory:addItem(name,amount,attributes)
 
     for iy=1 ,self.sizeY do
         for ix=1 ,self.sizeX do
-            if not self:getSlotAttribute("disabled",ix,iy) then
+            if (not self:getSlotAttribute("disabled",ix,iy)) or (self:getSlotAttribute("disabled",ix,iy) == 0) then
 
                 if amount > 0 then
                     if (self.items[self.currentPage][ix][iy]["name"] == name and self:getItemAmount(ix,iy) < items[name].maxStack) and (not available) then

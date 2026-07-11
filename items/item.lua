@@ -127,7 +127,7 @@ function Item:use(entity,attributes,cursorX,cursorY,slot,stacks)
     end
 
 
-    if checkifinlist(slot,self.desiredInventorySpots) and self.category == "tool" then
+    if checkifinlist(slot,self.desiredInventorySpots) and self.mineDamage > 0 then
 
         local destroyedAtLeastATile = false
 

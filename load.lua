@@ -4,6 +4,7 @@ function loadeverything()
   loadtiles()
   loadItems()
   GenerateTileItems()
+  LoadInterfaces()
 
   LoadStructureList()
   --loadbiomes()
@@ -94,7 +95,7 @@ function loadtextures()
   textures["sprites"]["placementPreview"] = Sprite("placementPreview","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {0,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
   textures["sprites"]["destroyPreviewReady"] = Sprite("destroyPreviewReady","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {2,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
   textures["sprites"]["destroyPreview"] = Sprite("destroyPreview","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {1,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
-  textures["sprites"]["destroyAnimation"] = Sprite("destroyAnimation","miscTiles.png",{["type"] = "hold", ["timePerFrame"] = 1/8, ["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {{0,1},{1,1},{2,1},{3,1},{4,1},{5,1},{6,1},{7,1}}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleAnimation"})
+  textures["sprites"]["destroyAnimation"] = Sprite("destroyAnimation","miscTiles.png",{["type"] = "hold", ["timePerFrame"] = 1/9, ["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {{0,1},{1,1},{2,1},{3,1},{4,1},{5,1},{6,1},{7,1},{8,1}}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleAnimation"})
   
   textures["sprites"]["player"] = Sprite("player","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,0},["spriteSizes"]={1,2},["spriteCenters"]={0.5,1.5}})
   textures["sprites"]["crudePickaxe_Hold"] = Sprite("crudePickaxe_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,1},["spriteSizes"]={1.5,2},["spriteCenters"]={0.75,1.5}})
@@ -166,6 +167,13 @@ function loadtiles()
       ["newQuad"] = { 1, 0, 1, 1, 8 },
       ["border type"] = "non-solid",
       ["health"] = 0
+    })
+   tiles["soilGrass"]         = Tile("soilGrass", "top", "tiles.png", "soilGrass",
+    {
+      ["newQuad"] = { 1, 2, 1, 1, 8 },
+      ["border type"] = "non-solid",
+      ["health"] = 0,
+      ["actualName"] = "soil grass",
     })
 
   tiles["purplegrass"]   = Tile("purplegrass", "top", "tiles.png", "purplegrass",
@@ -320,6 +328,82 @@ function loadtiles()
       ["actualDropeRate"] = 0,
       ["secondaryDropAmount"] = 4,
     })
+  tiles["glass"]          = Tile("glass", "solid", "tiles.png", "glass",
+    {
+      ["newQuad"] = { 18, 0, 1, 1, 8 },
+      ["border"] = {
+        ["quad"] = "glass_top",
+        ["newQuad"] = { 18, 1, 1, 1, 8 }
+      },
+      ["health"] = 2.2,
+      ["actualDropeRate"] = 1,
+      ["lightCanGoThrough"] = true,
+      ["color"] = {1,1,1,0.6},
+    })
+  tiles["soil"]          = Tile("soil", "solid", "tiles.png", "soil",
+    {
+      ["newQuad"] = { 0, 2, 1, 1, 8, },
+      ["border"] = {
+        ["quad"] = "soil_top",
+        ["newQuad"] = { 0, 3, 1, 1, 8 }
+      },
+      ["health"] = 3.5
+    })
+  tiles["heavyStone"]         = Tile("heavyStone", "solid", "tiles.png", "heavyStone", {
+    ["newQuad"] = { 2, 2, 1, 1, 8 },
+    ["border"] = {
+      ["quad"] = "heavyStone_top",
+      ["newQuad"] = { 2, 3, 1, 1, 8 }
+    },
+    ["isStone"] = true,
+    ["health"] = 6,
+    ["actualName"] = "heavy stone",
+  })
+  tiles["essenceLeaves"]          = Tile("essenceLeaves", "solid", "tiles.png", "essenceLeaves",
+    {
+      ["newQuad"] = { 3, 2, 1, 1, 8 },
+      ["border"] = {
+        ["quad"] = "essenceLeaves_top",
+        ["newQuad"] = { 3, 4, 1, 1, 8 }
+      },
+      ["health"] = 0.6,
+      ["actualDropeRate"] = 0.4,
+      ["lightCanGoThrough"] = true,
+      ["actualName"] = "essence leaves",
+      ["secondaryDrop"] = "stick",
+      ["secondaryDropAmount"] = 2,
+    })
+  tiles["essenceWood"]         = Tile("essenceWood", "solid", "tiles.png", "essenceWood", {
+    ["newQuad"] = { 4, 2, 1, 1, 8 },
+    ["border"] = {
+      ["quad"] = "essenceWood_top",
+      ["newQuad"] = { 4, 3, 1, 1, 8 }
+    },
+    ["health"] = 3,
+    ["actualName"] = "Essence wood",
+    ["secondaryDrop"] = "stick",
+    ["secondaryDropAmount"] = 5,
+  })
+  tiles["essenceWoodBricks"]         = Tile("essenceWoodBricks", "solid", "tiles.png", "essenceWoodBricks", {
+    ["newQuad"] = { 5, 2, 1, 1, 8 },
+    ["border"] = {
+      ["quad"] = "essenceWoodBricks_top",
+      ["newQuad"] = { 5, 3, 1, 1, 8 }
+    },
+    ["health"] = 3,
+    ["actualName"] = "Essence wood bricks",
+    ["secondaryDrop"] = "stick",
+    ["secondaryDropAmount"] = 5,
+  })
+  tiles["campfire"]         = Tile("campfire", "non-solid", "tiles.png", "campfire", {
+    ["newQuad"] = { 6, 2, 1, 1, 8 },
+    ["border type"] = "none",
+    ["health"] = 0.5,
+    ["secondaryDrop"] = "stick",
+    ["secondaryDropAmount"] = 8,
+    ["particleEmit"] = "fire",
+    ["particleEmitData"] = {["amount"]=5,["radius"]=0.3,["color"]={0.9,0.9,0,0.7},["flags"]={["color2"]={0.8,0.2,0.2,0.8},["color3"]={0.4,0.4,0.4,0.9}},["timer"]=3},
+  })
 end
 
 function loadEntities()
@@ -334,13 +418,14 @@ function loadItems()
   ItemList = {}
   items = {}
   items["none"] = Item("none","none",{})
-  items["stick"] = Item("stick","stick",{["category"]="material"})
+  --items["stick"] = Item("stick","stick",{["category"]="material"})
+  items["stick"] = Item("stick","stick",{["category"]="material",["placeBlock"] = "essenceWoodBricks", ["placeBlockCost"] = 5, ["maxStack"] = 300})
   items["rock"] = Item("rock","rock",{["category"]="material",["placeBlock"] = "scrapBlock", ["placeBlockCost"] = 4, ["maxStack"] = 300})
   items["crudePickaxe"] = Item("crudePickaxe","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude pickaxe",
-    ["cooldown"] = 0.5,
-    ["mineDamage"] = 1,
-    ["blockDamageAmount"] = 6,
-    ["rangeLimit"] = 6,
+    ["cooldown"] = 0.7,
+    ["mineDamage"] = 0.8, --1
+    ["blockDamageAmount"] = 6, --6
+    ["rangeLimit"] = 5,  --6
     ["mineArcAngle"] = 130,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
@@ -351,7 +436,7 @@ function loadItems()
     ["rangeLimit"] = 20,
     ["mineArcAngle"] = 360,
     ["holdAnimation"] = "crudePickaxe_Hold",
-    ["baseColor"] = {1,0,0,1},
+    ["baseColor"] = {0,1,1,1},
   })
 end
 
@@ -448,4 +533,17 @@ function generateRandomBiomeList()
   if math.random() > 0.6 then world:addBiome("darkland", 0.5, 0.3, math.random() * 3 - 1, 99999, 1, 1) end
   if math.random() > 0.6 then world:addBiome("ancientland", 0.3, 0.9, math.random() * 3 - 1, 99999, 1, 0.2) end
   if math.random() > 0.6 then world:addBiome("duneland", 0.7, 0.2, math.random() * 3 - 1, 99999, 5, 1) end
+end
+
+function LoadInterfaces()
+  interfaces = {}
+  interfaces["mainMenu"] = Interface("MainMenu",0.5,0.35,0.6,0.6,"invisible",{0.6,0.6,0.9,1},{1,1,1,1},{["gap"]=0.03,["scrollMargin"]=0})
+  interfaces["mainMenu"]:addElement("playButton","button",0.4,0.1,"Play",{},{},nil,nil)
+  interfaces["mainMenu"]:addElement("settingsButton","button",0.4,0.1,"Settings",{},{},nil,nil)
+  interfaces["mainMenu"]:addElement("quitButton","button",0.4,0.1,"Quit",{},{},nil,nil)
+
+  interfaces["settings"] = Interface("settings",0.5,0.15,0.6,0.8,"bland",{0.6,0.6,0.9,1},{1,1,1,1},{["gap"]=0.03,["scrollMargin"]=0.1})
+
+  interfaces["back"] = Interface("back",0.1,-0.05,0.3,0.3,"invisible",{0.6,0.6,0.9,1},{1,1,1,1},{["gap"]=0.03,["scrollMargin"]=0.1,["elementsStayInBound"]=false})
+  interfaces["back"]:addElement("playButton","button",0.4,0.075,"Back",{["gap"]=0},{},nil,nil)
 end

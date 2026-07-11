@@ -73,7 +73,7 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
             ,Inventory("armor",{0.5,0.6,0.7,1},Vector2(0.95,0.05),3,4,1,1,(0.065),(0.065/8),{["isEquipmentInventory"]=true,["anchorX"]="right",["anchorY"]="top"})
             ,Inventory("chest test",{0.7,0.5,0.5,1},Vector2(0.5,0.95),8,3,1,100,(0.065),(0.065/8),{["anchorX"]="middle",["anchorY"]="bottom"})
         }
-        self.inventory[1]:setupMainInventory()
+        --self.inventory[1]:setupMainInventory()
         if CheatMode then
             table.insert(self.inventory,Inventory("cheat inventory, press arrows to scroll",{0.5,0.5,0.7,1},Vector2(0.5,0.5),12,3,1,100,(0.065),(0.065/8),{["anchorY"]="top",["cheat"]=true}))
         end
@@ -84,7 +84,7 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
             ,Inventory("armor",{0.5,0.6,0.7,1},Vector2(0.95,0.05),3,4,1,1,(0.065),(0.065/8),{["isEquipmentInventory"]=true,["anchorX"]="right",["anchorY"]="top"})
         }
     end
-
+    
 end
 
 function Entity:setType(newType)
@@ -375,19 +375,22 @@ function Entity:drawBlocPreview()
         for iy=1,self.inventory[1].sizeY do
             local item = items[self.inventory[1]:getItemName(ix,iy)]
 
-            if item.placeBlock ~= "none" and checkifinlist(self.inventory[1]:getSlotAttribute("button",ix,iy),item.desiredInventorySpots) then
+            if item ~= nil then
 
-                local color = {self.cursorColor[1],self.cursorColor[2],self.cursorColor[3],0.4}
-                if self.inventory[1]:getSlotAttribute("cooldown",ix,iy) > 0.1 then color = {self.cursorColor[1],self.cursorColor[2],self.cursorColor[3],0.18} end
+                if item.placeBlock ~= "none" and checkifinlist(self.inventory[1]:getSlotAttribute("button",ix,iy),item.desiredInventorySpots) then
 
-                local place = world:rayTrace({item.blockPlaceLayer},self.position:copy(),Vector2(round(self:getAim("x")),round(self:getAim("y"))),item.rangeLimit,true)
+                    local color = {self.cursorColor[1],self.cursorColor[2],self.cursorColor[3],0.4}
+                    if self.inventory[1]:getSlotAttribute("cooldown",ix,iy) > 0.1 then color = {self.cursorColor[1],self.cursorColor[2],self.cursorColor[3],0.18} end
 
-                local x,y,size = world:getTileScreenPosition(round(place.x),round(place.y))
+                    local place = world:rayTrace({item.blockPlaceLayer},self.position:copy(),Vector2(round(self:getAim("x")),round(self:getAim("y"))),item.rangeLimit,true)
+
+                    local x,y,size = world:getTileScreenPosition(round(place.x),round(place.y))
 
 
-                textures["sprites"]["placementPreview"]:drawSI("right",x,y,size,size,color)
+                    textures["sprites"]["placementPreview"]:drawSI("right",x,y,size,size,color)
+                end
+                
             end
-    
             
         end
     end
@@ -398,29 +401,33 @@ function Entity:drawMinePreview()
         for iy=1,self.inventory[1].sizeY do
             local item = items[self.inventory[1]:getItemName(ix,iy)]
 
-            if item.mineDamage > 0 and checkifinlist(self.inventory[1]:getSlotAttribute("button",ix,iy),item.desiredInventorySpots) then
-                
+            if item ~= nil then
 
-                local targets = item:getPickaxeTargets(self,self.inventory[1]:getItemAttributes(ix,iy),self:getAim("x"),self:getAim("y"))
+                if item.mineDamage > 0 and checkifinlist(self.inventory[1]:getSlotAttribute("button",ix,iy),item.desiredInventorySpots) then
+                    
 
-                if #targets > 0 then
-                    for targ=1,#targets do
-                        local x,y,size = world:getTileScreenPosition(round(targets[targ].x),round(targets[targ].y))
+                    local targets = item:getPickaxeTargets(self,self.inventory[1]:getItemAttributes(ix,iy),self:getAim("x"),self:getAim("y"))
 
-                        if self.inventory[1]:getSlotAttribute("cooldown",ix,iy) > 0.1 then
+                    if #targets > 0 then
+                        for targ=1,#targets do
+                            local x,y,size = world:getTileScreenPosition(round(targets[targ].x),round(targets[targ].y))
 
-                            local color = {0.8,0.4,0,0.5}
-                            textures["sprites"]["destroyPreview"]:drawSI("right",x,y,size,size,color)
+                            if self.inventory[1]:getSlotAttribute("cooldown",ix,iy) > 0.1 then
 
-                        else
+                                local color = {0.8,0.4,0,0.5}
+                                textures["sprites"]["destroyPreview"]:drawSI("right",x,y,size,size,color)
 
-                            local color = {0.8,0.4,0,0.8}
-                            textures["sprites"]["destroyPreviewReady"]:drawSI("right",x,y,size,size,color)
+                            else
 
+                                local color = {0.8,0.4,0,0.8}
+                                textures["sprites"]["destroyPreviewReady"]:drawSI("right",x,y,size,size,color)
+
+                            end
                         end
                     end
+                    
+
                 end
-                
 
             end
     
@@ -903,6 +910,8 @@ function Entity:draw(inInventory,customX,customY,customSize)
 
     local size = camv/8*self.spriteSize
 
+    if customSize ~= nil then size = customSize end
+
     self:drawHoldItem(spriteX,spriteY,size)
     
     --love.graphics.setColor(0, 0, 0, 1)
@@ -921,7 +930,7 @@ function Entity:draw(inInventory,customX,customY,customSize)
     if self.spriteName ~= "none" and self.animation ~= "none" and textures["sprites"][self.spriteName] ~= nil then
         --print("draw1")
         
-        if customSize ~= nil then size = customSize end
+        
         self.sprite:draw(self.animation,self.animationTime,self.animationDirection,spriteX,spriteY,size,size,{1,1,1,1})
     end
 

@@ -18,6 +18,7 @@ function love.load()
   require "class/utility/eventEmitter"
   require "class/utility/vector2"
   require "particles/particles"
+  require "interfaces/interface"
   love.graphics.setDefaultFilter("nearest", "nearest")
 
   require "World/tiledef"
@@ -35,6 +36,7 @@ function love.load()
   entities = {}
   sprites = {}
   textures = {}
+  interfaces = {}
 
   --[[
   --commandes:
@@ -93,7 +95,7 @@ function love.load()
   camy = 0
   gametime = 0
   realtime = 0
-  gamestate = "game"
+  gamestate = "mainMenu"
   tick = 0
   szx = 100
   szy = 100
@@ -181,6 +183,14 @@ function love.update(dt)
   cy = szy / 2
   math.random()
   tick = tick + 1
+
+  if gamestate == "game" then
+    GlobalGameUpdate(dt)
+  end
+  
+end
+
+function GlobalGameUpdate(dt)
   cameramove(dt)
   gameupdate(dt)
 end
@@ -201,7 +211,19 @@ end
 function love.draw()
   love.graphics.setBackgroundColor(backgroundcolor)
 
-  drawgame()
+  if gamestate == "game" then
+    drawgame()
+  end
+  if gamestate == "pause" then
+    drawgame()
+  end
+  if gamestate == "mainMenu" then
+    MainMenuUpdate()
+  end
+  if gamestate == "settings" then
+    SettingsUpdate()
+  end
+
 
   ResetButtonTicks()
 end

@@ -80,7 +80,18 @@ function MainMenuUpdate()
 end
 
 function SettingsUpdate()
+
+  interfaces["settings"]:passDataToElement("cheat",CheatMode)
+
   local results = interfaces["settings"]:updateAndDraw()
 
+  CheatMode = results["cheat"]
+  
+
+
+
   local results = interfaces["back"]:updateAndDraw()
+  if results["back"] then
+    gamestate = "mainMenu"
+  end
 end

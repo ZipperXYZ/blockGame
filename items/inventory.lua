@@ -86,7 +86,6 @@ end
 
 function Inventory:setupMainInventory()
 
-    print("pourquoi ce fucking code est ignoré please someone fix this")
 
     self:setItem("crudePickaxe",1,{},1,1)
     --self:setItemName("crudePickaxe",1,1)
@@ -203,7 +202,6 @@ function Inventory:slotUpdate(dt,entity,ix,iy,page)
 end
 
 function Inventory:updateCheat()
-    --love.graphics.print(#ItemList,0,50)
     --CheatInventoryScroll
     if love.keyboard.isDown("left") then CheatInventoryScroll = CheatInventoryScroll - 1 end
     if love.keyboard.isDown("right") then CheatInventoryScroll = CheatInventoryScroll + 1 end
@@ -217,20 +215,28 @@ function Inventory:updateCheat()
     end
 end
 
+function Inventory:getTileSize()
+    return self.tileSize * InventorySize
+end
+
+function Inventory:getItemSize()
+    return self.itemSize * InventorySize
+end
+
 function Inventory:draw(mode,entity,flags)
     if self.cheat then self:updateCheat() end
     if mode == nil then mode = "complete" end
     if flags == nil then flags = {} end
     if flags["hightlights"] == nil then flags["hightlights"] = {} end
-    if #flags.hightlights > 1 then print(flags.hightlights[1]) end
+    --if #flags.hightlights > 1 then print(flags.hightlights[1]) end
     local page = self.currentPage
 
 
     local actualScreenPosX,actualScreenPosY, actualTileSize, actualSizeY
     if szx > szy then
-        actualTileSize = szy * self.tileSize
+        actualTileSize = szy * self:getTileSize()
     else
-        actualTileSize = szx * self.tileSize
+        actualTileSize = szx * self:getTileSize()
     end
     if mode == "firstLine" then
         actualSizeY = 1
@@ -407,7 +413,7 @@ function Inventory:draw(mode,entity,flags)
     end
 
     love.graphics.setColor(1,1,1,1)
-    love.graphics.print(self.inventoryName,actualScreenPosX+5,actualScreenPosY+5)
+    love.graphics.printf(self.inventoryName,actualScreenPosX+5,actualScreenPosY+5,999,"left",0,InventoryTextSize,InventoryTextSize)
     
 end
 
@@ -415,9 +421,9 @@ function Inventory:getPosAndSize()
 
     local actualScreenPosX,actualScreenPosY, actualTileSize, actualSizeY
     if szx > szy then
-        actualTileSize = szy * self.tileSize
+        actualTileSize = szy * self:getTileSize()
     else
-        actualTileSize = szx * self.tileSize
+        actualTileSize = szx * self:getTileSize()
     end
     actualSizeY = self.sizeY
 
@@ -449,9 +455,9 @@ function Inventory:getTilePosAndSize(ix,iy)
 
     local actualScreenPosX,actualScreenPosY, actualTileSize, actualSizeY
     if szx > szy then
-        actualTileSize = szy * self.tileSize
+        actualTileSize = szy * self:getTileSize()
     else
-        actualTileSize = szx * self.tileSize
+        actualTileSize = szx * self:getTileSize()
     end
     actualSizeY = self.sizeY
 
@@ -715,7 +721,7 @@ function Inventory:drawItem(page,tileX,tileY,positionX,positionY,size)
                 items[self.items[page][tileX][tileY]["name"]]:draw("medium",positionX,positionY,size,self.items[page][tileX][tileY]["attributes"])
                 if self.items[page][tileX][tileY]["amount"] > 1 then
                     love.graphics.setColor(1,1,1,1)
-                    love.graphics.printf("x"..self.items[page][tileX][tileY]["amount"],positionX-size/2,positionY+size/2 - 15,size/1.2,"right",0,1.2,1.2)
+                    love.graphics.printf("x"..self.items[page][tileX][tileY]["amount"],positionX-size/2,positionY+size/2 - 15,size/(InventoryTextSize),"right",0,InventoryTextSize,InventoryTextSize)
                 end
             end
         end

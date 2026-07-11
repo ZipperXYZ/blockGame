@@ -24,6 +24,14 @@ function love.load()
   require "World/tiledef"
   require "World/chunk"
   require "World/world"
+  love.filesystem.setIdentity("GAMENAMEPLEASEFINDONE")
+
+  Fonts = {
+    love.graphics.newFont("/fonts/DotGothic16/DotGothic16-Regular.ttf", 12, "light", 4),
+    love.graphics.newFont("/fonts/Pixelify_Sans/PixelifySans-VariableFont_wght.ttf", 12, "light", 4),
+  }
+  love.graphics.setFont(Fonts[2])
+  
   -- require "chunkv2"
   -- require "worldv2"
   --love.filesystem.setIdentity("gamename")
@@ -67,9 +75,14 @@ function love.load()
   generateBaseBiomes()
 
   debugseebiome = false
-  lightreach = 6        --cette valeure est importante
-  chunkloaddistance = 20 --celle la aussi
+
+  lightreach = 6       
+  chunkloaddistance = 20 
   MaxChunkLoadedPerFrame = 3
+  InventorySize = 1
+  UISize = 1.4
+  InventoryTextSize = 1.4
+  SelectedFont = 2
 
   CheatMode = true
   CheatInventoryScroll = 0

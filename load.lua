@@ -542,8 +542,10 @@ function LoadInterfaces()
   interfaces["mainMenu"]:addElement("settingsButton","button",0.4,0.1,"Settings",{},{},nil,nil)
   interfaces["mainMenu"]:addElement("quitButton","button",0.4,0.1,"Quit",{},{},nil,nil)
 
-  interfaces["settings"] = Interface("settings",0.5,0.15,0.6,0.8,"bland",{0.6,0.6,0.9,1},{1,1,1,1},{["gap"]=0.03,["scrollMargin"]=0.1})
+  interfaces["settings"] = Interface("settings",0.5,0.15,0.6,0.8,"bland",{0.6,0.6,0.9,1},{1,1,1,1},{["title"]= "Settings",["gap"]=0.00,["scrollMargin"]=0.1,["showTitle"] = true})
+  interfaces["settings"]:addElement("cheat","checkbox",0.9,0.04,"Cheat Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
+  interfaces["settings"]:addElement("cheat","slider",0.9,0.04,"Cheat Toggle",{["round"] = 1,["min"] = 20, ["max"]= 50,["displayAddition"]=-20,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
 
   interfaces["back"] = Interface("back",0.1,-0.05,0.3,0.3,"invisible",{0.6,0.6,0.9,1},{1,1,1,1},{["gap"]=0.03,["scrollMargin"]=0.1,["elementsStayInBound"]=false})
-  interfaces["back"]:addElement("playButton","button",0.4,0.075,"Back",{["gap"]=0},{},nil,nil)
+  interfaces["back"]:addElement("back","button",0.4,0.075,"Back",{},{["gap"]=0},nil,nil)
 end

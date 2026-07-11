@@ -20,12 +20,12 @@ function StartGame(changeGameState)
   --local spawnX, spawnY = world:getSpawn()
   generateBaseBiomes()
 
-  debugseebiome = false
-  CheatMode = true
+  --debugseebiome = true
+  --CheatMode = true
 
-  lightreach = 6        --light distance
-  chunkloaddistance = 20 --
-  MaxChunkLoadedPerFrame = 3  --
+  --lightreach = 6        --light distance
+  --chunkloaddistance = 20 --
+  --MaxChunkLoadedPerFrame = 3  --
 
 
   world:spawnEntity("player", 0, 0)

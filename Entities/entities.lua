@@ -52,8 +52,9 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.gravity = self.flags["gravity"] or 0.5
     self.movevementSpeed = self.flags["movevementSpeed"] or 1
     self.jumpStrength = self.flags["jumpStrength"] or 1.2
-    self.lastGrounded = nil
-    self.currentFallDamage = 0
+
+    self.highestPositionBeforeFall = nil
+    self.groundedLastFrame = true
 
     self.cameraFocus = self.flags.cameraFocus or (self.ia == "player" or self.ia == "human")
 
@@ -263,8 +264,8 @@ function Entity:InventoryItemsUpdate(dt)
     end
 end
 
-function Entity:hasFallDamage()
-    if self.lastGrounded == nil then
+function Entity:updateFallDamage()
+    --[[if self.highestPositionBeforeFall == nil then
         if not self:isGrounded() then
             self.lastGrounded = self.position.y
         end
@@ -276,7 +277,85 @@ function Entity:hasFallDamage()
             self.currentFallDamage = 0
             self.lastGrounded = nil
         end
+    end]]
+
+    if (not self.groundedLastFrame)  then
+        if self.highestPositionBeforeFall ~= nil then
+
+            local difference = self.highestPositionBeforeFall.y-self.position.y 
+            local treshold = 8
+            
+            if difference > 0 then
+                if self:isGrounded() then
+                    self:jumpHopParticules( maximum(difference + 3,40))
+                end
+            end
+            if difference > treshold then
+                
+                if self:isGrounded() then
+                    -- replace 1 by max health
+                    local maxHealth = 1
+                    local damage = self:getFallDamage((difference) - treshold, maxHealth)
+                    --damage = damage * 50
+
+                    self:spawnBlood(1 * math.ceil(damage*150),3 + damage * 5 / maxHealth)
+                end
+            end
+        end
     end
+    if self.velocity.y >= -0.05 then
+        self.highestPositionBeforeFall = self.position:copy()
+    end
+    self.groundedLastFrame = self:isGrounded()
+    
+end
+
+function Entity:jumpHopParticules(amount,velo,direction,arc)
+    if velo == nil then velo = 0.5 end
+    if direction == nil then direction = -90 end
+    if arc == nil then arc = 360 end
+    world:spawnParticles(
+                        amount,
+                        "air",
+                        self.position:copy(),
+                        self.size,
+                        {0.7,0.7,0.7,0.5}, 
+                        {0.1,0.1,0.1,0.3}, 
+                        0.5, 
+                        0.5,
+                        "fire", 
+                        velo, 
+                        direction, 
+                        arc, 
+                        {["weight"]=0.25})
+end
+
+function Entity:spawnBlood(amount,velo,direction,arc)
+    if velo == nil then velo = 0.5 end
+    if direction == nil then direction = -90 end
+    if arc == nil then arc = 360 end
+    world:spawnParticles(
+                        amount,
+                        "blood",
+                        self.position:copy(),
+                        self.size,
+                        {0.4,0,0.1,1}, 
+                        {0.3,0.05,0.075,1}, 
+                        5, 
+                        5,
+                        "dust", 
+                        velo, 
+                        direction, 
+                        arc, 
+                        {})
+end
+
+function Entity:getFallDamage(fallHeight, maxHealth)
+    local kv = 0.05 --
+    local damageFraction = math.log(1 + kv * fallHeight)
+                           / (1 + math.log(1 + kv * fallHeight))
+
+    return damageFraction * maxHealth
 end
 
 function Entity:movementUpdate(dt)
@@ -292,7 +371,7 @@ function Entity:movementUpdate(dt)
             (self.movevementSpeed * 10 * dt / self.movementSlide)
     end
 
-    self:hasFallDamage()
+    --self:updateFallDamage()
 
     if self.controls.jump and self:canJump() then
         if self.velocity.y < 0 then self.velocity.y = 0 end
@@ -899,6 +978,7 @@ function Entity:drawHoldItem(spriteX, spriteY, size)
 end
 
 function Entity:draw(inInventory, customX, customY, customSize)
+    self:updateFallDamage()
     local x
     local y
     x, y = positiontoscreen(round(self.position:getX() * 8) / 8,

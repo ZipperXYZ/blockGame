@@ -27,10 +27,11 @@ function love.load()
   love.filesystem.setIdentity("GAMENAMEPLEASEFINDONE")
 
   Fonts = {
-    love.graphics.newFont("/fonts/DotGothic16/DotGothic16-Regular.ttf", 12, "light", 4),
     love.graphics.newFont("/fonts/Pixelify_Sans/PixelifySans-VariableFont_wght.ttf", 12, "light", 4),
+    love.graphics.newFont("/fonts/DotGothic16/DotGothic16-Regular.ttf", 12, "light", 4),
   }
-  love.graphics.setFont(Fonts[2])
+  Font = Fonts[1]
+  love.graphics.setFont(Font)
   
   -- require "chunkv2"
   -- require "worldv2"
@@ -80,9 +81,10 @@ function love.load()
   chunkloaddistance = 20 
   MaxChunkLoadedPerFrame = 3
   InventorySize = 1
-  UISize = 1.4
+  UISize = 1
   InventoryTextSize = 1.4
-  SelectedFont = 2
+  SelectedFont = 1
+  MapZoom = 2
 
   CheatMode = true
   CheatInventoryScroll = 0
@@ -115,7 +117,10 @@ function love.load()
   cx = 50
   cy = 50
   fullscreen = false
+  scrollValueX = 0
+  scrollValueY = 0
   buttons = {"w","e","tab","click","rclick","shiftclick","shiftrclick"}
+  SelectedMouseDrag = "none"
   buttonFramePress = {}
   for ib = 1, #buttons do
     buttonFramePress[buttons[ib]] = false
@@ -229,6 +234,7 @@ function love.draw()
   end
   if gamestate == "pause" then
     drawgame()
+    PauseUpdate()
   end
   if gamestate == "mainMenu" then
     MainMenuUpdate()
@@ -236,15 +242,21 @@ function love.draw()
   if gamestate == "settings" then
     SettingsUpdate()
   end
+  if gamestate == "worldCreation" then
+    WorldCreationUpdate(dt)
+  end
 
 
   ResetButtonTicks()
 end
 
 function ResetButtonTicks()
+  if not love.mouse.isDown(1) then SelectedMouseDrag = "none" end
   clicktick = false
   rightclicktick = false
   middleclicktick = false
+  scrollValueX = 0
+  scrollValueY = 0
 
   for ib = 1, #buttons do
     buttonFramePress[buttons[ib]] = false
@@ -255,6 +267,16 @@ function love.keypressed(key)
   if key == "p" then
     fullscreen = not fullscreen
     love.window.setFullscreen(fullscreen)
+  end
+
+  if key == "escape" then
+    if gamestate == "game" then
+      gamestate = "pause"
+    else
+      if gamestate == "pause" then
+        gamestate = "game"
+      end
+    end
   end
   if key == "r" then
    --[[ world = World(math.random() * 1000000, 10, 100, 150, {},
@@ -308,5 +330,6 @@ function love.mousepressed(x, y, b)
 end
 
 function love.wheelmoved(x, y)
-
+  scrollValueX = x
+  scrollValueY = y
 end

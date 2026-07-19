@@ -14,9 +14,18 @@ function gameupdate(dt)
   --updatelight(dt)
 end
 
-function StartGame(changeGameState)
+function StartGame(changeGameState,parameters)
+  if parameters == nil then parameters = {} end
+  if parameters.wh == nil then parameters.wh = 1500 end
+  if parameters.ww == nil then parameters.ww = 450 end
+  if parameters.freeCam == nil then parameters.freeCam = false end
+
+  camEntityFollow = 0
   entities = {}
-  world = World(math.random() * 1000000, 10, 100, 150, {}, { "none", "stone", "stone2", "grass", "ores", "deco", "done" })
+  local worldParameters = {}
+  worldParameters.borderX = parameters.ww
+  worldParameters.borderY = parameters.wh * 1.2
+  world = World(math.random() * 1000000, 10, parameters.wh/5, 150, {}, { "none", "stone", "stone2", "grass", "ores", "deco", "done" }, worldParameters)
   --local spawnX, spawnY = world:getSpawn()
   generateBaseBiomes()
 
@@ -26,9 +35,11 @@ function StartGame(changeGameState)
   --lightreach = 6        --light distance
   --chunkloaddistance = 20 --
   --MaxChunkLoadedPerFrame = 3  --
-
-
-  world:spawnEntity("player", 0, 0)
+  if parameters.freeCam then
+    spectator = true
+  else
+    world:spawnEntity("player", 0, 0)
+  end
 
   if changeGameState then gamestate = "game" end
 end

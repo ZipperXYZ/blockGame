@@ -331,6 +331,11 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                         end
                     end
                 end
+                if biome == "edgeLands" then
+                    self.chunkTiles["tiles"][ix][iy] = "soil"
+                    self.chunkTiles["backTiles"][ix][iy] = "soil"
+                    --self.chunkTiles["backTiles"][ix][iy] = "soil"
+                end
             end
         end
         self:advanceGenerationStatus(stepList)
@@ -537,6 +542,32 @@ function Chunk:getBiome(worldPosX, worldPosY, worldSeed, depthProgression, biome
     else
         nearCenter = 1
     end
+
+    -- biome exceptions :
+    local xt = math.abs((((worldPosX+world.loopX/2)%world.loopX)-world.loopX/2)*2)
+    local yt = worldPosY
+    local a = world.borderX
+    local b = world.borderY
+    if xt > a then
+        biome = "edgeLands"
+    end
+    if yt < -b then
+        biome = "edgeLands"
+    end
+    --if (xt*1.67)/a > ((yt+b)/(b/12))^0.2 then
+    if (xt*2.67)/a > ((yt+b)/(b/12))^0.4 then
+        biome = "edgeLands"
+    end
+    if (xt*2)/a > ((-yt+b/6)/(b/60))^0.3 then
+        biome = "edgeLands"
+    end
+    if biome == "edgeLands" then
+        if yt - (b/6) * 0.8 > (noise(xt/30,worldSeed*15+10)-0.5)*10 then
+        --if love.math.noise(xt / 30, yt / 450, worldSeed + 100) < (yt/ 30) - 1  then
+            biome = "none"
+        end
+    end
+
 
     return biome, nearCenter
 end

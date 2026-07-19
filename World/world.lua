@@ -12,7 +12,7 @@ for i, s in ipairs(stepOrder) do stepIndex[s] = i end
 --  depthProgression correspond au nombre de blocs
 --  par progression du monde, comme par exemple, mettre 100 feras en sorte que des enemies vont commencer à spawn à y-100, d'autres à -200 et ça s'applique
 --  sur tout genre les mobs, les ores, les tiles, les biomes, les structures etc.
-function World:init(worldSeed, chunkSize, depthProgression, biomeSize, biomeList, generationSteps)
+function World:init(worldSeed, chunkSize, depthProgression, biomeSize, biomeList, generationSteps, parameters)
     self.worldSeed = worldSeed or math.random() * 100000
     self.depthProgression = depthProgression or 100
     self.biomeSize = biomeSize or 150
@@ -22,6 +22,12 @@ function World:init(worldSeed, chunkSize, depthProgression, biomeSize, biomeList
     self.chunks = {}
     self.groundItems = {}
     self.particles = {}
+
+    self.parameters = parameters or {}
+    self.borderX = self.parameters.borderX or 0
+    self.loopX = self.parameters.loopX or (self.borderX*1.4)
+    self.borderY = self.parameters.borderY or 0
+    self.hasBorder = self.parameters.hasBorder or (self.borderX ~= 0)
 
     
 end

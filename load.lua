@@ -640,6 +640,7 @@ function LoadInterfaces()
 
 
   interfaces["settings"] = Interface("settings",0.5,0.15,0.6,0.8,"bland",{0.9,0.6,0.6,1},{1,1,1,1},{["title"]= "Settings",["gap"]=0.00,["scrollMargin"]=0.1,["showTitle"] = true})
+  interfaces["settings"]:addElement("resetSettings","button",0.4,0.1,"Reset Settings",{},{},nil,nil)
   --interfaces["settings"]:addElement("cheat","checkbox",0.9,0,"Cheat Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   --interfaces["settings"]:addElement("lightReach","slider",0.9,0.2,"Light reach",{["round"] = 1,["min"] = 1, ["max"]= 12,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 6},nil,nil)
   interfaces["settings"]:addElement("chunkRenderDistance","slider",0.9,0.2,"Additional chunk gen distance",{["round"] = 1,["min"] = 20, ["max"]= 50,["displayAddition"]=-20,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 20},nil,nil)
@@ -650,6 +651,7 @@ function LoadInterfaces()
   interfaces["settings"]:addElement("SelectedFont","slider",0.9,0.2,"Font",{["round"] = 1,["min"] = 1, ["max"]= #Fonts},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)
   interfaces["settings"]:addElement("UISize","slider",0.9,0.2,"UI size",{["round"] = 0.1,["min"] = 0.5, ["max"]= 1.5},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)
   interfaces["settings"]:addElement("resetUI","button",0.4,0.1,"Reset UI",{},{},nil,nil)
+  
 
 
   interfaces["back"] = Interface("back",0.1,-0.05,0.3,0.3,"invisible",{0.6,0.6,0.9,1},{1,1,1,1},{["gap"]=0.03,["scrollMargin"]=0,["elementsStayInBound"]=false})

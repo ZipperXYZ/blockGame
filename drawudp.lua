@@ -142,6 +142,10 @@ function SettingsUpdate()
   
   local results = interfaces["settings"]:updateAndDraw()
 
+  if results["resetSettings"] then
+    interfaces["settings"]:resetAll()
+    results = interfaces["settings"]:updateAndDraw()
+  end
   --CheatMode = results["cheat"]
   --lightreach = results["lightReach"]
   chunkloaddistance = results["chunkRenderDistance"]
@@ -161,6 +165,7 @@ function SettingsUpdate()
   if results["resetUI"] then
     LoadInterfaces()
   end
+  
 
 
 

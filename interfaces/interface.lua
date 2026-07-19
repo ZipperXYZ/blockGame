@@ -196,6 +196,16 @@ function Interface:updateAndDraw()
     return results
 end
 
+function Interface:resetAll()
+    if #self.elements > 0 then
+        for i = 1, #self.elements do
+            if self.elements[i].default ~= nil then
+                self.elements[i].data = self.elements[i].default
+            end
+        end
+    end
+end
+
 function Interface:passDataToElement(elementName,data)
     if #self.elements > 0 then
         for i = 1, #self.elements do

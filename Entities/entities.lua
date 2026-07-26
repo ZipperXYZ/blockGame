@@ -10,7 +10,11 @@ Entity.className = "Entity"
 function Entity:init(name, type, sprite, position, health, size, level, ia, flags)
     self.name = name or "none"
     self.type = type or "enemy"
-    self.health = health or 1
+
+    self.health = Bar("health",{1,0.5,0.5,1},{1,1,1,1},"multisection")
+    self.health:addSection("hp",{0,1,0.5,1},health,(health/100),3,false,false,false)
+    self.health:addSection("shield",{0,0.5,1,1},health*0.2,(health/30),8,false,false,false)
+
     self.size = size or 0.5
     self.level = level or 0
     self.ia = ia or "none"
@@ -112,9 +116,9 @@ function Entity:getPosition()
     return self.position
 end
 
-function Entity:setHealth(newHealth)
-    self.health = newHealth
-end
+--function Entity:setHealth(newHealth)
+    --self.health = newHealth
+--end
 
 function Entity:setPosY(posY)
     self.position:setY(y)
@@ -148,13 +152,27 @@ function Entity:spawnEntity(name, x, y)
     self.position = Vector2:new(x, y)
 end
 
-function Entity:damage(damage)
-    if (self.health - damage < 0) then
-        self.health = 0
-        self.deathEvent:emit()
-    else
-        self.health = -damage
+function Entity:damage(damage,source,entitySource)
+    local section = nil
+
+    --damage health first :
+    if checkifinlist(source,{"fall"}) then
+        section = "hp"
     end
+
+
+    local overflow,downflow = self.health:decrease(damage,section)
+
+end
+
+function Entity:gainHealth(value,hpType,source,entitySource)
+    local section = hpType
+
+
+    local overflow,downflow = self.health:increase(value,section)
+
+
+    return overflow,downflow
 end
 
 function Entity:death()
@@ -281,7 +299,9 @@ function Entity:updateFallDamage()
             self.lastGrounded = nil
         end
     end]]
-
+    --self.health:setDamagePreview("a",10,{0.3,0.3,1,1},0.1,nil)
+    --self.health:setDamagePreview("b",30,{1,1,0.3,1},0.1,nil)
+    
     if (not self.groundedLastFrame)  then
         if self.highestPositionBeforeFall ~= nil then
 
@@ -294,14 +314,16 @@ function Entity:updateFallDamage()
                 end
             end
             if difference > treshold then
+
+                local maxHealth = self.health:getMax("hp")
+                local damage = self:getFallDamage((difference) - treshold, maxHealth)
+
+                self.health:setDamagePreview("fallDamage",damage,{0.8,0.3,0.3,1},0.1,"hp")
                 
                 if self:isGrounded() then
-                    -- replace 1 by max health
-                    local maxHealth = 1
-                    local damage = self:getFallDamage((difference) - treshold, maxHealth)
-                    --damage = damage * 50
-
-                    self:spawnBlood(1 * math.ceil(damage*150),3 + damage * 5 / maxHealth)
+                    self:spawnBlood(1 * math.ceil(damage/ maxHealth*150),3 + damage * 5 / maxHealth)
+                    self:damage(damage,"fall")
+                    self.health:removeDamagePreview("fallDamage")
                 end
             end
         end
@@ -572,6 +594,11 @@ function Entity:DrawUI()
         end
     end
 
+    if self.health ~= nil then
+        self.health:draw(szx*0.05,szy*0.89,szx*0.25,szy*0.06,HealthBarStyle,"sectionned",nil,5)
+        self.health:draw(szx*0.05,szy*0.89-szy*0.1,szx*0.25,szy*0.06,HealthBarStyle,"total",nil,5)
+    end
+
     if itemDraw ~= nil then
         if itemDraw.item ~= nil and itemDraw.item.itemName ~= "none" then
             itemToolTipOffset = itemDraw.item:drawToolTip(true,mx+100,my,math.ceil(szx*0.07),szx * 0.35,itemDraw.attributes,itemDraw.amount,self)
@@ -743,7 +770,13 @@ end
     return true
 end--]]
 function Entity:entityUpdate(dt)
-
+    if middleclicktick then
+        self:gainHealth(20,nil)
+    end
+    if rightclicktick then
+        self:damage(20,"dev")
+    end
+    self.health:update(dt)
 end
 
 function Entity:playerUpdate(dt)

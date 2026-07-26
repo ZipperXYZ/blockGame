@@ -29,7 +29,7 @@ function World:init(worldSeed, chunkSize, depthProgression, biomeSize, biomeList
     self.borderY = self.parameters.borderY or 0
     self.hasBorder = self.parameters.hasBorder or (self.borderX ~= 0)
 
-    
+    --self.barList = {}
 end
 
 --clear() -- vide le monde de tout ses chunks, gardant toutes ses propriétés les mêmes
@@ -791,6 +791,7 @@ end
 function World:updateEntities(dt)
     if #entities > 0 then
         for i = 1, #entities do
+            entities[i]:entityUpdate(dt)
             entities[i]:controlsUpdate(dt)
             entities[i]:movementUpdate(dt)
             entities[i]:collisionWithEntities(dt)
@@ -813,7 +814,7 @@ function World:spawnEntity(type, worldPosX, worldPosY)
     aiType = "none"
     if type == "player" then aiType = "human" end
     --table.insert(entities,Entity(type, type, "none", Vector2(worldPosX, worldPosY), 1, 0.9, 0, aiType, {}))
-    table.insert(entities, Entity(type, type, "player", Vector2(worldPosX, worldPosY), 1, 0.425, 0, aiType, {}))
+    table.insert(entities, Entity(type, type, "player", Vector2(worldPosX, worldPosY), 100, 0.425, 0, aiType, {}))
 
     return true
 end

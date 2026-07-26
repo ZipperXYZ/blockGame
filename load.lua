@@ -91,6 +91,13 @@ function loadtextures()
   textures["sprites"]["stick"] = Sprite("stick","items1.png",{["parts"] = {"small","medium","large"}},{["setupItem"] = true,["itemQuadrant"]={0,0}})
   textures["sprites"]["rock"] = Sprite("rock","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,8}})
   textures["sprites"]["crudePickaxe"] = Sprite("crudePickaxe","items1.png",{["parts"] = {"small","medium","large"}},{["setupItem"] = true,["itemQuadrant"]={0,4}})
+  textures["sprites"]["crudeSpike"] = Sprite("crudeSpike","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,12}})
+  textures["sprites"]["crudeSwayPickaxe"] = Sprite("crudeSwayPickaxe","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,16}})
+  textures["sprites"]["crudeHammer"] = Sprite("crudeHammer","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,20}})
+  textures["sprites"]["crudeScalpel"] = Sprite("crudeScalpel","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,24}})
+  textures["sprites"]["crudeShovel"] = Sprite("crudeShovel","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,28}})
+  textures["sprites"]["crudeStiffPick"] = Sprite("crudeStiffPick","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,32}})
+  textures["sprites"]["crudeTargetPickaxe"] = Sprite("crudeTargetPickaxe","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,36}})
   
   textures["sprites"]["placementPreview"] = Sprite("placementPreview","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {0,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
   textures["sprites"]["destroyPreviewReady"] = Sprite("destroyPreviewReady","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {2,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
@@ -479,7 +486,7 @@ function loadItems()
     ["mineArcAngle"] = 130,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
-  items["crudeSpike"] = Item("crudeSpike","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude spike",
+  items["crudeSpike"] = Item("crudeSpike","crudeSpike",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude spike",
     ["cooldown"] = 0.6,
     ["mineDamage"] = 1.2, --1
     ["blockDamageAmount"] = 3, --6
@@ -487,7 +494,7 @@ function loadItems()
     ["mineArcAngle"] = 130,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
-  items["crudeSwayPickaxe"] = Item("crudeSwayPickaxe","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude sway pickaxe",
+  items["crudeSwayPickaxe"] = Item("crudeSwayPickaxe","crudeSwayPickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude sway pickaxe",
     ["cooldown"] = 2.4,
     ["mineDamage"] = 0.8, --1
     ["blockDamageAmount"] = 18, --6
@@ -495,7 +502,7 @@ function loadItems()
     ["mineArcAngle"] = 130,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
-  items["crudeHammer"] = Item("crudeHammer","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude hammer",
+  items["crudeHammer"] = Item("crudeHammer","crudeHammer",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude hammer",
     ["cooldown"] = 2,
     ["mineDamage"] = 4, --1
     ["blockDamageAmount"] = 3, --6
@@ -503,7 +510,7 @@ function loadItems()
     ["mineArcAngle"] = 130,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
-  items["crudeDrill"] = Item("crudeDrill","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude drill",
+  items["crudeScalpel"] = Item("crudeScalpel","crudeScalpel",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude scalpel",
     ["cooldown"] = 0.1,
     ["mineDamage"] = 0.6, --1
     ["blockDamageAmount"] = 1, --6
@@ -511,7 +518,7 @@ function loadItems()
     ["mineArcAngle"] = 130,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
-  items["crudeShovel"] = Item("crudeShovel","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude shovel",
+  items["crudeShovel"] = Item("crudeShovel","crudeShovel",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude shovel",
     ["cooldown"] = 1.8,
     ["mineDamage"] = 1.2, --1
     ["blockDamageAmount"] = 9, --6
@@ -519,7 +526,7 @@ function loadItems()
     ["mineArcAngle"] = 130,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
-  items["crudeStiffPick"] = Item("crudeStiffPick","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude stiff pick",
+  items["crudeStiffPick"] = Item("crudeStiffPick","crudeStiffPick",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude stiff pick",
     ["cooldown"] = 1.15,
     ["mineDamage"] = 1.4, --1
     ["blockDamageAmount"] = 5, --6
@@ -527,7 +534,7 @@ function loadItems()
     ["mineArcAngle"] = 130,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
-  items["crudeTargetPickaxe"] = Item("crudeTargetPickaxe","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude target pickaxe",
+  items["crudeTargetPickaxe"] = Item("crudeTargetPickaxe","crudeTargetPickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude target pickaxe",
     ["cooldown"] = 0.2,
     ["mineDamage"] = 0.25, --1
     ["blockDamageAmount"] = 5, --6
@@ -709,6 +716,7 @@ function LoadInterfaces()
   --interfaces["settings"]:addElement("lightReach","slider",0.9,0.2,"Light reach",{["round"] = 1,["min"] = 1, ["max"]= 12,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 6},nil,nil)
   interfaces["settings"]:addElement("chunkRenderDistance","slider",0.9,0.2,"Additional chunk gen distance",{["round"] = 1,["min"] = 20, ["max"]= 50,["displayAddition"]=-20,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 20},nil,nil)
   interfaces["settings"]:addElement("maxChunkLoadedPerFrame","slider",0.9,0.2,"Max chunks generated per frame",{["round"] = 1,["min"] = 0, ["max"]= 50},{["textAlign"] = "left",["gap"]=0,["default"] = 9},nil,nil)
+  interfaces["settings"]:addElement("HealthBarStyle","options",0.9,0.2,"Health bar sections style :",{"seperated","glued"},{["textAlign"] = "left",["gap"]=0,["default"] = "seperated"},nil,nil)
   interfaces["settings"]:addElement("MapZoom","slider",0.9,0.2,"Map zoom",{["round"] = 0.2,["min"] = 0.4, ["max"]= 5},{["textAlign"] = "left",["gap"]=0,["default"] = 2},nil,nil)
   interfaces["settings"]:addElement("fullscreen", "checkbox",0.9,0,"Fullscreen",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["settings"]:addElement("InventorySize","slider",0.9,0.2,"Inventory size",{["round"] = 0.1,["min"] = 0.5, ["max"]= 1.5},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)

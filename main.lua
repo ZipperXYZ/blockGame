@@ -19,6 +19,7 @@ function love.load()
   require "class/utility/vector2"
   require "particles/particles"
   require "interfaces/interface"
+  require "bars/bar"
   love.graphics.setDefaultFilter("nearest", "nearest")
 
   require "World/tiledef"
@@ -86,6 +87,8 @@ function love.load()
   InventoryTextSize = 1.4
   SelectedFont = 1
   MapZoom = 2
+  MapQuality = 0.4 --0.2
+  HealthBarStyle = "seperated"
 
   CheatMode = false
   StructureMaker = {{["x"]=1,["y"]=1},{["x"]=1,["y"]=1}}

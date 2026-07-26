@@ -152,6 +152,7 @@ function SettingsUpdate()
   interfaces["settings"]:passDataToElement("InventoryTextSize",InventoryTextSize)
   interfaces["settings"]:passDataToElement("SelectedFont",SelectedFont)
   interfaces["settings"]:passDataToElement("fullscreen",fullscreen)
+  interfaces["settings"]:passDataToElement("HealthBarStyle",HealthBarStyle)
   local lastFont = SelectedFont
   local lastFullscreen = fullscreen
   
@@ -167,6 +168,7 @@ function SettingsUpdate()
   MaxChunkLoadedPerFrame = results["maxChunkLoadedPerFrame"]
   
   MapZoom = results["MapZoom"]
+  HealthBarStyle = results["HealthBarStyle"]
   InventorySize = results["InventorySize"]
   InventoryTextSize = results["InventoryTextSize"]
   SelectedFont = results["SelectedFont"]

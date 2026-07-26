@@ -230,6 +230,7 @@ function Inventory:draw(mode,entity,flags)
     if flags["hightlights"] == nil then flags["hightlights"] = {} end
     --if #flags.hightlights > 1 then print(flags.hightlights[1]) end
     local page = self.currentPage
+    local itemDraw = nil
 
 
     local actualScreenPosX,actualScreenPosY, actualTileSize, actualSizeY
@@ -284,6 +285,10 @@ function Inventory:draw(mode,entity,flags)
                     and my > (actualScreenPosY + actualTileSize * 0.1) + (iy-1)*(actualTileSize*1.1)
                     and my < (actualScreenPosY + actualTileSize * 0.1) + (iy-1)*(actualTileSize*1.1) + actualTileSize
                 then
+                    itemDraw = {}
+                    itemDraw.item = self:getActualItem(ix,iy,page)
+                    itemDraw.attributes = self:getItemAttributes(ix,iy,page)
+                    itemDraw.amount = self:getItemAmount(ix,iy,page)
                     love.graphics.setColor(k(self.color[1],1,0.5),k(self.color[2],1,0.5),k(self.color[3],1,0.5),self.color[4])
                 end
                 love.graphics.rectangle("fill"
@@ -414,7 +419,7 @@ function Inventory:draw(mode,entity,flags)
 
     love.graphics.setColor(1,1,1,1)
     love.graphics.printf(self.inventoryName,actualScreenPosX+5,actualScreenPosY+5,999,"left",0,InventoryTextSize,InventoryTextSize)
-    
+    return itemDraw
 end
 
 function Inventory:getPosAndSize()
@@ -563,6 +568,13 @@ function Inventory:doesSlotAttributeExists(attribute,ix,iy,page)
     return false
 end
 
+function Inventory:getActualItem(ix,iy,page)
+    if page == nil then page = self.currentPage end
+    if ix <= self.sizeX and ix >= 1 and iy >= 1 and iy <= self.sizeY then
+        return items[self.items[page][ix][iy]["name"]]
+    end
+    return items["none"]
+end
 
 function Inventory:getItem(ix,iy,page)
     if page == nil then page = self.currentPage end

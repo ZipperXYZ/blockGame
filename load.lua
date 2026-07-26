@@ -139,6 +139,7 @@ end
 function loadtiles()
   tiles = {}
   tilelists["stones"] = {}
+  tilelists["dirts"] = {}
   tilelists["all tiles"] = {}
   --[[tilelists["stones"]    = {
     "stone", "darkstone", "palestone", "ancientstone",
@@ -154,26 +155,28 @@ function loadtiles()
 
   tiles["dirt"]          = Tile("dirt", "solid", "tiles.png", "dirt",
     {
-      ["newQuad"] = { 0, 0, 1, 1, 8, },
+      ["newQuad"] = { 7, 2, 1, 1, 8, },
       ["border"] = {
         ["quad"] = "dirt_top",
-        ["newQuad"] = { 0, 1, 1, 1, 8 }
+        ["newQuad"] = { 7, 3, 1, 1, 8 }
       },
-      ["health"] = 2.5
+      ["health"] = 2.5,
+      ["isDirt"] = true,
     })
 
-  tiles["grass"]         = Tile("grass", "top", "tiles.png", "grass",
+  tiles["essenceGrass"]         = Tile("essenceGrass", "top", "tiles.png", "essenceGrass",
     {
       ["newQuad"] = { 1, 0, 1, 1, 8 },
       ["border type"] = "non-solid",
+      ["actualName"] = "essenceGrass",
       ["health"] = 0
     })
-   tiles["soilGrass"]         = Tile("soilGrass", "top", "tiles.png", "soilGrass",
+   tiles["grass"]         = Tile("grass", "top", "tiles.png", "grass",
     {
       ["newQuad"] = { 1, 2, 1, 1, 8 },
       ["border type"] = "non-solid",
       ["health"] = 0,
-      ["actualName"] = "soil grass",
+      ["actualName"] = "grass",
     })
 
   tiles["purplegrass"]   = Tile("purplegrass", "top", "tiles.png", "purplegrass",
@@ -205,10 +208,10 @@ function loadtiles()
     })
 
   tiles["stone"]         = Tile("stone", "solid", "tiles.png", "stone", {
-    ["newQuad"] = { 2, 0, 1, 1, 8 },
+    ["newQuad"] = { 2, 2, 1, 1, 8 },
     ["border"] = {
       ["quad"] = "stone_top",
-      ["newQuad"] = { 2, 1, 1, 1, 8 }
+      ["newQuad"] = { 2, 3, 1, 1, 8 }
     },
     ["isStone"] = true,
     ["health"] = 5
@@ -349,27 +352,52 @@ function loadtiles()
       },
       ["health"] = 12
     })
-  tiles["heavyStone"]         = Tile("heavyStone", "solid", "tiles.png", "heavyStone", {
-    ["newQuad"] = { 2, 2, 1, 1, 8 },
+  tiles["essenceStone"]         = Tile("essenceStone", "solid", "tiles.png", "essenceStone", {
+    ["newQuad"] = { 2, 0, 1, 1, 8 },
     ["border"] = {
-      ["quad"] = "heavyStone_top",
-      ["newQuad"] = { 2, 3, 1, 1, 8 }
+      ["quad"] = "essenceStone_top",
+      ["newQuad"] = { 2, 1, 1, 1, 8 }
     },
     ["isStone"] = true,
     ["health"] = 12,
-    ["actualName"] = "heavy stone",
+    ["actualName"] = "essence stone",
   })
+  tiles["essenceDirt"]          = Tile("essenceDirt", "solid", "tiles.png", "essenceDirt",
+    {
+      ["newQuad"] = { 0, 0, 1, 1, 8, },
+      ["border"] = {
+        ["quad"] = "essenceDirt_top",
+        ["newQuad"] = { 0, 1, 1, 1, 8 }
+      },
+      ["health"] = 3,
+      ["actualName"] = "essence dirt",
+      ["isDirt"] = true,
+    })
   tiles["essenceLeaves"]          = Tile("essenceLeaves", "solid", "tiles.png", "essenceLeaves",
     {
       ["newQuad"] = { 3, 2, 1, 1, 8 },
       ["border"] = {
         ["quad"] = "essenceLeaves_top",
-        ["newQuad"] = { 3, 4, 1, 1, 8 }
+        ["newQuad"] = { 3, 3, 1, 1, 8 }
       },
       ["health"] = 0.6,
       ["actualDropeRate"] = 0.4,
       ["lightCanGoThrough"] = true,
       ["actualName"] = "essence leaves",
+      ["secondaryDrop"] = "stick",
+      ["secondaryDropAmount"] = 2,
+    })
+  tiles["leaves"]          = Tile("leaves", "solid", "tiles.png", "leaves",
+    {
+      ["newQuad"] = { 8, 2, 1, 1, 8 },
+      ["border"] = {
+        ["quad"] = "leaves_top",
+        ["newQuad"] = { 8, 3, 1, 1, 8 }
+      },
+      ["health"] = 0.6,
+      ["actualDropeRate"] = 0.4,
+      ["lightCanGoThrough"] = true,
+      ["actualName"] = "leaves",
       ["secondaryDrop"] = "stick",
       ["secondaryDropAmount"] = 2,
     })
@@ -381,6 +409,28 @@ function loadtiles()
     },
     ["health"] = 3,
     ["actualName"] = "Essence wood",
+    ["secondaryDrop"] = "stick",
+    ["secondaryDropAmount"] = 5,
+  })
+  tiles["wood"]         = Tile("wood", "solid", "tiles.png", "wood", {
+    ["newQuad"] = { 9, 2, 1, 1, 8 },
+    ["border"] = {
+      ["quad"] = "wood_top",
+      ["newQuad"] = { 9, 3, 1, 1, 8 }
+    },
+    ["health"] = 1.8,
+    ["actualName"] = "Wood",
+    ["secondaryDrop"] = "stick",
+    ["secondaryDropAmount"] = 5,
+  })
+  tiles["cactus"]         = Tile("cactus", "solid", "tiles.png", "cactus", {
+    ["newQuad"] = { 10, 2, 1, 1, 8 },
+    ["border"] = {
+      ["quad"] = "cactus_top",
+      ["newQuad"] = { 10, 3, 1, 1, 8 }
+    },
+    ["health"] = 1.8,
+    ["actualName"] = "Cactus",
     ["secondaryDrop"] = "stick",
     ["secondaryDropAmount"] = 5,
   })
@@ -420,7 +470,7 @@ function loadItems()
   items["none"] = Item("none","none",{})
   --items["stick"] = Item("stick","stick",{["category"]="material"})
   items["stick"] = Item("stick","stick",{["category"]="material",["placeBlock"] = "essenceWoodBricks", ["placeBlockCost"] = 5, ["maxStack"] = 300})
-  items["rock"] = Item("rock","rock",{["category"]="material",["placeBlock"] = "scrapBlock", ["placeBlockCost"] = 4, ["maxStack"] = 300})
+  items["rock"] = Item("rock","rock",{["category"]="material",["placeBlock"] = "scrapBlock", ["placeBlockCost"] = 4,["fullName"] = "Scrap pebbles", ["maxStack"] = 300})
   items["crudePickaxe"] = Item("crudePickaxe","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude pickaxe",
     ["cooldown"] = 0.8,
     ["mineDamage"] = 0.8, --1
@@ -445,7 +495,7 @@ function loadItems()
     ["mineArcAngle"] = 130,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
-  items["crudeSwayHammer"] = Item("crudeSwayHammer","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude hammer",
+  items["crudeHammer"] = Item("crudeHammer","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude hammer",
     ["cooldown"] = 2,
     ["mineDamage"] = 4, --1
     ["blockDamageAmount"] = 3, --6
@@ -469,7 +519,7 @@ function loadItems()
     ["mineArcAngle"] = 130,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
-  items["crudeCrowbar"] = Item("crudeCrowbar","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude crowbar",
+  items["crudeStiffPick"] = Item("crudeStiffPick","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude stiff pick",
     ["cooldown"] = 1.15,
     ["mineDamage"] = 1.4, --1
     ["blockDamageAmount"] = 5, --6
@@ -501,6 +551,16 @@ function loadItems()
     ["mineArcAngle"] = 360,
     ["holdAnimation"] = "crudePickaxe_Hold",
     ["baseColor"] = {0,1,1,1},
+  })
+  items["devPickaxe"] = Item("devPickaxe","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Dev pickaxe",
+    ["cooldown"] = 0.05,
+    ["mineDamage"] = 9999,
+    ["blockDamageAmount"] = 1,
+    ["rangeLimit"] = 99,
+    ["mineArcAngle"] = 360,
+    ["holdAnimation"] = "crudePickaxe_Hold",
+    ["baseColor"] = {1,0,0,1},
+    ["minePierce"] = true,
   })
 end
 
@@ -572,9 +632,11 @@ function GenerateTileItems()
 end
 
 function generateBaseBiomes()
+  --biomeName, temperature, wetness, deepnessmin, deepnessmax, deepnesssmooth, likeness
   --stage 1
-  world:addBiome("none", 0.5, 0.5, -1, 1, 0.3, 1)
-  world:addBiome("duneland", 0.7, 0.2, -1, 1, 2, 0.3) --oui, il est en double, une fois à la surface
+  world:addBiome("none", 0.5, 0.5, -0.5, 1, 0.3, 0.45)
+  world:addBiome("duneland", 0.7, 0.2, -0.5, 1, 0.3, 0.5)
+  world:addBiome("essenceLand", 0.3, 0.8, -0.5, 1, 0.3, 0.75)
 
   --stage 2
   world:addBiome("coldland", 0.2, 0.4, 0.7, 2, 0.3, 1)
@@ -632,11 +694,13 @@ function LoadInterfaces()
 
   interfaces["worldCreation"] = Interface("worldCreation",0.5,0.15,0.6,0.8,"bland",{0.6,0.9,0.6,1},{1,1,1,1},{["title"]= "World Cration",["gap"]=0.00,["scrollMargin"]=0.1,["showTitle"] = true})
   interfaces["worldCreation"]:addElement("createButton","button",0.4,0.1,"Start game",{},{},nil,nil)
-  interfaces["worldCreation"]:addElement("worldHeigth","options",0.9,0.2,"World deepness :",{"500","1000","1500","2000","2500"},{["textAlign"] = "left",["gap"]=0,["default"] = "1500"},nil,nil)
+  interfaces["worldCreation"]:addElement("worldHeigth","options",0.9,0.2,"World deepness :",{"500","1000","2000","3000","4000"},{["textAlign"] = "left",["gap"]=0,["default"] = "2000"},nil,nil)
   interfaces["worldCreation"]:addElement("worldWidth","options",0.9,0.2,"World width :",{"150","300","450","600","750"},{["textAlign"] = "left",["gap"]=0,["default"] = "450"},nil,nil)
-  interfaces["worldCreation"]:addElement("cheat","checkbox",0.9,0,"Cheat Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
+  interfaces["worldCreation"]:addElement("cheat", "checkbox",0.9,0,"Cheat Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["worldCreation"]:addElement("freeCam","checkbox",0.9,0,"Free cam Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
+  interfaces["worldCreation"]:addElement("flyCheat","checkbox",0.9,0,"Fly & noClip Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["worldCreation"]:addElement("lightReach","slider",0.9,0.2,"Light reach",{["round"] = 1,["min"] = 1, ["max"]= 12,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 6},nil,nil)
+  interfaces["worldCreation"]:addElement("resetWorldCreation","button",0.3,0.08,"Default",{},{},nil,nil)
 
 
   interfaces["settings"] = Interface("settings",0.5,0.15,0.6,0.8,"bland",{0.9,0.6,0.6,1},{1,1,1,1},{["title"]= "Settings",["gap"]=0.00,["scrollMargin"]=0.1,["showTitle"] = true})
@@ -644,8 +708,9 @@ function LoadInterfaces()
   --interfaces["settings"]:addElement("cheat","checkbox",0.9,0,"Cheat Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   --interfaces["settings"]:addElement("lightReach","slider",0.9,0.2,"Light reach",{["round"] = 1,["min"] = 1, ["max"]= 12,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 6},nil,nil)
   interfaces["settings"]:addElement("chunkRenderDistance","slider",0.9,0.2,"Additional chunk gen distance",{["round"] = 1,["min"] = 20, ["max"]= 50,["displayAddition"]=-20,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 20},nil,nil)
-  interfaces["settings"]:addElement("maxChunkLoadedPerFrame","slider",0.9,0.2,"Max chunks generated per frame",{["round"] = 1,["min"] = 0, ["max"]= 12},{["textAlign"] = "left",["gap"]=0,["default"] = 3},nil,nil)
+  interfaces["settings"]:addElement("maxChunkLoadedPerFrame","slider",0.9,0.2,"Max chunks generated per frame",{["round"] = 1,["min"] = 0, ["max"]= 50},{["textAlign"] = "left",["gap"]=0,["default"] = 9},nil,nil)
   interfaces["settings"]:addElement("MapZoom","slider",0.9,0.2,"Map zoom",{["round"] = 0.2,["min"] = 0.4, ["max"]= 5},{["textAlign"] = "left",["gap"]=0,["default"] = 2},nil,nil)
+  interfaces["settings"]:addElement("fullscreen", "checkbox",0.9,0,"Fullscreen",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["settings"]:addElement("InventorySize","slider",0.9,0.2,"Inventory size",{["round"] = 0.1,["min"] = 0.5, ["max"]= 1.5},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)
   interfaces["settings"]:addElement("InventoryTextSize","slider",0.9,0.2,"Inventory text size",{["round"] = 0.1,["min"] = 1, ["max"]= 2},{["textAlign"] = "left",["gap"]=0,["default"] = 1.4},nil,nil)
   interfaces["settings"]:addElement("SelectedFont","slider",0.9,0.2,"Font",{["round"] = 1,["min"] = 1, ["max"]= #Fonts},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)

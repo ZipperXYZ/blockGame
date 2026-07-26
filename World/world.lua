@@ -3,9 +3,9 @@ World = SuperClass:extend()
 World.className = "World"
 
 
-local stepOrder = { "none", "stone", "stone2", "grass", "ores", "deco", "done" }
-local stepIndex = {}
-for i, s in ipairs(stepOrder) do stepIndex[s] = i end
+--local stepOrder = { "none", "stone", "stone2", "grass", "ores", "deco", "done" }
+--local stepIndex = {}
+--for i, s in ipairs(stepOrder) do stepIndex[s] = i end
 
 
 --new(worldseed,depthProgression,biomeSize,biomeList,generationSteps) --Biomelist peut être empty,
@@ -69,8 +69,14 @@ end
 --à refaire puisque tu ne peux pas avoir la position globale avec juste une liste de chunks, serait inutile
 --peut être retourne la liste de coordonées de chaque chunks et les utilisés de cette façon?
 function World:getNeighboringChunks(chunkX, chunkY, step)
-    local required = stepIndex[step]
-    if not required then return false end
+    --local required = stepIndex[step]
+    --if not required then return false end
+
+    local stepIndex = getListIndex(self.generationSteps, step)
+    if stepIndex <= 0 then return false end
+
+    local requiredStep = self.generationSteps[stepIndex - 1]
+    if requiredStep == nil then return true end
 
     local neighbors = {
         { chunkX + 1, chunkY + 1 }, { chunkX + 1, chunkY }, { chunkX + 1, chunkY - 1 },
@@ -83,7 +89,7 @@ function World:getNeighboringChunks(chunkX, chunkY, step)
         if not self:checkIfChunkExists(nx, ny) then return false end
         local neighborStatus = self.chunks[nx][ny]:getGenerationStatus()
         -- le voisin doit avoir complété au moins l'étape précédente
-        if stepIndex[neighborStatus] < required then return false end
+        if getListIndex(self.generationSteps, neighborStatus) < getListIndex(self.generationSteps, requiredStep) then return false end
     end
     return true
 end
@@ -286,7 +292,7 @@ end
 --devrait être éxécuter chaque seconde à la position de la caméra ainsi que avec force=false
 --pour la gen des structure, force=true pis la taille de la structure
 function World:generate(centerX, centerY, length, heigth, force, steps)
-    if step == nil then step = self.generationSteps end
+    if steps == nil then steps = self.generationSteps end
     centerX = round(centerX)
     centerY = round(centerY)
 
@@ -305,8 +311,18 @@ function World:generate(centerX, centerY, length, heigth, force, steps)
                 y = y + dy
 
                 if math.abs(x) <= length and math.abs(y) <= heigth then
-                    if chunksGenerated <= MaxChunkLoadedPerFrame then
-                        if self:generateChunk(centerX + x, centerY + y,force,steps) then
+                    local chunkX = centerX + x
+                    local chunkY = centerY + y
+                    if self:checkIfChunkExists(chunkX, chunkY) then
+                        self.chunks[chunkX][chunkY]:updateStructureGeneration()
+                    end
+                    if chunksGenerated < MaxChunkLoadedPerFrame then
+                        local generated, stepDone = self:generateChunk(chunkX, chunkY, force, steps)
+                        if stepDone then
+                            local generationStep = self.chunks[chunkX][chunkY]:getGenerationStatus()
+                            AttemptAllStructureGenerations(self.chunks[chunkX][chunkY], chunkX, chunkY, self.chunkSize, generationStep, self.generationSteps, self.worldSeed, self.depthProgression, self.biomeList, self.biomeList, self)
+                        end
+                        if stepDone then
                             chunksGenerated = chunksGenerated + 1 
                         end
                     end
@@ -320,12 +336,11 @@ end
 
 function World:generateChunk(chunkPosX,chunkPosY,force,steps)
     if self:checkIfChunkExists(chunkPosX, chunkPosY) then
-        self.chunks[chunkPosX][chunkPosY]:generate(self.chunks[chunkPosX][chunkPosY]:getGenerationStatus(),
+        local generated, stepDone = self.chunks[chunkPosX][chunkPosY]:generate(
+            self.chunks[chunkPosX][chunkPosY]:getGenerationStatus(),
             self.generationSteps, self.worldSeed, self.depthProgression, self.biomeSize, self.biomeList, self)
 
-        if not self.chunks[chunkPosX][chunkPosY]:getGenerationStatus() == "done" then
-            return true
-        end
+        return generated, stepDone
         else
         if self.chunks == nil then
             self.chunks = {}
@@ -749,6 +764,21 @@ function World:generateTerrainTile(tileX, tileY)
 
     if love.math.noise(tileX / 15, tileY / 30, seed + 100) > (-tileY / 20) then
         name = "none"
+    end
+
+
+    --edgelands
+    if biome == "edgeLands" then
+        name = "dirt"
+    end
+
+    --debug
+    if false then
+        if tileY % 50 == 0 then
+            name = "dirt"
+        else
+            name = "none"
+        end
     end
 
     return name

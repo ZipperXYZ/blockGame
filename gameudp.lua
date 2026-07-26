@@ -19,13 +19,16 @@ function StartGame(changeGameState,parameters)
   if parameters.wh == nil then parameters.wh = 1500 end
   if parameters.ww == nil then parameters.ww = 450 end
   if parameters.freeCam == nil then parameters.freeCam = false end
+  if parameters.flyCheat == nil then parameters.flyCheat = false end
 
   camEntityFollow = 0
+  camx = 0
+  camy = 0
   entities = {}
   local worldParameters = {}
   worldParameters.borderX = parameters.ww
   worldParameters.borderY = parameters.wh * 1.2
-  world = World(math.random() * 1000000, 10, parameters.wh/5, 150, {}, { "none", "stone", "stone2", "grass", "ores", "deco", "done" }, worldParameters)
+  world = World(math.random() * 1000000, 10, parameters.wh/5, 150, {}, GlobalWorldGenStepList, worldParameters)
   --local spawnX, spawnY = world:getSpawn()
   generateBaseBiomes()
 
@@ -39,6 +42,9 @@ function StartGame(changeGameState,parameters)
     spectator = true
   else
     world:spawnEntity("player", 0, 0)
+    if parameters.flyCheat then
+      entities[1].flyCheat = true
+    end
   end
 
   if changeGameState then gamestate = "game" end

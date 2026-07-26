@@ -13,6 +13,7 @@ function Chunk:init(chunkX, chunkY, chunkSize)
     self.changedTiles = {}
     self.generationStatus = "none"
     self.chunkTiles = {}
+    self.structures = {}
     self.chunkTiles["tiles"] = {}
     self.chunkTiles["topTiles"] = {}
     self.chunkTiles["backTiles"] = {}
@@ -219,9 +220,8 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
 
         --self.generationStatus = "stone"
         self:advanceGenerationStatus(stepList)
-        return (self.generationStatus == "done")
+        return (self.generationStatus == "done"), true
     end
-
 
     if step == "stone" and world:getNeighboringChunks(self.chunkX, self.chunkY, "stone") then
         -- première passe : backs
@@ -244,14 +244,14 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                 local tileRaw = self:getRawTile(ix, iy, "tiles")
                 local backRaw = self:getRawTile(ix, iy, "backTiles")
                 if backRaw == "dirt" then
-                    if love.math.noise(wx / 8, wy / 8, worldSeed + 600) > (wy / (depthProgression * 3)) + 0.75 then
+                    if love.math.noise(wx / 8, wy / 8, worldSeed + 600) > (wy / (depthProgression * 2)) + 0.75 then
                         if not (love.math.noise(wx / 45, wy / 30, worldSeed + 800) > 0.7) then
                             self.chunkTiles["backTiles"][ix][iy] = "stone"
                         end
                     end
                 end
                 if tileRaw == "dirt" then
-                    if love.math.noise(wx / 8, wy / 8, worldSeed + 600) > (wy / (depthProgression * 3)) + 0.75 then
+                    if love.math.noise(wx / 8, wy / 8, worldSeed + 600) > (wy / (depthProgression * 2)) + 0.75 then
                         if not (love.math.noise(wx / 45, wy / 30, worldSeed + 800) > 0.7) then
                             self.chunkTiles["tiles"][ix][iy] = "stone"
                         end
@@ -260,7 +260,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
             end
         end
         self:advanceGenerationStatus(stepList)
-        return (self.generationStatus == "done")
+        return (self.generationStatus == "done"), true
     end
 
     if step == "stone2" and world:getNeighboringChunks(self.chunkX, self.chunkY, "stone2") then
@@ -280,6 +280,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                     end
                     if biome == "darkland" then self.chunkTiles["tiles"][ix][iy] = "shadowStone" end
                     if biome == "ancientland" then self.chunkTiles["tiles"][ix][iy] = "ancientstone" end
+                    if biome == "essenceLand" then self.chunkTiles["tiles"][ix][iy] = "essenceStone" end
                 end
                 if checkifinlist(tileRaw, tilelists["stones"]) or tileRaw == "dirt" then
                     if biome == "duneland" then self.chunkTiles["tiles"][ix][iy] = "sand" end
@@ -295,6 +296,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                     if biome == "darkland" then self.chunkTiles["backTiles"][ix][iy] = "shadowStone" end
                     if biome == "duneland" then self.chunkTiles["backTiles"][ix][iy] = "sand" end
                     if biome == "ancientland" then self.chunkTiles["backTiles"][ix][iy] = "ancientstone" end
+                    if biome == "essenceland" then self.chunkTiles["backTiles"][ix][iy] = "essenceStone" end
                 end
                 if checkifinlist(backRaw, tilelists["stones"]) or backRaw == "dirt" then
                     if biome == "duneland" then self.chunkTiles["backTiles"][ix][iy] = "sand" end
@@ -331,6 +333,16 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                         end
                     end
                 end
+                if checkifinlist(tileRaw, tilelists["dirts"]) then
+                    if biome == "essenceLand" then
+                        self.chunkTiles["tiles"][ix][iy] = "essenceDirt"
+                    end
+                end
+                if checkifinlist(backRaw, tilelists["dirts"]) then
+                    if biome == "essenceLand" then
+                        self.chunkTiles["backTiles"][ix][iy] = "essenceDirt"
+                    end
+                end
                 if biome == "edgeLands" then
                     self.chunkTiles["tiles"][ix][iy] = "soil"
                     self.chunkTiles["backTiles"][ix][iy] = "soil"
@@ -339,7 +351,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
             end
         end
         self:advanceGenerationStatus(stepList)
-        return (self.generationStatus == "done")
+        return (self.generationStatus == "done"), true
     end
 
     if step == "grass" and world:getNeighboringChunks(self.chunkX, self.chunkY, "grass") then
@@ -348,7 +360,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                 local wx, wy  = self:convertChunkPosToWorldPos(ix, iy)
                 local tileRaw = self:getRawTile(ix, iy, "tiles")
 
-                if checkifinlist(tileRaw, { "dirt", "stone" }) then
+                if checkifinlist(tileRaw, JoinTables({tilelists["dirts"], tilelists["stones"]})) then
                     if not (love.math.noise(wx / 20, wy / 20, worldSeed + 800) > (wy / (depthProgression * 3)) + 0.85) then
                         self.chunkTiles["topTiles"][ix][iy] = "grass"
                     end
@@ -358,7 +370,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                         self.chunkTiles["topTiles"][ix][iy] = "wheatgrass"
                     end
                 end
-                if checkifinlist(tileRaw, { "dirt", "stone", "darkstone" }) then
+                if checkifinlist(tileRaw, JoinTables({tilelists["dirts"], tilelists["stones"]})) then
                     if not (love.math.noise(wx / 20, wy / 20, worldSeed + 520) < (wy / (depthProgression * 5)) + 0.85) and
                         love.math.noise(wx / 40, wy / 40, worldSeed + 585) < 0.35 then
                         self.chunkTiles["topTiles"][ix][iy] = "purplegrass"
@@ -370,10 +382,16 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                         self.chunkTiles["topTiles"][ix][iy] = "shadowgrass"
                     end
                 end
+                local biome = self:getBiome(wx, wy, worldSeed, depthProgression, biomeSize, biomeList)
+                if self.chunkTiles["topTiles"][ix][iy] == "grass" then
+                    if biome == "essenceLand" then
+                        self.chunkTiles["topTiles"][ix][iy] = "essenceGrass"
+                    end
+                end
             end
         end
         self:advanceGenerationStatus(stepList)
-        return (self.generationStatus == "done")
+        return (self.generationStatus == "done"), true
     end
 
     if step == "ores" and world:getNeighboringChunks(self.chunkX, self.chunkY, "ores") then
@@ -391,7 +409,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
         end
         
         self:advanceGenerationStatus(stepList)
-        return (self.generationStatus == "done")
+        return (self.generationStatus == "done"), true
     end
 
     if step == "deco" and world:getNeighboringChunks(self.chunkX, self.chunkY, "deco") then
@@ -410,14 +428,34 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
         end
 
         self:advanceGenerationStatus(stepList)
-        return (self.generationStatus == "done")
+        return (self.generationStatus == "done"), true
     end
+
+    if step == "trees" and world:getNeighboringChunks(self.chunkX, self.chunkY, "trees") then
+        self:advanceGenerationStatus(stepList)
+        return (self.generationStatus == "done"), true
+    end
+
+    return (self.generationStatus == "done"), false
 end
 
 --advanceGenerationStatus() --comme un setGenerationStatus, mais change vers le prochain, mis à la fin d'une étape de generate
 function Chunk:advanceGenerationStatus(stepList)
     if nextinlistroll(self.generationStatus,stepList) == "done" then world:updateLight(self.chunkX, self.chunkY) end
     self.generationStatus = nextinlistroll(self.generationStatus,stepList)
+end
+
+function Chunk:updateStructureGeneration()
+    --print("updating structure generation for chunk: ", self.chunkX, self.chunkY)
+    if #self.structures > 0 then
+        for i = #self.structures, 1, -1 do
+            --print("generating structure: ", self.structures[i].structure.name, " at ", self.structures[i].x, self.structures[i].y)
+            local generated = self.structures[i].structure:generate(self, self.structures[i].x, self.structures[i].y, self.structures[i].seed, self.structures[i])
+            if generated then
+                table.remove(self.structures, i)
+            end
+        end
+    end
 end
 
 --getTerrain(worldPosX,wordPosY,worldSeed,depthProgression,biomeSize,biomeList) -- retourne soit 'air', ou 'dirt' (peut être false or true?)

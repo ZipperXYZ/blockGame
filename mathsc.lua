@@ -77,10 +77,13 @@ end
   if number > l2 then number=l2 end
   return number
   end
-function round(x1)
-  if x1-math.floor(x1)<0.5 then return math.floor(x1)
-    else return math.ceil(x1) end
+function round(x1,precision)
+  if precision == nil then precision = 1 end
+  local mult = precision
+  if x1*mult-math.floor(x1*mult)<0.5 then return math.floor(x1*mult)/mult
+    else return math.ceil(x1*mult)/mult
   end
+end
 function round2(value,precision)
   return (round(value*precision)/precision)
   end
@@ -313,6 +316,145 @@ function checkifinlist(value1, list1)
     end
     return inside
 end
+function getListIndex(list1, value1)
+    if list1 == nil then return -1 end  -- ← ajout
+    local index = 0
+    if #list1 > 0 then
+        for j6 = 1, #list1 do
+            if list1[j6] == value1 then index = j6 end
+        end
+    end
+    return index
+end
+function averageColorQuad(image, quad)
+  local data = nil
+
+  if image == nil or quad == nil then
+    return {1, 1, 1, 1}
+  end
+
+  local x, y, w, h = quad:getViewport()
+
+  -- Preferred path: render the quad to a temporary canvas and read it back.
+  -- This is robust across LÖVE versions and texture backends.
+  if love.graphics and love.graphics.newCanvas and image.typeOf and image:typeOf("Texture") then
+    local sampleW = math.max(1, math.floor(w))
+    local sampleH = math.max(1, math.floor(h))
+    local okCanvas, canvas = pcall(function()
+      return love.graphics.newCanvas(sampleW, sampleH)
+    end)
+
+    if okCanvas and canvas then
+      local prevCanvas = love.graphics.getCanvas()
+      local cr, cg, cb, ca = love.graphics.getColor()
+
+      love.graphics.setCanvas(canvas)
+      love.graphics.clear(0, 0, 0, 0)
+      love.graphics.setColor(1, 1, 1, 1)
+      love.graphics.draw(image, quad, 0, 0)
+      love.graphics.setCanvas(prevCanvas)
+      love.graphics.setColor(cr, cg, cb, ca)
+
+      local okData, canvasData = pcall(function()
+        return canvas:newImageData()
+      end)
+      if okData then
+        data = canvasData
+        x, y = 0, 0
+        w, h = sampleW, sampleH
+      end
+
+      if canvas.release then
+        canvas:release()
+      end
+    end
+  end
+
+  if data == nil and image.getFilename then
+    local okName, filename = pcall(function()
+      return image:getFilename()
+    end)
+    if okName and filename and filename ~= "" then
+      local okData, imageData = pcall(function()
+        return love.image.newImageData(filename)
+      end)
+      if okData then
+        data = imageData
+      end
+    end
+  end
+
+  if data == nil and image.typeOf and image:typeOf("ImageData") then
+    data = image
+  elseif data == nil and image.newImageData then
+    local ok, result = pcall(function()
+      return image:newImageData()
+    end)
+    if ok then
+      data = result
+    end
+  elseif data == nil and image.getData then
+    local ok, result = pcall(function()
+      return image:getData()
+    end)
+    if ok then
+      data = result
+    end
+  end
+
+  if data == nil then
+    return {1, 1, 1, 1}
+  end
+
+  local dataW, dataH = data:getDimensions()
+
+  local minX = math.max(0, math.floor(x))
+  local minY = math.max(0, math.floor(y))
+  local maxX = math.min(dataW - 1, math.floor(x + w - 1))
+  local maxY = math.min(dataH - 1, math.floor(y + h - 1))
+
+  if minX > maxX or minY > maxY then
+    return {1, 1, 1, 1}
+  end
+
+  local r, g, b = 0, 0, 0
+  local a = 0
+  local alphaWeight = 0
+  local pixels = 0
+  local legacyColorRange = false
+
+  for py = minY, maxY do
+    for px = minX, maxX do
+      local pr, pg, pb, pa = data:getPixel(px, py)
+      if pr > 1 or pg > 1 or pb > 1 or pa > 1 then
+        legacyColorRange = true
+      end
+      r = r + pr * pa
+      g = g + pg * pa
+      b = b + pb * pa
+      a = a + pa
+      alphaWeight = alphaWeight + pa
+      pixels = pixels + 1
+    end
+  end
+
+  if pixels <= 0 then
+    return {1, 1, 1, 1}
+  end
+
+  if alphaWeight <= 0 then
+    return {1, 1, 1, 0}
+  end
+
+  local rangeScale = legacyColorRange and 255 or 1
+
+  return {
+    (r / alphaWeight) / rangeScale,
+    (g / alphaWeight) / rangeScale,
+    (b / alphaWeight) / rangeScale,
+    (a / pixels) / rangeScale
+  }
+end
 function checkIfVectorInList(value1, vectorList,rounded)
     if vectorList == nil then return false end  -- ← ajout
     local inside = false
@@ -322,6 +464,34 @@ function checkIfVectorInList(value1, vectorList,rounded)
         end
     end
     return inside
+end
+function JoinTables(tables)
+    local result = {}
+    for i = 1, #tables do
+        local t = tables[i]
+        for j = 1, #t do
+            table.insert(result, t[j])
+        end
+    end
+    return result
+end
+function getRandom(values,seed)
+  table1={}
+  for iv=1,#values do
+    if values[iv][2]>1 then
+  if values[iv][2]>1000 then values[iv][2]=1000 end 
+  for iv2=1,math.ceil(values[iv][2]) do
+  table.insert(table1,values[iv][1])
+  end end
+  end
+  if seed == nil then
+  t=round(math.random(#table1))
+  else
+  t=round(noise(seed,0,0,0)*#table1)
+  end
+  if t<1 then t=1 end
+  if t>#table1 then t=#table1 end
+  return table1[t]
 end
 function pickrandomvalued(values)
   table1={}

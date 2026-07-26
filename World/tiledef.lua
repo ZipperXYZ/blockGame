@@ -7,6 +7,7 @@ Tile.className = "Tile"
 function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.name = tilename or "none"
     self.type = tiletype or "empty"
+    self.mapColor = nil
     self.textureName = textureName or "tiles.png"
     self.quadName = quadName or "none"
     self.flags = flags or {}
@@ -37,6 +38,12 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
         self.textureCenterX = self.flags.textureCenterX or (4)
         self.textureCenterY = self.flags.textureCenterY or (4)
     end
+    if textures["textures"][self.textureName] ~= nil and textures["quads"][self.quadName] ~= nil then
+        self.mapColor = self.flags.mapColor or averageColorQuad(textures["textures"][self.textureName], textures["quads"][self.quadName])
+        else
+        self.mapColor = self.flags.mapColor or {1,1,1,1}
+    end
+    
 
     --flags comprend tout le reste, la pluspart vont être nil, donc assigner des variables pour tout de base
     -- comme par exemple 'newTile.isStone = flags.isStone or false', 'newTile.canBeMined = flags.canBeMined or true' -- ce sont juste des exemples,
@@ -49,6 +56,7 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
             , textures["textures"][self.textureName])
     end
     self.isStone = self.flags.isStone or false
+    self.isDirt = self.flags.isDirt or false
     self.hasCollisions = self.flags.hasCollisions or (self.type == "solid")
     self.canBeMined = self.flags.canBeMined or ((self.type == "not-solid") or (self.type == "solid") or (self.textureName ~= "none"))
     self.color = self.flags.color or { 1, 1, 1, 1 }
@@ -56,7 +64,7 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.lightCanGoThrough = self.flags.lightCanGoThrough or self.type ~= "solid"
     self.canBeOverWritten = self.flags.canBeOverWritten or self.type ~= "solid"
 
-    self.particleColor = self.flags.particleColor or {0.45,0.45,0.45,0.5}
+    self.particleColor = self.flags.particleColor or CopyAll(self.mapColor)
     self.particleType = self.flags.particleType or "dust"
 
     self.actualDropeRate = self.flags.actualDropeRate or 0.1
@@ -84,6 +92,7 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
 
     table.insert(tilelists["all tiles"],self.name)
     if self.isStone then table.insert(tilelists["stones"],self.name) end
+    if self.isDirt then table.insert(tilelists["dirts"],self.name) end
 end
 
 function Tile:emitParticles(x,y,dt)

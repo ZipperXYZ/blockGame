@@ -69,7 +69,11 @@ function Interface:addElement(name,elementType,sizeX,sizeY,textContent,contents,
     newElement.textAlign = newElement.parameters.textAlign or "center"
     newElement.scaleWithText = newElement.parameters.scaleWithText or false
     newElement.textYOffset = newElement.parameters.textYOffset or (sizeY*0.25)
-    newElement.default = newElement.parameters.default or nil
+    newElement.default = nil
+    if newElement.parameters.default ~= nil then
+        newElement.default = newElement.parameters.default
+    end
+    
 
     newElement.holdTime = 0
     

@@ -55,6 +55,7 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
 
     self.highestPositionBeforeFall = nil
     self.groundedLastFrame = true
+    self.flyCheat = false
 
     self.cameraFocus = self.flags.cameraFocus or (self.ia == "player" or self.ia == "human")
 
@@ -204,6 +205,8 @@ function Entity:controlsUpdate(dt)
         self.controls.left = love.keyboard.isDown("a")
         self.controls.right = love.keyboard.isDown("d")
         self.controls.jump = love.keyboard.isDown("w")
+        self.controls.up = love.keyboard.isDown("w")
+        self.controls.down = love.keyboard.isDown("s")
         if self.inventoryOpened then
             self.controls.invClick = buttonFramePress["click"]
             self.controls.invRightClick = buttonFramePress["rclick"]
@@ -362,28 +365,34 @@ function Entity:movementUpdate(dt)
     --if love.keyboard.isDown("w") then self.velocity.y=self.velocity.y+(8*dt) end
     --if love.keyboard.isDown("s") then self.velocity.y=self.velocity.y-(8*dt) end
 
-    if self.controls.right then
-        self.velocity.x = self.velocity.x +
-            (self.movevementSpeed * 10 * dt / self.movementSlide)
+    if self.flyCheat then
+        
+    else
+    
+        if self.controls.right then
+            self.velocity.x = self.velocity.x +
+                (self.movevementSpeed * 10 * dt / self.movementSlide)
+        end
+        if self.controls.left then
+            self.velocity.x = self.velocity.x -
+                (self.movevementSpeed * 10 * dt / self.movementSlide)
+        end
+
+        --self:updateFallDamage()
+
+        if self.controls.jump and self:canJump() then
+            if self.velocity.y < 0 then self.velocity.y = 0 end
+            self.velocity.y = self.velocity.y + (self.jumpStrength * 10)
+            if self.velocity.y > (self.jumpStrength * 10) then self.velocity.y = (self.jumpStrength * 10) end
+        end
+
+        self.velocity.y = self.velocity.y - dt * self.gravity * 50
+
+        self.velocity.x = k(self.velocity.x, 0, dt / self.movementSlide)
+        if self.velocity.y < -(1 / dt / 2) then self.velocity.y = -(1 / dt / 2) end
+        --self.velocity.y = k(self.velocity.y,0,dt/self.movementSlide)
+
     end
-    if self.controls.left then
-        self.velocity.x = self.velocity.x -
-            (self.movevementSpeed * 10 * dt / self.movementSlide)
-    end
-
-    --self:updateFallDamage()
-
-    if self.controls.jump and self:canJump() then
-        if self.velocity.y < 0 then self.velocity.y = 0 end
-        self.velocity.y = self.velocity.y + (self.jumpStrength * 10)
-        if self.velocity.y > (self.jumpStrength * 10) then self.velocity.y = (self.jumpStrength * 10) end
-    end
-
-    self.velocity.y = self.velocity.y - dt * self.gravity * 50
-
-    self.velocity.x = k(self.velocity.x, 0, dt / self.movementSlide)
-    if self.velocity.y < -(1 / dt / 2) then self.velocity.y = -(1 / dt / 2) end
-    --self.velocity.y = k(self.velocity.y,0,dt/self.movementSlide)
 end
 
 function Entity:canJump()
@@ -403,42 +412,57 @@ function Entity:isGrounded()
 end
 
 function Entity:collisionUpdate(dt)
-    --update Y
-
-    self.position.y = self.position.y + (self.velocity.y * dt)
-
-    if self.hasWorldCollisions then
-        local x
-        local y
-        for ix = 0, math.ceil(self.size * 2) + 2 do
-            x = self.position.x - self.size + ((self.size * 2) / (math.ceil(self.size * 2) + 2) * ix)
-            y = self.position.y + self.size
-            if self:CollisionDirectionCheck(self.position.y, x, y, "y") then break end
-            y = self.position.y - self.size
-            if self:CollisionDirectionCheck(self.position.y, x, y, "y") then break end
+    if self.flyCheat then
+        if self.controls.up then
+            self.position.y = self.position.y + 20 * dt
         end
-    end
-
-    --update X
-    self.position.x = self.position.x + (self.velocity.x * dt)
-
-    if self.hasWorldCollisions then
-        local x
-        local y
-        for iy = 0, math.ceil(self.size * 2) + 2 do
-            y = self.position.y - self.size + ((self.size * 2) / (math.ceil(self.size * 2) + 2) * iy)
-            x = self.position.x + self.size
-            if self:CollisionDirectionCheck(self.position.x, y, x, "x") then break end
-            x = self.position.x - self.size
-            if self:CollisionDirectionCheck(self.position.x, y, x, "x") then break end
+        if self.controls.down then
+            self.position.y = self.position.y - 20 * dt
         end
-    end
+        if self.controls.right then
+            self.position.x = self.position.x + 20 * dt
+        end
+        if self.controls.left then
+            self.position.x = self.position.x - 20 * dt
+        end
+    else
+        --update Y
+
+        self.position.y = self.position.y + (self.velocity.y * dt)
+
+        if self.hasWorldCollisions then
+            local x
+            local y
+            for ix = 0, math.ceil(self.size * 2) + 2 do
+                x = self.position.x - self.size + ((self.size * 2) / (math.ceil(self.size * 2) + 2) * ix)
+                y = self.position.y + self.size
+                if self:CollisionDirectionCheck(self.position.y, x, y, "y") then break end
+                y = self.position.y - self.size
+                if self:CollisionDirectionCheck(self.position.y, x, y, "y") then break end
+            end
+        end
+
+        --update X
+        self.position.x = self.position.x + (self.velocity.x * dt)
+
+        if self.hasWorldCollisions then
+            local x
+            local y
+            for iy = 0, math.ceil(self.size * 2) + 2 do
+                y = self.position.y - self.size + ((self.size * 2) / (math.ceil(self.size * 2) + 2) * iy)
+                x = self.position.x + self.size
+                if self:CollisionDirectionCheck(self.position.x, y, x, "x") then break end
+                x = self.position.x - self.size
+                if self:CollisionDirectionCheck(self.position.x, y, x, "x") then break end
+            end
+        end
 
 
-    --s'assurer que le joueur n'est toujours pas coincé dans un block
-    if self.hasWorldCollisions then
-        if world:getColision(self.position.x, self.position.y) then
-            self.position.y = self.position.y + 1
+        --s'assurer que le joueur n'est toujours pas coincé dans un block
+        if self.hasWorldCollisions then
+            if world:getColision(self.position.x, self.position.y) then
+                self.position.y = self.position.y + 1
+            end
         end
     end
 end
@@ -478,6 +502,10 @@ function Entity:drawBlocPreview()
 
                     local place = world:rayTrace({ item.blockPlaceLayer }, self.position:copy(),
                         Vector2(round(self:getAim("x")), round(self:getAim("y"))), item.rangeLimit, true)
+
+                    if self.flyCheat then
+                        place = Vector2(round(self:getAim("x")), round(self:getAim("y")))
+                    end
 
                     local x, y, size = world:getTileScreenPosition(round(place.x), round(place.y))
 
@@ -526,24 +554,36 @@ function Entity:DrawUI()
         self.inventoryOpened = not self.inventoryOpened
     end
 
+    local itemToolTipOffset = 0
+    local itemDraw = nil
+    
     if self.inventoryOpened then
         if #self.inventory > 0 then
             for i = 1, #self.inventory do
-                self.inventory[i]:draw("complete", self, { ["hightlights"] = self.inventorySpaceHighlights })
+                local hovered = self.inventory[i]:draw("complete", self, { ["hightlights"] = self.inventorySpaceHighlights })
+                if hovered ~= nil then
+                    itemDraw = hovered
+                end
             end
         end
     else
         if #self.inventory > 0 then
-            self.inventory[1]:draw("firstLine", self)
+            itemDraw = self.inventory[1]:draw("firstLine", self)
+        end
+    end
+
+    if itemDraw ~= nil then
+        if itemDraw.item ~= nil and itemDraw.item.itemName ~= "none" then
+            itemToolTipOffset = itemDraw.item:drawToolTip(true,mx+100,my,math.ceil(szx*0.07),szx * 0.35,itemDraw.attributes,itemDraw.amount,self)
         end
     end
 
     if self.inventoryCursor.name ~= "none" then
-        self:drawCursorItem()
+        self:drawCursorItem(itemToolTipOffset)
     end
 end
 
-function Entity:drawCursorItem()
+function Entity:drawCursorItem(itemToolTipOffset)
     local x1, y1, s1 = self.inventory[1]:getTilePosAndSize(1, 1)
     x1 = mx - s1 / 2
     y1 = my - s1 / 2
@@ -555,6 +595,7 @@ function Entity:drawCursorItem()
                 love.graphics.setColor(1, 1, 1, 1)
                 love.graphics.printf("x" .. self.inventoryCursor.amount, x1, y1 + s1 - 15, s1 / 1.2, "right", 0, 1.2, 1.2)
             end
+            items[self.inventoryCursor.name]:drawToolTip(true,mx+100,my + itemToolTipOffset + 10,math.ceil(szx*0.07),szx * 0.3,self.inventoryCursor.attributes,self.inventoryCursor.amount,self)
         end
     end
 end

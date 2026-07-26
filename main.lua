@@ -72,21 +72,23 @@ function love.load()
   GlobalNoisePower = calculateNoisePower(0.25)
   
   biomelist = {}
-  world = World(math.random() * 1000000, 10, 100, 150, {}, { "none", "stone", "stone2", "grass", "ores", "deco", "done" })
+  GlobalWorldGenStepList = { "none", "stone", "stone2", "grass", "trees", "ores", "deco", "done" }
+  world = World(math.random() * 1000000, 10, 100, 150, {}, GlobalWorldGenStepList)
   generateBaseBiomes()
 
   debugseebiome = false
 
   lightreach = 6       
   chunkloaddistance = 20 
-  MaxChunkLoadedPerFrame = 3
+  MaxChunkLoadedPerFrame = 9
   InventorySize = 1
   UISize = 1
   InventoryTextSize = 1.4
   SelectedFont = 1
   MapZoom = 2
 
-  CheatMode = true
+  CheatMode = false
+  StructureMaker = {{["x"]=1,["y"]=1},{["x"]=1,["y"]=1}}
   CheatInventoryScroll = 0
 
   biomesize = 150
@@ -231,6 +233,9 @@ function love.draw()
 
   if gamestate == "game" then
     drawgame()
+    if CheatMode then
+      drawStructureMakerOutline()
+    end
   end
   if gamestate == "pause" then
     drawgame()
@@ -302,6 +307,18 @@ function love.keypressed(key)
     end
     if key == "q" then 
       camv = nextinlistrollreverse(camv, cameraPossibleZooms) 
+    end
+  end
+
+  if CheatMode then
+    if key == "1" and gamestate == "game" then
+      StructureMaker[1] = {["x"] = round(mxworldpos), ["y"] = round(myworldpos)}
+    end
+    if key == "2" and gamestate == "game" then
+      StructureMaker[2] = {["x"] = round(mxworldpos), ["y"] = round(myworldpos)}
+    end
+    if key == "z" and gamestate == "game" then
+      saveStructureMaker()
     end
   end
 

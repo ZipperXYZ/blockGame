@@ -19,21 +19,28 @@ end
 function drawWorldMap()
   local mapSizePerPixel = 5
   local zoom  = 1/MapZoom
+  local colorScheme = "tiles" --tiles | biomes
   for ix = 0, round2(szx, mapSizePerPixel), mapSizePerPixel do
     for iy = 0, round2(szy, mapSizePerPixel), mapSizePerPixel do
       local wx = camx + ((ix - szx / 2) * (zoom))
       local wy = camy + (20 - (iy - szy / 2) * (zoom))
       local t1 = world:getRawTile(wx, wy, "tiles")
       if t1 ~= "none" then
-        b1, c1 = world:getBiome(wx, wy)
-        love.graphics.setColor(0.8, 0.8, 0.8, 1)
-        if b1 == "none" then love.graphics.setColor(0.5, 0.5, 0.5, 1) end
-        if b1 == "coldland" then love.graphics.setColor(0.3, 0.8, 0.8, 1) end
-        if b1 == "hotland" then love.graphics.setColor(0.8, 0.4, 0.1, 1) end
-        if b1 == "darkland" then love.graphics.setColor(0.5, 0.2, 0.5, 1) end
-        if b1 == "ancientland" then love.graphics.setColor(0.6, 0.8, 0.6, 1) end
-        if b1 == "duneland" then love.graphics.setColor(0.8, 0.8, 0.6, 1) end
-        if b1 == "edgeLands" then love.graphics.setColor(0.3, 0.22, 0, 1) end
+        if colorScheme == "biomes" then
+          b1, c1 = world:getBiome(wx, wy)
+          love.graphics.setColor(0.8, 0.8, 0.8, 1)
+          if b1 == "none" then love.graphics.setColor(0.5, 0.5, 0.5, 1) end
+          if b1 == "essenceLand" then love.graphics.setColor(0, 0.3, 0.8, 1) end
+          if b1 == "coldland" then love.graphics.setColor(0.3, 0.8, 0.8, 1) end
+          if b1 == "hotland" then love.graphics.setColor(0.8, 0.4, 0.1, 1) end
+          if b1 == "darkland" then love.graphics.setColor(0.5, 0.2, 0.5, 1) end
+          if b1 == "ancientland" then love.graphics.setColor(0.6, 0.8, 0.6, 1) end
+          if b1 == "duneland" then love.graphics.setColor(0.8, 0.8, 0.6, 1) end
+          if b1 == "edgeLands" then love.graphics.setColor(0.3, 0.22, 0, 1) end
+        end
+        if colorScheme == "tiles" then
+          love.graphics.setColor(tiles[t1].mapColor)
+        end
         love.graphics.rectangle("fill", ix, iy, mapSizePerPixel, mapSizePerPixel)
       end
     end
@@ -104,11 +111,17 @@ function WorldCreationUpdate(dt)
   interfaces["worldCreation"]:passDataToElement("cheat",CheatMode)
   local results = interfaces["worldCreation"]:updateAndDraw()
 
+  if results["resetWorldCreation"] then
+    interfaces["worldCreation"]:resetAll()
+    results = interfaces["worldCreation"]:updateAndDraw()
+  end
+
   if results["createButton"] then
     local parameters = {}
     parameters.wh = tonumber(results["worldHeigth"])
     parameters.ww = tonumber(results["worldWidth"])
     parameters.freeCam = results["freeCam"]
+    parameters.flyCheat = results["flyCheat"]
 
     StartGame(true,parameters)
   end
@@ -138,7 +151,9 @@ function SettingsUpdate()
   interfaces["settings"]:passDataToElement("UISize",UISize)
   interfaces["settings"]:passDataToElement("InventoryTextSize",InventoryTextSize)
   interfaces["settings"]:passDataToElement("SelectedFont",SelectedFont)
+  interfaces["settings"]:passDataToElement("fullscreen",fullscreen)
   local lastFont = SelectedFont
+  local lastFullscreen = fullscreen
   
   local results = interfaces["settings"]:updateAndDraw()
 
@@ -156,7 +171,11 @@ function SettingsUpdate()
   InventoryTextSize = results["InventoryTextSize"]
   SelectedFont = results["SelectedFont"]
   UISize = results["UISize"]
+  fullscreen = results["fullscreen"]
 
+  if lastFullscreen ~= fullscreen then
+    love.window.setFullscreen(fullscreen)
+  end
   if lastFont ~= SelectedFont then
     Font = Fonts[SelectedFont]
     love.graphics.setFont(Font)

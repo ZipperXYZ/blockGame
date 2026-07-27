@@ -803,6 +803,14 @@ function World:updateEntities(dt)
             if entities[i].type == "player" then entities[i]:playerUpdate(dt) end
         end
     end
+    if #entities > 0 then
+        for i = 1, #entities do
+            local remove = entities[i]:entityDeathUpdate(dt)
+            if remove then
+                table.remove(entities,i)
+            end
+        end
+    end
 end
 
 function World:getColision(worldPosX, worldPosY)
@@ -890,6 +898,15 @@ end
 function World:DrawEntities()
     for i = 1, #entities do
         entities[i]:draw()
+        ---love.graphics.draw(entities[ix]:getTexture(), entities[ix]:getSprite(), entities[ix]:getPosition():getY(),
+        --    entities[ix]:getPosition():getX(),
+        --    0, round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)
+    end
+end
+
+function World:drawEntitiesHealthBars()
+    for i = 1, #entities do
+        entities[i]:drawHealthBars()
         ---love.graphics.draw(entities[ix]:getTexture(), entities[ix]:getSprite(), entities[ix]:getPosition():getY(),
         --    entities[ix]:getPosition():getX(),
         --    0, round2(camv / 8, 8), round2(camv / 8, 8), 4, 4)

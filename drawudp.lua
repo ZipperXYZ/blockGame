@@ -11,6 +11,7 @@ function drawgame()
       world:drawParticles()
       world:DrawEntities()
       world:drawGroundItems()
+      world:drawEntitiesHealthBars()
       world:DrawUi()
     end
   end
@@ -122,6 +123,7 @@ function WorldCreationUpdate(dt)
     parameters.ww = tonumber(results["worldWidth"])
     parameters.freeCam = results["freeCam"]
     parameters.flyCheat = results["flyCheat"]
+    parameters.biomeSize = results["biomeSize"]
 
     StartGame(true,parameters)
   end

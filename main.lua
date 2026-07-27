@@ -98,7 +98,11 @@ function love.load()
   worldseed = math.random() * 100000
   chunksize = 10
   worlddeepnessprogression = 100
+  NoPlayersAlive = false
+  EndGameWhenNoPlayer = false
+  DeathAnimation = 0
   --biomesize=25 worlddeepnessprogression=15
+
 
   entities = {}
   --loadtextures()

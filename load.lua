@@ -483,7 +483,7 @@ function loadItems()
     ["mineDamage"] = 0.8, --1
     ["blockDamageAmount"] = 6, --6
     ["rangeLimit"] = 5,  --6
-    ["mineArcAngle"] = 130,
+    ["mineWidth"] = 3,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
   items["crudeSpike"] = Item("crudeSpike","crudeSpike",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude spike",
@@ -491,7 +491,7 @@ function loadItems()
     ["mineDamage"] = 1.2, --1
     ["blockDamageAmount"] = 3, --6
     ["rangeLimit"] = 7,  --6
-    ["mineArcAngle"] = 130,
+    ["mineWidth"] = 1,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
   items["crudeSwayPickaxe"] = Item("crudeSwayPickaxe","crudeSwayPickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude sway pickaxe",
@@ -499,7 +499,7 @@ function loadItems()
     ["mineDamage"] = 0.8, --1
     ["blockDamageAmount"] = 18, --6
     ["rangeLimit"] = 8,  --6
-    ["mineArcAngle"] = 130,
+    ["mineWidth"] = 6,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
   items["crudeHammer"] = Item("crudeHammer","crudeHammer",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude hammer",
@@ -507,7 +507,7 @@ function loadItems()
     ["mineDamage"] = 4, --1
     ["blockDamageAmount"] = 3, --6
     ["rangeLimit"] = 5,  --6
-    ["mineArcAngle"] = 130,
+    ["mineWidth"] = 2,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
   items["crudeScalpel"] = Item("crudeScalpel","crudeScalpel",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude scalpel",
@@ -515,7 +515,7 @@ function loadItems()
     ["mineDamage"] = 0.6, --1
     ["blockDamageAmount"] = 1, --6
     ["rangeLimit"] = 3,  --6
-    ["mineArcAngle"] = 130,
+    ["mineWidth"] = 1,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
   items["crudeShovel"] = Item("crudeShovel","crudeShovel",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude shovel",
@@ -523,7 +523,7 @@ function loadItems()
     ["mineDamage"] = 1.2, --1
     ["blockDamageAmount"] = 9, --6
     ["rangeLimit"] = 6,  --6
-    ["mineArcAngle"] = 130,
+    ["mineWidth"] = 3,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
   items["crudeStiffPick"] = Item("crudeStiffPick","crudeStiffPick",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude stiff pick",
@@ -531,7 +531,7 @@ function loadItems()
     ["mineDamage"] = 1.4, --1
     ["blockDamageAmount"] = 5, --6
     ["rangeLimit"] = 8,  --6
-    ["mineArcAngle"] = 130,
+    ["mineWidth"] = 3,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
   items["crudeTargetPickaxe"] = Item("crudeTargetPickaxe","crudeTargetPickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude target pickaxe",
@@ -539,7 +539,7 @@ function loadItems()
     ["mineDamage"] = 0.25, --1
     ["blockDamageAmount"] = 5, --6
     ["rangeLimit"] = 5,  --6
-    ["mineArcAngle"] = 130,
+    ["mineWidth"] = 0.8,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
   items["paws"] = Item("paws","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Paws",
@@ -547,7 +547,7 @@ function loadItems()
     ["mineDamage"] = 1, --1
     ["blockDamageAmount"] = 3, --6
     ["rangeLimit"] = 2,  --6
-    ["mineArcAngle"] = 130,
+    ["mineWidth"] = 3,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
   items["coolPickaxe"] = Item("coolPickaxe","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Cool pickaxe",
@@ -555,7 +555,7 @@ function loadItems()
     ["mineDamage"] = 2.5,
     ["blockDamageAmount"] = 15,
     ["rangeLimit"] = 20,
-    ["mineArcAngle"] = 360,
+    ["mineWidth"] = 5,
     ["holdAnimation"] = "crudePickaxe_Hold",
     ["baseColor"] = {0,1,1,1},
   })
@@ -564,7 +564,7 @@ function loadItems()
     ["mineDamage"] = 9999,
     ["blockDamageAmount"] = 1,
     ["rangeLimit"] = 99,
-    ["mineArcAngle"] = 360,
+    ["mineWidth"] = 1,
     ["holdAnimation"] = "crudePickaxe_Hold",
     ["baseColor"] = {1,0,0,1},
     ["minePierce"] = true,
@@ -703,10 +703,12 @@ function LoadInterfaces()
   interfaces["worldCreation"]:addElement("createButton","button",0.4,0.1,"Start game",{},{},nil,nil)
   interfaces["worldCreation"]:addElement("worldHeigth","options",0.9,0.2,"World deepness :",{"500","1000","2000","3000","4000"},{["textAlign"] = "left",["gap"]=0,["default"] = "2000"},nil,nil)
   interfaces["worldCreation"]:addElement("worldWidth","options",0.9,0.2,"World width :",{"150","300","450","600","750"},{["textAlign"] = "left",["gap"]=0,["default"] = "450"},nil,nil)
+  interfaces["worldCreation"]:addElement("biomeSize","options",0.9,0.2,"Biome size :",{"50","100","150","250","400"},{["textAlign"] = "left",["gap"]=0,["default"] = "150"},nil,nil)
   interfaces["worldCreation"]:addElement("cheat", "checkbox",0.9,0,"Cheat Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["worldCreation"]:addElement("freeCam","checkbox",0.9,0,"Free cam Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["worldCreation"]:addElement("flyCheat","checkbox",0.9,0,"Fly & noClip Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["worldCreation"]:addElement("lightReach","slider",0.9,0.2,"Light reach",{["round"] = 1,["min"] = 1, ["max"]= 12,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 6},nil,nil)
+  --interfaces["worldCreation"]:addElement("seed","slider",0.9,0.2,"World seed",{["round"] = 1,["min"] = 1, ["max"]= 9999999,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 6},nil,nil)
   interfaces["worldCreation"]:addElement("resetWorldCreation","button",0.3,0.08,"Default",{},{},nil,nil)
 
 

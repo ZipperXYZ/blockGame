@@ -13,11 +13,11 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
 
     self.health = Bar("health",{1,0.5,0.5,1},{1,1,1,1},"multisection")
     self.health:addSection("hp",{0,1,0.5,1},health,(health/100),3,false,false,false)
-    self.health:addSection("shield",{0,0.5,1,1},health*0.2,(health/30),8,false,false,false)
+    --self.health:addSection("shield",{0,0.5,1,1},health*0.2,(health/30),8,false,false,false)
 
     self.size = size or 0.5
     self.level = level or 0
-    self.ia = ia or "none"
+    self.ai = ia or "none"
     self.id = math.random()
     self.flags = flags or {}
 
@@ -61,7 +61,7 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.groundedLastFrame = true
     self.flyCheat = false
 
-    self.cameraFocus = self.flags.cameraFocus or (self.ia == "player" or self.ia == "human")
+    self.cameraFocus = self.flags.cameraFocus or (self.ai == "player" or self.ai == "human")
 
     self.attackDamage = self.flags.attackDamage or 5
     self.miningRadius = self.flags.miningRadius or 1
@@ -97,6 +97,12 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
             , Inventory("armor", { 0.5, 0.6, 0.7, 1 }, Vector2(0.95, 0.05), 3, 4, 1, 1, (0.065), (0.065 / 8),
             { ["isEquipmentInventory"] = true, ["anchorX"] = "right", ["anchorY"] = "top" })
         }
+    end
+
+
+    self.isPlayer = (false)
+    if self.type == "player" then
+        self.isPlayer = true
     end
 end
 
@@ -376,11 +382,23 @@ function Entity:spawnBlood(amount,velo,direction,arc)
 end
 
 function Entity:getFallDamage(fallHeight, maxHealth)
-    local kv = 0.05 --
+    local kv = 0.2 --
+    if fallHeight < 40 then
+        kv = k(0,kv,fallHeight/40)
+    end
     local damageFraction = math.log(1 + kv * fallHeight)
                            / (1 + math.log(1 + kv * fallHeight))
 
     return damageFraction * maxHealth
+end
+
+function Entity:entityDeathUpdate(dt)
+    local dead = false
+    if self.health:getValue("hp") <= 0.4 then
+        dead = true
+        self:death()
+    end
+    return dead
 end
 
 function Entity:movementUpdate(dt)
@@ -596,7 +614,7 @@ function Entity:DrawUI()
 
     if self.health ~= nil then
         self.health:draw(szx*0.05,szy*0.89,szx*0.25,szy*0.06,HealthBarStyle,"sectionned",nil,5)
-        self.health:draw(szx*0.05,szy*0.89-szy*0.1,szx*0.25,szy*0.06,HealthBarStyle,"total",nil,5)
+        --self.health:draw(szx*0.05,szy*0.89-szy*0.1,szx*0.25,szy*0.06,HealthBarStyle,"total",nil,5)
     end
 
     if itemDraw ~= nil then
@@ -770,12 +788,12 @@ end
     return true
 end--]]
 function Entity:entityUpdate(dt)
-    if middleclicktick then
+    --[[if middleclicktick then
         self:gainHealth(20,nil)
     end
     if rightclicktick then
         self:damage(20,"dev")
-    end
+    end]]
     self.health:update(dt)
 end
 
@@ -1049,6 +1067,23 @@ function Entity:drawHoldItem(spriteX, spriteY, size)
         items[self.itemHold.name]:drawHolding(self, spriteX, spriteY, size, self.itemHold.attributes,
             self.itemHold.quantity)
     end
+end
+
+function Entity:drawHealthBars()
+    --local x, y, size = world:getTileScreenPosition(round(self.position.x,8),round(self.position.y - self.size - 0.5,8) )
+    local x, y = positiontoscreen(round(self.position.x * 8) / 8,
+        round((self.position.y - self.size / 2 - 0.5) * 8) / 8 )
+    local size = camv / 8
+
+    local width = size * self.size * 3 * 8
+
+    self.health:draw(x-width/2,y,width,szy*0.008,"glued","total",szy*0.001,5,"bars")
+    self.health:draw(x-width/2,y,width,szy*0.008,"glued","total",szy*0.001,5,"previews")
+    self.health:draw(x-width/2-100,y,width+200,szy*0.03,"glued","total",szy*0.0015,5,"text")
+    --love.graphics.rectangle("fill",x,y,100,5)
+    --love.graphics.setColor(1,1,1,1)
+    --love.graphics.print((round((self.position.y - self.size / 2 - 0.5) * 8) / 8),0,0)
+
 end
 
 function Entity:draw(inInventory, customX, customY, customSize)

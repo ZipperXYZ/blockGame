@@ -39,6 +39,8 @@ function Item:init(itemName,sprite,flags)
     self.blockDamageAmount = self.flags.blockDamageAmount or 0
     self.mineArcAngle = self.flags.mineArcAngle or 180
     self.mineForwardWeight = self.flags.mineForwardWeight or 2
+    self.mineWidth = self.flags.mineWidth or 1
+    self.mineForwardWeight = self.flags.mineForwardWeight or 2
     self.mineLayer = self.flags.mineLayer or {"tiles"}
     self.minePierce = self.flags.minePierce or false
 
@@ -98,10 +100,47 @@ function Item:getPickaxeTargets(entity,attributes,cursorX,cursorY)
             place = entity.position:copy()
             place:moveTowards(Vector2(round(cursorX),round(cursorY)),self.rangeLimit)
         end
+
+        local bloc = place:copy()
+        if bloc:dist(entity.position:copy()) <= self.rangeLimit then
+            if world:getTile(bloc.x,bloc.y,"tiles").canBeMined and world:getTile(bloc.x,bloc.y,"tiles").name ~= "none" then
+                if not checkIfVectorInList(Vector2(bloc.x,bloc.y),targetList,true) then
+                    table.insert(targetList,Vector2(bloc.x,bloc.y))
+                end
+            end
+        end
+    end
+
+    local baseDirection = entity.position:getDirection360Towards(Vector2(round(cursorX),round(cursorY)))
+
+    for advance = 0, math.ceil(self.rangeLimit*2) do
+        for forwardDistance = 0, math.ceil(self.mineWidth*4) do
+            for side = -1,1,2 do
+                local forwardValue = (advance/2)
+
+                if #targetList < self.blockDamageAmount then
+
+                    local bloc = entity.position:copy()
+                    bloc:move(baseDirection,forwardValue )
+                    bloc:move(baseDirection + 90 * side,forwardDistance * 0.25/4 )
+                    bloc.x = round(bloc.x)
+                    bloc.y = round(bloc.y)
+                    --local angle
+
+                    if bloc:dist(entity.position:copy()) <= self.rangeLimit then
+                        if world:getTile(bloc.x,bloc.y,"tiles").canBeMined and world:getTile(bloc.x,bloc.y,"tiles").name ~= "none" then
+                            if not checkIfVectorInList(Vector2(bloc.x,bloc.y),targetList,true) then
+                                table.insert(targetList,Vector2(bloc.x,bloc.y))
+                            end
+                        end
+                    end
+                end
+            end
+        end
     end
     
 
-    if world:getTile(place.x,place.y,"tiles").canBeMined and world:getTile(place.x,place.y,"tiles").name ~= "none" then
+    --[[if world:getTile(place.x,place.y,"tiles").canBeMined and world:getTile(place.x,place.y,"tiles").name ~= "none" then
         table.insert(targetList,Vector2(round(place.x),round(place.y)))
 
         local baseDirection = entity.position:getDirection360Towards(Vector2(round(cursorX),round(cursorY)))
@@ -131,7 +170,7 @@ function Item:getPickaxeTargets(entity,attributes,cursorX,cursorY)
             end
         end
 
-    end
+    end]]
 
     return targetList
     
@@ -447,6 +486,6 @@ function Item:draw(state,posX,posY,size,attributes, amount,centerX,centerY)
         if centerX then posX = posX + size/2 end
         if centerY then posY = posY + size/2 end
 
-        self.sprite:draw(state,0,"right",posX,posY,drawSize,drawSize,self.baseColor)
+        self.sprite:draw(state,0,"right",round(posX),round(posY),round(drawSize),round(drawSize),self.baseColor)
     end
 end

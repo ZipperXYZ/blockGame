@@ -559,6 +559,15 @@ function loadItems()
     ["holdAnimation"] = "crudePickaxe_Hold",
     ["baseColor"] = {0,1,1,1},
   })
+  items["ultimatePickaxe"] = Item("ultimatePickaxe","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Ultimate pickaxe",
+    ["cooldown"] = 0,
+    ["mineDamage"] = math.huge,
+    ["blockDamageAmount"] = math.huge,
+    ["rangeLimit"] = 500,
+    ["mineWidth"] = 20,
+    ["holdAnimation"] = "crudePickaxe_Hold",
+    ["baseColor"] = {1,0,1,1},
+  })
   items["devPickaxe"] = Item("devPickaxe","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Dev pickaxe",
     ["cooldown"] = 0.05,
     ["mineDamage"] = 9999,

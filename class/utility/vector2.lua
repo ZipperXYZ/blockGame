@@ -95,6 +95,11 @@ function Vector2:getDirection360Towards(other)
     return (math.atan2(other.y-self.y,other.x-self.x)*180)/math.pi
 end
 
+function Vector2:pointInAngleRange(other, direction, range)
+    local targetDirection = self:getDirectionTowards(other)
+    return angleDifference(direction, targetDirection) <= range / 2
+end
+
 function Vector2:__tostring()
     return "X: ".. tostring(self.x).. " Y: " ..tostring(self.y)
 end

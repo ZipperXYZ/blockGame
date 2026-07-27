@@ -37,6 +37,15 @@ function roundify(x2,y2,x3,y3,distance1) --distance is probably between 0 and 1
   y4=round(y2+(y1*y3))
   return x4,y4
 end
+function angleDifference(a, b)
+    local diff = (b - a + 180) % 360 - 180
+    return math.abs(diff)
+end
+
+function pointInAngleRange(x1, y1, angle1, x2, y2, angleRange)
+     targetAngle = pointat180(x1, y1, x2, y2)
+    return angleDifference(angle1, targetAngle) <= angleRange / 2
+end
   function movetowards(x1,y1,x2,y2,move1)
    d1= pointatpi(x1,y1,x2,y2)
    x3,y3= movepositionpi(x1,y1,d1,move1)

@@ -422,7 +422,7 @@ function Bar:draw(x,y,width,height,sectionTypes,textType,textSize,corners,draw)
     textType = textType or "total"
     corners = corners or 0
     textSize = textSize or height/30
-    local yText = y + ((Font:getHeight()*textSize)/2)
+    local yText = y + (height-(Font:getHeight()*textSize))/2
 
     local total = self:getMaxTotal()
     

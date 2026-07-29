@@ -3,14 +3,16 @@ function love.load()
 
   require "lume"
   require "gameudp"
-  require "drawudp" --là ou tout le code de dessins
-  require "mathsc"  --math comprend plusieurs truc bien qui sont pas dans lua de base
+  require "drawudp"
+  require "mathsc" 
   require "World/worldgeneration"
   require "World/structureList"
   require "World/structure"
   require "load"
   require "Entities/entities"
   require "Entities/sprite"
+  require "directors/entitySpawnDirector"
+  require "directors/entitySpawnCards"
   require "items/inventory"
   require "items/item"
   require "items/groundItem"
@@ -18,6 +20,7 @@ function love.load()
   require "class/utility/eventEmitter"
   require "class/utility/vector2"
   require "particles/particles"
+  require "particles/textParticles"
   require "interfaces/interface"
   require "bars/bar"
   love.graphics.setDefaultFilter("nearest", "nearest")
@@ -47,6 +50,7 @@ function love.load()
   sprites = {}
   textures = {}
   interfaces = {}
+  GlobalEnemyCards = {}
 
   --[[
   --commandes:

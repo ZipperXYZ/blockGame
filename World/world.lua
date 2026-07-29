@@ -22,6 +22,10 @@ function World:init(worldSeed, chunkSize, depthProgression, biomeSize, biomeList
     self.chunks = {}
     self.groundItems = {}
     self.particles = {}
+    self.textParticles = {}
+
+    self.globalDirector = EntitySpawnDirector(25,3,12,nil,60,95,0,100,200,150,999999999,40)
+    self.directors = {}
 
     self.parameters = parameters or {}
     self.borderX = self.parameters.borderX or 0
@@ -260,6 +264,8 @@ function World:damageBlock(worldPosX, worldPosY, damage,layer,destroyTopAsWell)
         self:tilePropretyAdd(worldPosX, worldPosY, "health"..layer, -damage)
         self:setTileProprety(worldPosX, worldPosY, "healthMineTimer"..layer, 5)
     end
+
+    world:spawnTextParticle((round(damage*10)/10).."",Vector2(worldPosX,worldPosY))
 
     local tile = self:getTile(worldPosX, worldPosY,layer)
 
@@ -921,6 +927,11 @@ function World:DrawUi()
     end
 end
 
+function World:spawnTextParticle(text,position, time, size, height,color,outlineColor,animationColor, flags)
+
+    table.insert(self.textParticles,TextParticle(text,position:copy(), time, size, height,color,outlineColor,animationColor, flags))
+end
+
 function World:spawnParticles(count,name,position,radius,color, colorNoise, timer, timerNoise,motion, motionStrength, motionArcAngle, motionArcSpread, flags)
     if count>0 then
         for ip =1, math.ceil(count) do
@@ -945,12 +956,28 @@ function World:updateParticles(dt)
             end
         end
     end
+    if #self.textParticles > 0 then
+        for i=#self.textParticles,1,-1 do
+            local die = self.textParticles[i]:update(dt)
+            if die then
+                table.remove(self.textParticles,i)
+            end
+        end
+    end
 end
 
 function World:drawParticles()
     if #self.particles > 0 then
         for i=1, #self.particles do
             self.particles[i]:draw()
+        end
+    end
+end
+
+function World:drawTextParticles()
+    if #self.textParticles > 0 then
+        for i=1, #self.textParticles do
+            self.textParticles[i]:draw()
         end
     end
 end

@@ -8,6 +8,7 @@ function loadeverything()
 
   LoadStructureList()
   --loadbiomes()
+  LoadSpawnCards()
   loadEntities()
 end
 
@@ -141,6 +142,16 @@ function loadtextures()
       ["quads"] = {{0,6},{1,6},{2,6},{2,6},{3,6}}
     }
   }, {["mirrorable"] = true})]]
+end
+
+function LoadSpawnCards()
+  GlobalEnemyCards = {}
+  --EntitySpawnCard(cardCost,cardWeight,cardType,biomes,name,sprite,size,health,damage,flags)
+  table.insert(GlobalEnemyCards,
+    EntitySpawnCard(3,10,"enmy",{"any"},"slime","none",0.4,25,5,{
+      ["team"] = "enemy",
+    })
+  )
 end
 
 function loadtiles()

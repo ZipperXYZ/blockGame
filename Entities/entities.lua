@@ -66,6 +66,11 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.attackDamage = self.flags.attackDamage or 5
     self.miningRadius = self.flags.miningRadius or 1
 
+
+    self.directorId = self.flags.directorId or 0
+    self.directorCost = self.flags.directorCost or 1
+
+
     self.controls = {}
     self:resetControls()
     self.mineList = {}
@@ -165,6 +170,12 @@ function Entity:damage(damage,source,entitySource)
     if checkifinlist(source,{"fall"}) then
         section = "hp"
     end
+
+
+
+    local damageColor = {1,1,1,1}
+    if self.type == "player" then damageColor = {1,0,0,1} end
+    world:spawnTextParticle(round(damage),self.position:copy(), 1.5, 0.4,nil,damageColor)
 
 
     local overflow,downflow = self.health:decrease(damage,section)
@@ -1079,7 +1090,7 @@ function Entity:drawHealthBars()
 
     self.health:draw(x-width/2,y,width,szy*0.008,"glued","total",szy*0.001,5,"bars")
     self.health:draw(x-width/2,y,width,szy*0.008,"glued","total",szy*0.001,5,"previews")
-    self.health:draw(x-width/2-100,y,width+200,szy*0.03,"glued","total",szy*0.0015,5,"text")
+    self.health:draw(x-width/2-100,y,width+200,szy*0.035,"glued","total",szy*0.0015,5,"text")
     --love.graphics.rectangle("fill",x,y,100,5)
     --love.graphics.setColor(1,1,1,1)
     --love.graphics.print((round((self.position.y - self.size / 2 - 0.5) * 8) / 8),0,0)

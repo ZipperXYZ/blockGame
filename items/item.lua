@@ -127,7 +127,7 @@ function Item:getPickaxeTargets(entity,attributes,cursorX,cursorY)
                     bloc.y = round(bloc.y)
                     --local angle
 
-                    if pointInAngleRange(entity.position.x, entity.position.y, baseDirection, bloc.x, bloc.y, 95) then
+                    if pointInAngleRange(entity.position.x, entity.position.y, baseDirection, bloc.x, bloc.y, 100) then
                         if bloc:dist(entity.position:copy()) <= self.rangeLimit then
                             if world:getTile(bloc.x,bloc.y,"tiles").canBeMined and world:getTile(bloc.x,bloc.y,"tiles").name ~= "none" then
                                 if not checkIfVectorInList(Vector2(bloc.x,bloc.y),targetList,true) then

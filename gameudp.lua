@@ -56,6 +56,10 @@ function IsAPlayerAlive()
   return alive
 end
 
+function DirectorUpdate()
+  
+end
+
 function StartGame(changeGameState,parameters)
   if parameters == nil then parameters = {} end
   if parameters.wh == nil then parameters.wh = 1500 end

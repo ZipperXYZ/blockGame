@@ -10,7 +10,7 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.mapColor = nil
     self.textureName = textureName or "tiles.png"
     self.quadName = quadName or "none"
-    self.flags = flags or {}
+    self.flags = CopyAll(flags) or {}
     self.properties = {}
     self.borderType = self.flags["border type"] or "same block"
     self.border = self.flags["border"] or {}

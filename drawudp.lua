@@ -11,6 +11,7 @@ function drawgame()
       world:drawParticles()
       world:DrawEntities()
       world:drawGroundItems()
+      world:drawTextParticles()
       world:drawEntitiesHealthBars()
       world:DrawUi()
     end

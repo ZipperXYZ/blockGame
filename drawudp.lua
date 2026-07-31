@@ -14,6 +14,7 @@ function drawgame()
       world:drawTextParticles()
       world:drawEntitiesHealthBars()
       world:DrawUi()
+      world.globalDirector:print()
     end
   end
 end
@@ -156,6 +157,7 @@ function SettingsUpdate()
   interfaces["settings"]:passDataToElement("SelectedFont",SelectedFont)
   interfaces["settings"]:passDataToElement("fullscreen",fullscreen)
   interfaces["settings"]:passDataToElement("HealthBarStyle",HealthBarStyle)
+  interfaces["settings"]:passDataToElement("HealthBarPosition",HealthBarPosition)
   local lastFont = SelectedFont
   local lastFullscreen = fullscreen
   
@@ -172,6 +174,7 @@ function SettingsUpdate()
   
   MapZoom = results["MapZoom"]
   HealthBarStyle = results["HealthBarStyle"]
+  HealthBarPosition = results["HealthBarPosition"]
   InventorySize = results["InventorySize"]
   InventoryTextSize = results["InventoryTextSize"]
   SelectedFont = results["SelectedFont"]

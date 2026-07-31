@@ -93,6 +93,7 @@ function love.load()
   MapZoom = 2
   MapQuality = 0.4 --0.2
   HealthBarStyle = "seperated"
+  HealthBarPosition = "bottom"
 
   CheatMode = false
   StructureMaker = {{["x"]=1,["y"]=1},{["x"]=1,["y"]=1}}

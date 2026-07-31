@@ -42,6 +42,39 @@ function angleDifference(a, b)
     return math.abs(diff)
 end
 
+function CombineColors(colors)
+  local finalColor = {0, 0, 0, 0}
+  for i = 1, #colors do
+    local color = colors[i]
+    finalColor[1] = finalColor[1] + color[1]
+    finalColor[2] = finalColor[2] + color[2]
+    finalColor[3] = finalColor[3] + color[3]
+    finalColor[4] = finalColor[4] + color[4]
+  end
+  finalColor[1] = finalColor[1] / #colors
+  finalColor[2] = finalColor[2] / #colors
+  finalColor[3] = finalColor[3] / #colors
+  finalColor[4] = finalColor[4] / #colors
+  return finalColor
+end
+function OverrideColor(color1,color2)
+  if color1 == nil then color1 = {0, 0, 0, 0} end
+  if color2 == nil then color2 = {0, 0, 0, 0} end
+  local finalColor = CopyAll(color1) or {0, 0, 0, 0}
+  if #color2 == 5 then
+    finalColor[1] = k(finalColor[1],color2[1],color2[5])
+    finalColor[2] = k(finalColor[2],color2[2],color2[5])
+    finalColor[3] = k(finalColor[3],color2[3],color2[5])
+    finalColor[4] = k(finalColor[4],color2[4],color2[5])
+  else
+    finalColor[1] = k(finalColor[1],color2[1],color2[4])
+    finalColor[2] = k(finalColor[2],color2[2],color2[4])
+    finalColor[3] = k(finalColor[3],color2[3],color2[4])
+  end
+  --finalColor[4] = k(finalColor[4],color2[4],color2[4])
+  return finalColor
+end
+
 function pointInAngleRange(x1, y1, angle1, x2, y2, angleRange)
      targetAngle = pointat180(x1, y1, x2, y2)
     return angleDifference(angle1, targetAngle) <= angleRange / 2

@@ -8,18 +8,25 @@ Entity.className = "Entity"
 
 --init()
 function Entity:init(name, type, sprite, position, health, size, level, ia, flags)
+    --name : player, slime, skeleton...
+    --type : player, enemy, boss, specialBoss, other
+    --ai : player, regular, other...
+    --movevementType : humanlike, hoplike, flying, other
     self.name = name or "none"
     self.type = type or "enemy"
+    self.flags = flags or {}
 
     self.health = Bar("health",{1,0.5,0.5,1},{1,1,1,1},"multisection")
+    if health == nil then health = self.flags.health or 1 end
     self.health:addSection("hp",{0,1,0.5,1},health,(health/100),3,false,false,false)
     --self.health:addSection("shield",{0,0.5,1,1},health*0.2,(health/30),8,false,false,false)
 
-    self.size = size or 0.5
+    self.size = size or 0.45
+    if size == nil then size = self.flags.size or 0.45 end
     self.level = level or 0
     self.ai = ia or "none"
     self.id = math.random()
-    self.flags = flags or {}
+    
 
     self.spriteSize = self.flags["spriteSize"] or 1
     self.spriteOffsetY = self.flags["spriteOffsetY"] or (1 - self.size * 2 - 1 / 8)
@@ -48,6 +55,8 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.state = "alive"
     --self.deathEvent:on(self:death())
 
+    self.movementType = self.flags.movementType or "humanlike"
+
     self.movementSlide = self.flags["movementSlide"] or 0.25
     self.hasWorldCollisions = self.flags["hasWorldCollisions"] or true
     self.position = position or Vector2:new(0, 0)
@@ -62,9 +71,15 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.flyCheat = false
 
     self.cameraFocus = self.flags.cameraFocus or (self.ai == "player" or self.ai == "human")
+    self.disappearFarFromPlayer = self.flags.disappearFarFromPlayer or (self.type == "enemy")
 
     self.attackDamage = self.flags.attackDamage or 5
     self.miningRadius = self.flags.miningRadius or 1
+
+
+    self.colorisation = self.flags.colorisation or {0,0,0,0}
+    self.bloodColor = self.flags.bloodColor or {0.4,0,0.1,1}
+    self.bloodColorNoise = self.flags.bloodColorNoise or {0.3,0.05,0.075,1}
 
 
     self.directorId = self.flags.directorId or 0
@@ -74,6 +89,8 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.controls = {}
     self:resetControls()
     self.mineList = {}
+    self.lastDamageTakenTime = 0
+    self.lastDamageTakenEntityId = 0
     self.inventorySpaceHighlights = {}
     self.cursorColor = { 1, 1, 1, 1 }
 
@@ -132,11 +149,11 @@ end
 --end
 
 function Entity:setPosY(posY)
-    self.position:setY(y)
+    self.position:setY(posY)
 end
 
 function Entity:setPosX(posX)
-    self.position:setY(y)
+    self.position:setX(posX)
 end
 
 function Entity:setPos(posX, posY)
@@ -160,7 +177,7 @@ function Entity:getSize(newLevel)
 end
 
 function Entity:spawnEntity(name, x, y)
-    self.position = Vector2:new(x, y)
+    self.position = Vector2(x, y)
 end
 
 function Entity:damage(damage,source,entitySource)
@@ -179,6 +196,10 @@ function Entity:damage(damage,source,entitySource)
 
 
     local overflow,downflow = self.health:decrease(damage,section)
+    self.lastDamageTakenTime = 0
+    if entitySource ~= nil then
+        self.lastDamageTakenEntityId = entitySource.id
+    end
 
 end
 
@@ -236,7 +257,7 @@ function Entity:getAim(axis)
 end
 
 function Entity:controlsUpdate(dt)
-    if self.ai == "player" or true then
+    if self.ai == "player" or false then
         self.controls.left = love.keyboard.isDown("a")
         self.controls.right = love.keyboard.isDown("d")
         self.controls.jump = love.keyboard.isDown("w")
@@ -303,7 +324,8 @@ function Entity:InventoryItemsUpdate(dt)
 end
 
 function Entity:updateFallDamage()
-    --[[if self.highestPositionBeforeFall == nil then
+    --[[
+    if self.highestPositionBeforeFall == nil then
         if not self:isGrounded() then
             self.lastGrounded = self.position.y
         end
@@ -381,8 +403,8 @@ function Entity:spawnBlood(amount,velo,direction,arc)
                         "blood",
                         self.position:copy(),
                         self.size,
-                        {0.4,0,0.1,1}, 
-                        {0.3,0.05,0.075,1}, 
+                        self.bloodColor, 
+                        self.bloodColorNoise, 
                         5, 
                         5,
                         "dust", 
@@ -527,8 +549,8 @@ function Entity:camUpdate()
         if camv <= 8 then camv = 8 end
         if camv >= 128 then camv = 128 end
 
-        realcamx = round(self.position:getX() * 8) / 8
-        realcamy = round((self.position:getY() + self.spriteOffsetY) * 8) / 8
+        realcamx = round(self.position.x * 8) / 8
+        realcamy = round((self.position.y + self.spriteOffsetY) * 8) / 8
         camx = realcamx
         camy = realcamy
         spectator = false
@@ -624,7 +646,11 @@ function Entity:DrawUI()
     end
 
     if self.health ~= nil then
-        self.health:draw(szx*0.05,szy*0.89,szx*0.25,szy*0.06,HealthBarStyle,"sectionned",nil,5)
+        if HealthBarPosition == "top" then
+            self.health:draw(szx*0.05,szy*0.05,szx*0.25,szy*0.06,HealthBarStyle,"sectionned",nil,5)
+        else
+            self.health:draw(szx*0.05,szy*0.89,szx*0.25,szy*0.06,HealthBarStyle,"sectionned",nil,5)
+        end
         --self.health:draw(szx*0.05,szy*0.89-szy*0.1,szx*0.25,szy*0.06,HealthBarStyle,"total",nil,5)
     end
 
@@ -690,6 +716,7 @@ function Entity:CollisionDirectionCheck(center, otherAxisPosition, check, axis)
 end
 
 function Entity:collisionWithEntities(dt)
+    --
     for i2 = 1, #entities do
         other = entities[i2]
         if self.id ~= other.id then
@@ -805,6 +832,7 @@ function Entity:entityUpdate(dt)
     if rightclicktick then
         self:damage(20,"dev")
     end]]
+    self.lastDamageTakenTime = self.lastDamageTakenTime + dt
     self.health:update(dt)
 end
 
@@ -1090,7 +1118,16 @@ function Entity:drawHealthBars()
 
     self.health:draw(x-width/2,y,width,szy*0.008,"glued","total",szy*0.001,5,"bars")
     self.health:draw(x-width/2,y,width,szy*0.008,"glued","total",szy*0.001,5,"previews")
-    self.health:draw(x-width/2-100,y,width+200,szy*0.035,"glued","total",szy*0.0015,5,"text")
+    self.health:draw(x-width/2-100,y,width+200,szy*0.035,"glued","total",szy*0.0012,5,"text")
+
+    local txtSize = math.ceil(szy*0.0012)
+    love.graphics.setColor(0,0,0,1)
+    love.graphics.printf("lvl "..self.level,x-width-100+1,y+szy*0.02,(width*2+200)/txtSize,"center",0,txtSize,txtSize)
+    love.graphics.printf("lvl "..self.level,x-width-100-1,y+szy*0.02,(width*2+200)/txtSize,"center",0,txtSize,txtSize)
+    love.graphics.printf("lvl "..self.level,x-width-100,y+szy*0.02+1,(width*2+200)/txtSize,"center",0,txtSize,txtSize)
+    love.graphics.printf("lvl "..self.level,x-width-100,y+szy*0.02-1,(width*2+200)/txtSize,"center",0,txtSize,txtSize)
+    love.graphics.setColor(1,1,1,1)
+    love.graphics.printf("lvl "..self.level,x-width-100,y+szy*0.02,(width*2+200)/txtSize,"center",0,txtSize,txtSize)
     --love.graphics.rectangle("fill",x,y,100,5)
     --love.graphics.setColor(1,1,1,1)
     --love.graphics.print((round((self.position.y - self.size / 2 - 0.5) * 8) / 8),0,0)
@@ -1101,10 +1138,10 @@ function Entity:draw(inInventory, customX, customY, customSize)
     self:updateFallDamage()
     local x
     local y
-    x, y = positiontoscreen(round(self.position:getX() * 8) / 8,
-        round((self.position:getY() + self.spriteOffsetY) * 8) / 8 - self.spriteOffsetY)
-    local spriteX, spriteY = positiontoscreen(round(self.position:getX() * 8) / 8,
-        round((self.position:getY() + self.spriteOffsetY) * 8) / 8)
+    x, y = positiontoscreen(round(self.position.x * 8) / 8,
+        round((self.position.y + self.spriteOffsetY) * 8) / 8 - self.spriteOffsetY)
+    local spriteX, spriteY = positiontoscreen(round(self.position.x * 8) / 8,
+        round((self.position.y + self.spriteOffsetY) * 8) / 8)
     spriteY = spriteY
     if customX ~= nil then spriteX = customX end
     if customY ~= nil then spriteY = customY end
@@ -1131,10 +1168,16 @@ function Entity:draw(inInventory, customX, customY, customSize)
 
     if self.spriteName ~= "none" and self.animation ~= "none" and textures["sprites"][self.spriteName] ~= nil then
         --print("draw1")
-
+        
+        local colorisationColor = CopyAll(self.colorisation)
+        if colorisationColor == nil then colorisationColor = { 1, 1, 1, 0 } end
+        --self.lastDamageTakenTime = 0.1
+        if self.lastDamageTakenTime < 0.5 then
+            colorisationColor = OverrideColor(colorisationColor,{10,10,10,1,(0.5-self.lastDamageTakenTime)*2})
+        end
 
         self.sprite:draw(self.animation, self.animationTime, self.animationDirection, spriteX, spriteY, size, size,
-            { 1, 1, 1, 1 })
+            { 1, 1, 1, 1 },colorisationColor)
     end
 
     --love.graphics.print(self.ia, x, y + 100)
@@ -1144,7 +1187,7 @@ function Entity:groundItemsUpdate(dt)
     if #world.groundItems > 0 then
         for g = #world.groundItems, 1, -1 do
             if self.inventory[1]:checkIfEmptySpacesAvailable() then
-                if world.groundItems[g]:moveEntityUpdate(dt, self.position, self.size + 5) then
+                if world.groundItems[g]:moveEntityUpdate(dt, self.position:copy(), self.size + 5) then
                     local success, amountLeft = self.inventory[1]:addItem(world.groundItems[g]["name"],
                         world.groundItems[g]["amount"], world.groundItems[g]["attributes"])
 

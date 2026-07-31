@@ -6,7 +6,10 @@ function gameupdate(dt)
   local udpDistanceY = math.ceil(szy / camv / 2)
 
   world:updateTiles(dt, camx, camy, udpDistanceX, udpDistanceY, {})
+  DirectorUpdate(dt)
+  world:updateDirectors(dt)
   world:updateEntities(dt)
+  RemoveDistantEnemies(60)
   world:updateParticles(dt)
   world:groundItemsUpdate(dt)
   --entityupdate(dt)
@@ -56,8 +59,73 @@ function IsAPlayerAlive()
   return alive
 end
 
-function DirectorUpdate()
-  
+function RemoveDistantEnemies(maxDistance) 
+  if #entities >0 then
+    for i = #entities, 1, -1 do
+      if entities[i].disappearFarFromPlayer then
+        local playerDistance = 999999
+        if #entities > 0 then
+          for j = 1, #entities do
+            if entities[j].isPlayer then
+              local distance = entities[i].position:getDistance(entities[j].position)
+              if distance < playerDistance then
+                playerDistance = distance
+              end
+            end
+          end
+        end
+
+        if playerDistance > maxDistance then
+          entities[i].state = "dead"
+          table.remove(entities,i)
+        end
+      end
+
+    end
+  end
+end
+
+function DirectorUpdate(dt)
+  --world:updateDirectors(dt)
+  local directorCount = -1
+  if #entities > 0 then
+    for i = 1, #entities do
+      if entities[i].isPlayer then
+        directorCount = directorCount + 1
+        if directorCount == 0 then
+          local depth = world:getDepth(entities[i].position.y)
+          local multiplier = 1 + math.abs((depth*1.5) ^ 2)
+          world.globalDirector.position = entities[i].position:copy()
+          world.globalDirector.maxCredit = 100 + 30 * multiplier
+          world.globalDirector.maxCreditBank = 40 + 30 * multiplier
+          world.globalDirector.creditGain = 0.25 + 0.22 * multiplier
+          world.globalDirector.spawnFrequency = 12 / (1 + 0.035 * multiplier)
+          world.globalDirector.minCreditPerSpawn = -30 + (3 * multiplier)
+          world.globalDirector.maxCreditPerSpawn = 50 + (10 * multiplier)
+          world.globalDirector.mobLimit = 60
+          world.globalDirector.decay = world.globalDirector.decay + 10
+        else
+          if #world.directors < directorCount then
+            local newDirector = EntitySpawnDirector(entities[i].position:copy(),50,15,25,3,12,nil,60,95,0,100,200,150,999999999,40)
+            table.insert(world.directors,newDirector)
+          else
+            world.directors[directorCount].position = entities[i].position:copy()
+            local depth = world:getDepth(entities[i].position.y)
+            local multiplier = 1 + math.abs((depth*1.5) ^ 2)
+            world.directors[directorCount].position = entities[i].position:copy()
+            world.directors[directorCount].maxCredit = 100 + 30 * multiplier
+            world.directors[directorCount].maxCreditBank = 40 + 30 * multiplier
+            world.directors[directorCount].creditGain = 0.25 + 0.22 * multiplier
+            world.directors[directorCount].spawnFrequency = 12 / (1 + 0.035 * multiplier)
+            world.directors[directorCount].minCreditPerSpawn = -30 + (3 * multiplier)
+            world.directors[directorCount].maxCreditPerSpawn = 50 + (10 * multiplier)
+            world.directors[directorCount].mobLimit = 60
+            world.directors[directorCount].decay = world.directors[directorCount].decay + 10
+          end
+        end
+      end
+    end
+  end
 end
 
 function StartGame(changeGameState,parameters)

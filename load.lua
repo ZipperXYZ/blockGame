@@ -18,6 +18,28 @@ function loadtextures()
   textures["textures"] = {}
   textures["quads"] = {}
   textures["sprites"] = {}
+
+  textures["textures"]["colorisationShader"]= love.graphics.newShader([[
+    extern vec3 tintColor;
+    extern float strength;
+
+    vec4 effect(vec4 color, Image texture, vec2 tc, vec2 sc)
+    {
+        vec4 tex = Texel(texture, tc);
+
+        // grayscale value
+        float gray = (tex.r + tex.g + tex.b) / 3.0;
+
+        // target tinted color
+        vec3 tinted = gray * tintColor;
+
+        // blend original -> tinted
+        vec3 finalColor = mix(tex.rgb, tinted, strength);
+
+        return vec4(finalColor, tex.a);
+    }
+    ]])
+
   textures["textures"]["tiles.png"]=love.graphics.newImage("Textures/tiles.png")
   textures["textures"]["items1.png"]=love.graphics.newImage("Textures/items1.png")
   textures["textures"]["player.png"]=love.graphics.newImage("Textures/player.png")
@@ -106,6 +128,8 @@ function loadtextures()
   textures["sprites"]["destroyAnimation"] = Sprite("destroyAnimation","miscTiles.png",{["type"] = "hold", ["timePerFrame"] = 1/9, ["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {{0,1},{1,1},{2,1},{3,1},{4,1},{5,1},{6,1},{7,1},{8,1}}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleAnimation"})
   
   textures["sprites"]["player"] = Sprite("player","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,0},["spriteSizes"]={1,2},["spriteCenters"]={0.5,1.5}})
+  textures["sprites"]["slime"] = Sprite("slime","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={1,0},["spriteSizes"]={1,2},["spriteCenters"]={0.5,1.5}})
+  textures["sprites"]["skeleton"] = Sprite("skeleton","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={2,0},["spriteSizes"]={1,2},["spriteCenters"]={0.5,1.5}})
   textures["sprites"]["crudePickaxe_Hold"] = Sprite("crudePickaxe_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,1},["spriteSizes"]={1.5,2},["spriteCenters"]={0.75,1.5}})
   --[[textures["sprites"]["player"] = Sprite("player","player.png",{
     ["parts"] = {"idle","walk","jump","use"},
@@ -146,12 +170,30 @@ end
 
 function LoadSpawnCards()
   GlobalEnemyCards = {}
-  --EntitySpawnCard(cardCost,cardWeight,cardType,biomes,name,sprite,size,health,damage,flags)
+  --EntitySpawnCard(cardCost,cardWeight,cardType,biomes,name,sprite,ai,flags)
   table.insert(GlobalEnemyCards,
-    EntitySpawnCard(3,10,"enmy",{"any"},"slime","none",0.4,25,5,{
+    EntitySpawnCard(3,100,"enemy",{"any"},"slime","slime","regular",{
       ["team"] = "enemy",
+      ["size"] =  0.4,
+      ["health"] = 25,
+      ["damage"] = 5,
+      ["movevementSpeed"] = 0.5,
+      ["movementType"] = "hoplike",
     })
   )
+  table.insert(GlobalEnemyCards,
+    EntitySpawnCard(8,60,"enemy",{"any"},"skeleton","skeleton","regular",{
+      ["team"] = "enemy",
+      ["size"] =  0.4,
+      ["health"] = 25,
+      ["damage"] = 5,
+      ["movevementSpeed"] = 0.5,
+      ["movementType"] = "humanlike",
+    })
+  )
+  -- --skeletra
+  --skeletor
+  --skeletang
 end
 
 function loadtiles()
@@ -496,6 +538,7 @@ function loadItems()
     ["rangeLimit"] = 5,  --6
     ["mineWidth"] = 3,
     ["holdAnimation"] = "crudePickaxe_Hold",
+    ["description"] = {"#silent","A crude pickaxe made of sticks and rocks. It can serve a lot more than you might think."},
   })
   items["crudeSpike"] = Item("crudeSpike","crudeSpike",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude spike",
     ["cooldown"] = 0.6,
@@ -739,6 +782,7 @@ function LoadInterfaces()
   interfaces["settings"]:addElement("chunkRenderDistance","slider",0.9,0.2,"Additional chunk gen distance",{["round"] = 1,["min"] = 20, ["max"]= 50,["displayAddition"]=-20,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 20},nil,nil)
   interfaces["settings"]:addElement("maxChunkLoadedPerFrame","slider",0.9,0.2,"Max chunks generated per frame",{["round"] = 1,["min"] = 0, ["max"]= 50},{["textAlign"] = "left",["gap"]=0,["default"] = 9},nil,nil)
   interfaces["settings"]:addElement("HealthBarStyle","options",0.9,0.2,"Health bar sections style :",{"seperated","glued"},{["textAlign"] = "left",["gap"]=0,["default"] = "seperated"},nil,nil)
+  interfaces["settings"]:addElement("HealthBarPosition","options",0.9,0.2,"Health bar position :",{"top","bottom"},{["textAlign"] = "left",["gap"]=0,["default"] = "bottom"},nil,nil)
   interfaces["settings"]:addElement("MapZoom","slider",0.9,0.2,"Map zoom",{["round"] = 0.2,["min"] = 0.4, ["max"]= 5},{["textAlign"] = "left",["gap"]=0,["default"] = 2},nil,nil)
   interfaces["settings"]:addElement("fullscreen", "checkbox",0.9,0,"Fullscreen",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["settings"]:addElement("InventorySize","slider",0.9,0.2,"Inventory size",{["round"] = 0.1,["min"] = 0.5, ["max"]= 1.5},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)

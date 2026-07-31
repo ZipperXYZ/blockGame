@@ -24,7 +24,7 @@ function World:init(worldSeed, chunkSize, depthProgression, biomeSize, biomeList
     self.particles = {}
     self.textParticles = {}
 
-    self.globalDirector = EntitySpawnDirector(25,3,12,nil,60,95,0,100,200,150,999999999,40)
+    self.globalDirector = EntitySpawnDirector(Vector2(0,0),50,15,25,3,12,nil,60,95,0,100,200,150,999999999,40)
     self.directors = {}
 
     self.parameters = parameters or {}
@@ -135,6 +135,7 @@ end
 --uniques qui sont nécessaires pour mettons l'information unique à une tile, comme son orientation, peut être un getTilePropreties
 --qui retourne les propriétés et setTilePropriety(propriety, value) qui set une propriété de la tile, comme l'inventaire d'un
 --coffre ou l'orientation d'un bloc)
+
 function World:getBiome(worldPosX, worldPosY)
     local biome = "none"
     local nearCenter = 0.5
@@ -810,11 +811,22 @@ function World:updateEntities(dt)
         end
     end
     if #entities > 0 then
-        for i = 1, #entities do
+        for i = #entities, 1, -1 do
             local remove = entities[i]:entityDeathUpdate(dt)
             if remove then
                 table.remove(entities,i)
             end
+        end
+    end
+end
+
+function World:updateDirectors(dt)
+    if self.globalDirector then
+        self.globalDirector:update(dt)
+    end
+    if self.directors then
+        for i = 1, #self.directors do
+            self.directors[i]:update(dt)
         end
     end
 end
@@ -824,9 +836,50 @@ function World:getColision(worldPosX, worldPosY)
     return tile:getColision()
 end
 
+function World:getDepth(y)
+    return -y / self.depthProgression
+end
+
+function World:getEnvironmentLevel(y)
+    --example :
+    --depth 0 : 1
+    --depth 0.5 : 5
+    --depth 1 : 11
+    --depth 2 : 27
+    --depth 3 : 50
+    --depth 4 : 78
+    --depth 5 : 111
+    --depth 6 : 150
+    return (1 + math.abs(self:getDepth(y)* 3)^ 1.7)
+end
+
+function World:checkSpawnValidity(position,space)
+    local valid = false
+    if space == nil then space = 1 end
+    if self:getColision(position.x - math.floor(space/2), position.y - math.floor(space/2)) == false then
+        if self:getColision(position.x - math.floor(space/2), position.y - 1 - math.floor(space/2)) == true then
+            valid = true
+        end
+    end
+    if space >= 2 then
+        for ix = 1, space do
+            for iy = 1, space do
+                if self:getColision(position.x - math.floor(space/2) + ix - 1, position.y + iy - math.floor(space/2) - 1) then
+                    valid = false
+                end
+            end
+            if not self:getColision(position.x - math.floor(space/2) + ix - 1, position.y - math.floor(space/2) - 1) then
+                valid = false
+            end
+        end
+    end
+
+    return valid
+end
+
 function World:spawnEntity(type, worldPosX, worldPosY)
     aiType = "none"
-    if type == "player" then aiType = "human" end
+    if type == "player" then aiType = "player" end
     --table.insert(entities,Entity(type, type, "none", Vector2(worldPosX, worldPosY), 1, 0.9, 0, aiType, {}))
     table.insert(entities, Entity(type, type, "player", Vector2(worldPosX, worldPosY), 100, 0.425, 0, aiType, {}))
 

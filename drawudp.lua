@@ -126,6 +126,7 @@ function WorldCreationUpdate(dt)
     parameters.freeCam = results["freeCam"]
     parameters.flyCheat = results["flyCheat"]
     parameters.biomeSize = results["biomeSize"]
+    parameters.terrainSize = results["terrainSize"]
 
     StartGame(true,parameters)
   end

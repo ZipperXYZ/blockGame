@@ -143,6 +143,7 @@ function StartGame(changeGameState,parameters)
   entities = {}
   local worldParameters = {}
   EndGameWhenNoPlayer = true
+  worldParameters.caveSize = parameters.terrainSize or 1
   worldParameters.borderX = parameters.ww
   worldParameters.borderY = parameters.wh * 1.2
   world = World(math.random() * 1000000, 10, parameters.wh/5, parameters.biomeSize, {}, GlobalWorldGenStepList, worldParameters)
@@ -159,7 +160,9 @@ function StartGame(changeGameState,parameters)
     spectator = true
     EndGameWhenNoPlayer = false
   else
-    world:spawnEntity("player", 0, 0)
+    --world:spawnEntity("player", 0, 0)
+    table.insert(entities, Entity("player", "player", "player", Vector2(0, 0), 100, 0.425, 0, "player", {}))
+    --table.insert(entities, Entity("player", "player", "bigSlime", Vector2(0, 0), 100, 0.85, 0, "player", {}))
     if parameters.flyCheat then
       entities[1].flyCheat = true
     end

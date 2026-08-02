@@ -16,6 +16,7 @@ function Inventory:init(inventoryName,color,screenPos,sizeX,sizeY,sizeZ,maxStack
     self.currentPage = 1
     self.screenPos = screenPos or Vector2(0.5,0.5)
     self.flags = flags or {}
+    self.passData = {}
     self.items = {}
     for page=1,self.sizeZ do
         self.items[page]={}
@@ -88,6 +89,7 @@ function Inventory:setupMainInventory()
 
 
     self:setItem("crudePickaxe",1,{},1,1)
+    self:setItem("crudeSword",1,{},2,1)
     --self:setItemName("crudePickaxe",1,1)
     --self:setItemAmount(1,1,1)
     ---self.items[1][1][1]["amount"] = 1
@@ -138,6 +140,54 @@ function Inventory:setUpEquipmentInventory()
     
 end
 
+function Inventory:getPassData(data,default)
+    if self.passData == nil then
+        self.passData = {}
+    end
+    if self.passData[data] == nil then
+        return default
+    else
+        return self.passData[data]
+    end
+end
+
+function Inventory:resetPassData(data,default)
+    if self.passData == nil then
+        self.passData = {}
+    end
+    self.passData[data] = default
+end
+
+function Inventory:setPassData(data,value,type)
+    if type == nil then type = "set" end
+    if self.passData == nil then
+        self.passData = {}
+    end
+    if self.passData[data] == nil then
+        self.passData[data] = 0
+        if type == "multiply" then self.passData[data] = 1 end
+        if type == "divide" then self.passData[data] = 1 end
+        if type == "add" then self.passData[data] = 0 end
+    end
+    if type == "set" then
+        self.passData[data] = value
+    end
+    if type == "multiply" then
+        self.passData[data] = self.passData[data] * value
+    end
+    if type == "add" then
+        self.passData[data] = self.passData[data] + value
+    end
+    if type == "divide" then
+        self.passData[data] = self.passData[data] / value
+    end
+end
+
+function Inventory:resetDefaultPassData()
+    self:resetPassData("movementSpeed",1)
+    --self:resetPassData("movementSpeed",1)
+end
+
 function Inventory:slotUpdate(dt,entity,ix,iy,page)
     if page == nil then page = self.currentPage end
     if ix <= self.sizeX and ix >= 1 and iy >= 1 and iy <= self.sizeY then
@@ -166,6 +216,17 @@ function Inventory:slotUpdate(dt,entity,ix,iy,page)
         end
 
 
+        if self:doesSlotAttributeExists("charge",ix,iy,page) then
+            self:setSlotAttribute("charge",self:getSlotAttribute("charge",ix,iy,page) + dt,ix,iy,page)
+            if self:getSlotAttribute("charge",ix,iy,page) > self:getSlotAttribute("chargeMax",ix,iy,page) then
+                self:setSlotAttribute("charge",self:getSlotAttribute("chargeMax",ix,iy,page) + dt,ix,iy,page)
+            end
+        else
+            self:setSlotAttribute("charge",0,ix,iy,page)
+            self:setSlotAttribute("chargeMax",0,ix,iy,page)
+        end
+
+
         if (not self:getSlotAttribute("disabled",ix,iy,page)) or (self:getSlotAttribute("disabled",ix,iy,page) == 0) then
 
             local button = self:getSlotAttribute("button",ix,iy,page)..""
@@ -175,17 +236,32 @@ function Inventory:slotUpdate(dt,entity,ix,iy,page)
                 
                 if items[itemName] ~= nil and itemName ~= "none" and entity.controls[button] and self:getSlotAttribute("cooldown",ix,iy,page) <= 0 then
                     local item = items[itemName]
-                    local useSuccess, setCooldown, stacksRemove = item:use(entity,itemAttributes,entity:getAim().x,entity:getAim().y,button,itemAmount)
-                    if useSuccess then
+                    local charge = item:getCharge(itemAttributes,entity)
+                    if charge > 0 then
+                        --self:setSlotAttribute("cooldown",charge,ix,iy,page)
+                        self:setSlotAttribute("chargeMax",charge,ix,iy,page)
+                    else
+                        self:slotUse(dt,entity,ix,iy,page)
+                        self:setSlotAttribute("chargeMax",0,ix,iy,page)
+                        self:setSlotAttribute("charge",0,ix,iy,page)
+                    end
+                end
+            end
 
-                        self:setSlotAttribute("cooldown",setCooldown,ix,iy,page)
-                        self:setSlotAttribute("cooldownMax",setCooldown,ix,iy,page)
 
-                        self:setItem(nil,itemAmount-stacksRemove,nil,ix,iy,page)
+            local chargeMax = self:getSlotAttribute("chargeMax",ix,iy,page)
+            local charge = self:getSlotAttribute("charge",ix,iy,page)
+            local itemName, itemAmount, itemAttributes = self:getItem(ix,iy,page)
+            local item = items[itemName]
 
-                        self:setSlotAttribute("useAnimation",minimum(maximum(setCooldown,1),0.25),ix,iy,page)
-                        self:setSlotAttribute("useAnimationMax",minimum(maximum(setCooldown,1),0.25),ix,iy,page)
-
+            if chargeMax > 0 then
+                if charge >= chargeMax then
+                    self:slotUse(dt,entity,ix,iy,page)
+                    self:setSlotAttribute("charge",0,ix,iy,page)
+                    self:setSlotAttribute("chargeMax",0,ix,iy,page)
+                else
+                    if item ~= nil then
+                        self:setPassData("movementSpeed",item.moveSpeedDuringCharge,"multiply")
                     end
                 end
             end
@@ -198,6 +274,26 @@ function Inventory:slotUpdate(dt,entity,ix,iy,page)
 
         end
 
+    end
+end
+
+function Inventory:slotUse(dt,entity,ix,iy,page)
+    local itemName, itemAmount, itemAttributes = self:getItem(ix,iy,page)
+    local button = self:getSlotAttribute("button",ix,iy,page)..""
+
+    local item = items[itemName]
+    --local charge = item:getCharge(itemAttributes,entity)
+
+    local useSuccess, setCooldown, stacksRemove = item:use(entity,itemAttributes,entity:getAim().x,entity:getAim().y,button,itemAmount)
+    if useSuccess then
+
+        self:setSlotAttribute("cooldown",setCooldown,ix,iy,page)
+        self:setSlotAttribute("cooldownMax",setCooldown,ix,iy,page)
+
+        self:setItemAmount(itemAmount-stacksRemove,ix,iy,page)
+
+        self:setSlotAttribute("useAnimation",minimum(maximum(setCooldown,1),0.25),ix,iy,page)
+        self:setSlotAttribute("useAnimationMax",minimum(maximum(setCooldown,1),0.25),ix,iy,page)
     end
 end
 
@@ -315,6 +411,23 @@ function Inventory:draw(mode,entity,flags)
                         ,(actualScreenPosY + (actualTileSize * 0.1) + actualTileSize*(1-cooldownRatio)) + (iy-1)*(actualTileSize*1.1)
                         ,(actualTileSize)
                         ,(actualTileSize*cooldownRatio)
+                        ,actualTileSize * 0.1
+                        ,actualTileSize * 0.1
+                    )
+                end
+
+                --draw charge
+                if self:getSlotAttribute("charge",ix,iy)>0 then
+
+                    local chargeRatio = self:getSlotAttribute("charge",ix,iy)/self:getSlotAttribute("chargeMax",ix,iy)
+
+                    love.graphics.setColor(1,1,1,0.5)
+
+                    love.graphics.rectangle("fill"
+                        ,(actualScreenPosX + actualTileSize * 0.1) + (ix-1)*(actualTileSize*1.1)
+                        ,(actualScreenPosY + (actualTileSize * 0.1) + actualTileSize*(1-chargeRatio)) + (iy-1)*(actualTileSize*1.1)
+                        ,(actualTileSize)
+                        ,(actualTileSize*chargeRatio)
                         ,actualTileSize * 0.1
                         ,actualTileSize * 0.1
                     )
@@ -732,7 +845,7 @@ function Inventory:drawItem(page,tileX,tileY,positionX,positionY,size)
             
             local drawFormat = medium
             if items[self.items[page][tileX][tileY]["name"]] ~= nil then
-                items[self.items[page][tileX][tileY]["name"]]:draw("medium",positionX,positionY,size,self.items[page][tileX][tileY]["attributes"])
+                items[self.items[page][tileX][tileY]["name"]]:draw("medium",positionX,positionY,size,self:getItemAttributes(tileX,tileY,page),self:getItemAmount(tileX,tileY,page),nil,nil,false,true)
                 if self.items[page][tileX][tileY]["amount"] > 1 then
                     love.graphics.setColor(1,1,1,1)
                     love.graphics.printf("x"..self.items[page][tileX][tileY]["amount"],positionX-size/2,positionY+size/2 - 15,size/(InventoryTextSize),"right",0,InventoryTextSize,InventoryTextSize)

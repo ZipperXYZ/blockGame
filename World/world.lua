@@ -32,6 +32,7 @@ function World:init(worldSeed, chunkSize, depthProgression, biomeSize, biomeList
     self.loopX = self.parameters.loopX or (self.borderX*1.4)
     self.borderY = self.parameters.borderY or 0
     self.hasBorder = self.parameters.hasBorder or (self.borderX ~= 0)
+    self.caveSize = self.parameters.caveSize or 1
 
     --self.barList = {}
 end
@@ -711,20 +712,20 @@ function World:generateTerrainTile(tileX, tileY)
     local dp   = self.depthProgression
     local name = "none"
 
-    if love.math.noise(tileX / 20, tileY / 20, seed) >= 0.25 then
+    if love.math.noise(tileX / 20 / self.caveSize, tileY / 20 / self.caveSize, seed) >= 0.25 then
         name = "dirt"
     end
-    if love.math.noise(tileX / 40, tileY / 40, seed - 100) < 0.3 then
+    if love.math.noise(tileX / 40 / self.caveSize, tileY / 40 / self.caveSize, seed - 100) < 0.3 then
         name = "none"
     end
-    if love.math.noise(tileX / 12, tileY / 12, seed - 500) < 0.35 then
+    if love.math.noise(tileX / 12 / self.caveSize, tileY / 12 / self.caveSize, seed - 500) < 0.35 then
         name = "none"
     end
-    if love.math.noise(tileX / 5, tileY / 5, seed - 600) < 0.35 and
-        love.math.noise(tileX / 15, tileY / 15, seed + 100) < (tileY / (dp * 2)) + 1 then
+    if love.math.noise(tileX / 5 / self.caveSize, tileY / 5 / self.caveSize, seed - 600) < 0.35 and
+        love.math.noise(tileX / 15 / self.caveSize, tileY / 15 / self.caveSize, seed + 100) < (tileY / (dp * 2)) + 1 then
         name = "none"
     end
-    local n = love.math.noise(tileX / 25, tileY / 90, seed - 200)
+    local n = love.math.noise(tileX / 25 / self.caveSize, tileY / 90 / self.caveSize, seed - 200)
     if n < 0.4 and n > 0.36 then
         name = "none"
     end
@@ -737,39 +738,39 @@ function World:generateTerrainTile(tileX, tileY)
             name = "dirt"
         else
             name = "dirt"
-            if love.math.noise(tileX / 25, tileY / 15, seed - 225) < 0.4
-                or love.math.noise(tileX / 25, tileY / 15, seed - 225) > 0.6 then
+            if love.math.noise(tileX / 25 / self.caveSize, tileY / 15 / self.caveSize, seed - 225) < 0.4
+                or love.math.noise(tileX / 25 / self.caveSize, tileY / 15 / self.caveSize, seed - 225) > 0.6 then
                 name = "none"
             end
         end
     end
 
     if biome == "coldland" then
-        if love.math.noise(tileX / 7, tileY / 7, seed - 1055) < 0.4 * distanceFromBiomeEdge then
+        if love.math.noise(tileX / 7 / self.caveSize, tileY / 7 / self.caveSize, seed - 1055) < 0.4 * distanceFromBiomeEdge then
             name = "none"
         end
     end
 
     if biome == "darkland" then
         name = "dirt"
-        if love.math.noise(tileX / 20, tileY / 20, seed - 805) < 0.45 and distanceFromBiomeEdge > 0.2 then
+        if love.math.noise(tileX / 20 / self.caveSize, tileY / 20 / self.caveSize, seed - 805) < 0.45 and distanceFromBiomeEdge > 0.2 then
             name = "none"
         end
     end
 
     if biome == "ancientland" then
         name = "dirt"
-        if love.math.noise(tileX / 15, tileY / 5, seed - 505) < 1.3 * distanceFromBiomeEdge then
+        if love.math.noise(tileX / 15 / self.caveSize, tileY / 5 / self.caveSize, seed - 505) < 1.3 * distanceFromBiomeEdge then
             name = "none"
         end
-        if love.math.noise(tileX / 10, tileY / 10, seed - 570) < 0.38 * distanceFromBiomeEdge then
+        if love.math.noise(tileX / 10 / self.caveSize, tileY / 10 / self.caveSize, seed - 570) < 0.38 * distanceFromBiomeEdge then
             name = "dirt"
         end
     end
 
     --ground
 
-    if love.math.noise(tileX / 15, tileY / 30, seed + 100) > (-tileY / 20) then
+    if love.math.noise(tileX / 15 / self.caveSize, tileY / 30 / self.caveSize, seed + 100) > (-tileY / 20) then
         name = "none"
     end
 
@@ -877,11 +878,24 @@ function World:checkSpawnValidity(position,space)
     return valid
 end
 
+function World:canLineGoThrough(position1,position2)
+    local canGoThrough = true
+    local precision = 3
+    for i = 1, math.ceil(position1:dist(position2)*precision) do
+        local pos = position1:copy()
+        pos:moveTowards(position2,i/precision)
+        if self:getColision(pos.x,pos.y) then
+            canGoThrough = false
+        end
+    end
+    return canGoThrough
+end
+
 function World:spawnEntity(type, worldPosX, worldPosY)
     aiType = "none"
     if type == "player" then aiType = "player" end
     --table.insert(entities,Entity(type, type, "none", Vector2(worldPosX, worldPosY), 1, 0.9, 0, aiType, {}))
-    table.insert(entities, Entity(type, type, "player", Vector2(worldPosX, worldPosY), 100, 0.425, 0, aiType, {}))
+    table.insert(entities, Entity(type, type, "player", Vector2(worldPosX, worldPosY), 100, 0.45, 0, aiType, {}))
 
     return true
 end

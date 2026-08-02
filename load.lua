@@ -121,6 +121,7 @@ function loadtextures()
   textures["sprites"]["crudeShovel"] = Sprite("crudeShovel","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,28}})
   textures["sprites"]["crudeStiffPick"] = Sprite("crudeStiffPick","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,32}})
   textures["sprites"]["crudeTargetPickaxe"] = Sprite("crudeTargetPickaxe","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,36}})
+  textures["sprites"]["crudeSword"] = Sprite("crudeSword","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,40}})
   
   textures["sprites"]["placementPreview"] = Sprite("placementPreview","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {0,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
   textures["sprites"]["destroyPreviewReady"] = Sprite("destroyPreviewReady","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {2,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
@@ -129,8 +130,10 @@ function loadtextures()
   
   textures["sprites"]["player"] = Sprite("player","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,0},["spriteSizes"]={1,2},["spriteCenters"]={0.5,1.5}})
   textures["sprites"]["slime"] = Sprite("slime","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={1,0},["spriteSizes"]={1,2},["spriteCenters"]={0.5,1.5}})
+  textures["sprites"]["bigSlime"] = Sprite("bigSlime","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={3,0},["spriteSizes"]={2,2},["spriteCenters"]={1,2}})
   textures["sprites"]["skeleton"] = Sprite("skeleton","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={2,0},["spriteSizes"]={1,2},["spriteCenters"]={0.5,1.5}})
   textures["sprites"]["crudePickaxe_Hold"] = Sprite("crudePickaxe_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,1},["spriteSizes"]={1.5,2},["spriteCenters"]={0.75,1.5}})
+  textures["sprites"]["crudeSword_Hold"] = Sprite("crudeSword_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={1.5,1},["spriteSizes"]={1.5,2},["spriteCenters"]={0.75,1.5}})
   --[[textures["sprites"]["player"] = Sprite("player","player.png",{
     ["parts"] = {"idle","walk","jump","use"},
     ["idle"] ={
@@ -173,22 +176,26 @@ function LoadSpawnCards()
   --EntitySpawnCard(cardCost,cardWeight,cardType,biomes,name,sprite,ai,flags)
   table.insert(GlobalEnemyCards,
     EntitySpawnCard(3,100,"enemy",{"any"},"slime","slime","regular",{
-      ["team"] = "enemy",
-      ["size"] =  0.4,
-      ["health"] = 25,
-      ["damage"] = 5,
-      ["movevementSpeed"] = 0.5,
-      ["movementType"] = "hoplike",
+      team = "enemy",
+      size =  0.4,
+      health = 25,
+      damage = 1.1,
+      movevementSpeed = 0.3,
+      movementType = "hoplike",
+      bloodColor = {0.8,0.4,0.1,1},
+      bloodColorNoise = {0.1,0.1,0.1,0}
     })
   )
   table.insert(GlobalEnemyCards,
     EntitySpawnCard(8,60,"enemy",{"any"},"skeleton","skeleton","regular",{
-      ["team"] = "enemy",
-      ["size"] =  0.4,
-      ["health"] = 25,
-      ["damage"] = 5,
-      ["movevementSpeed"] = 0.5,
-      ["movementType"] = "humanlike",
+      team = "enemy",
+      size =  0.4,
+      health = 25,
+      damage = 1.2,
+      movevementSpeed = 0.5,
+      movementType = "humanlike",
+      bloodColor = {0.6,0.6,0.6,1},
+      bloodColorNoise = {0.1,0.1,0.1,0}
     })
   )
   -- --skeletra
@@ -632,6 +639,19 @@ function loadItems()
     ["baseColor"] = {1,0,0,1},
     ["minePierce"] = true,
   })
+  items["crudeSword"] = Item("crudeSword","crudeSword",{["category"]="weapon",["subCategory"] = "melee",["fullName"] = "Crude sword",
+    cooldown = 2,
+    damage = 8,
+    attackRange = 3.2,
+    attackRadius = 1, 
+    attackDirectionRange = 100,
+    holdAnimation = "crudeSword_Hold",
+    charge = 0.3,
+    moveSpeedDuringCharge = 0.4,
+    dashVelocity = 8,
+    dashTime = 0.2,
+    knockback = 1,
+  })
 end
 
 function GenerateTileItems()
@@ -767,6 +787,7 @@ function LoadInterfaces()
   interfaces["worldCreation"]:addElement("worldHeigth","options",0.9,0.2,"World deepness :",{"500","1000","2000","3000","4000"},{["textAlign"] = "left",["gap"]=0,["default"] = "2000"},nil,nil)
   interfaces["worldCreation"]:addElement("worldWidth","options",0.9,0.2,"World width :",{"150","300","450","600","750"},{["textAlign"] = "left",["gap"]=0,["default"] = "450"},nil,nil)
   interfaces["worldCreation"]:addElement("biomeSize","options",0.9,0.2,"Biome size :",{"50","100","150","250","400"},{["textAlign"] = "left",["gap"]=0,["default"] = "150"},nil,nil)
+  interfaces["worldCreation"]:addElement("terrainSize","options",0.9,0.2,"Terrain & caves size :",{"0.5","1","2","3","5","10"},{["textAlign"] = "left",["gap"]=0,["default"] = "1"},nil,nil)
   interfaces["worldCreation"]:addElement("cheat", "checkbox",0.9,0,"Cheat Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["worldCreation"]:addElement("freeCam","checkbox",0.9,0,"Free cam Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["worldCreation"]:addElement("flyCheat","checkbox",0.9,0,"Fly & noClip Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)

@@ -15,11 +15,20 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.name = name or "none"
     self.type = type or "enemy"
     self.flags = flags or {}
+    self.team = self.flags.team or "neutral"
+    if self.flags.team == nil then
+        if self.type == "player" then
+            self.team = "ally"
+        else
+            self.team = "enemy"
+        end
+    end
 
     self.health = Bar("health",{1,0.5,0.5,1},{1,1,1,1},"multisection")
     if health == nil then health = self.flags.health or 1 end
     self.health:addSection("hp",{0,1,0.5,1},health,(health/100),3,false,false,false)
     --self.health:addSection("shield",{0,0.5,1,1},health*0.2,(health/30),8,false,false,false)
+    --self.health:addSection("yshield",{1,1,0,1},health*0.3,(health/30),8,false,false,false)
 
     self.size = size or 0.45
     if size == nil then size = self.flags.size or 0.45 end
@@ -58,6 +67,7 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.movementType = self.flags.movementType or "humanlike"
 
     self.movementSlide = self.flags["movementSlide"] or 0.25
+    self.dashes = {}
     self.hasWorldCollisions = self.flags["hasWorldCollisions"] or true
     self.position = position or Vector2:new(0, 0)
     --movement
@@ -73,7 +83,7 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.cameraFocus = self.flags.cameraFocus or (self.ai == "player" or self.ai == "human")
     self.disappearFarFromPlayer = self.flags.disappearFarFromPlayer or (self.type == "enemy")
 
-    self.attackDamage = self.flags.attackDamage or 5
+    self.attackDamage = self.flags.attackDamage or 1
     self.miningRadius = self.flags.miningRadius or 1
 
 
@@ -178,6 +188,37 @@ end
 
 function Entity:spawnEntity(name, x, y)
     self.position = Vector2(x, y)
+end
+
+function Entity:canAttack(otherEntity)
+    local canAttack = true
+    if otherEntity == nil then
+        return false
+    end
+
+    if otherEntity.team == self.team then
+        canAttack = false
+    end
+
+    if otherEntity.team == "pacifist" or self.team == "pacifist" then
+        canAttack = false
+    end
+    if otherEntity.team == "neutral" or self.team == "neutral" then
+        canAttack = true
+    end
+    if self.team == "ghost player" then
+        canAttack = false
+    end
+
+
+    if otherEntity.id == self.id then
+        canAttack = false
+    end
+    if otherEntity.state == "dead" then
+        canAttack = false
+    end
+
+    return canAttack
 end
 
 function Entity:damage(damage,source,entitySource)
@@ -313,6 +354,7 @@ end
 function Entity:InventoryItemsUpdate(dt)
     if #self.inventory > 0 then
         for i = 1, #self.inventory do
+            self.inventory[i]:resetDefaultPassData()
             local page = self.inventory[i].currentPage
             for ix = 1, self.inventory[i].sizeX do
                 for iy = 1, self.inventory[i].sizeY do
@@ -323,23 +365,45 @@ function Entity:InventoryItemsUpdate(dt)
     end
 end
 
+function Entity:getInventoryData(data,type,default,baseValue)
+    local value = 0
+    if type == nil then type = "multiply" end
+    if type == "multiply" then value = 1 end
+    if type == "divide" then value = 1 end
+    if baseValue ~= nil then value = baseValue end
+    if default == nil then
+        default = 0
+        if type == "multiply" then default = 1 end
+        if type == "divide" then default = 1 end
+        if type == "highest" then default = -math.huge end
+        if type == "lowest" then default = math.huge end
+    end
+    
+    if #self.inventory > 0 then
+        for i = 1, #self.inventory do
+            local currentData = self.inventory[i]:getPassData(data,default)
+            if type == "add" then
+                value = value + currentData
+            end
+            if type == "multiply" then
+                value = value * currentData
+            end
+            if type == "divide" then
+                value = value / currentData
+            end
+            if type == "highest" then
+                if currentData > value then value = currentData end
+            end
+            if type == "lowest" then
+                if currentData < value then value = currentData end
+            end
+        end
+    end
+
+    return value
+end
+
 function Entity:updateFallDamage()
-    --[[
-    if self.highestPositionBeforeFall == nil then
-        if not self:isGrounded() then
-            self.lastGrounded = self.position.y
-        end
-    else
-        if not self:isGrounded() then
-            self.currentFallDamage = self.position.y - self.lastGrounded
-        else
-            self:damage(self.currentFallDamage)
-            self.currentFallDamage = 0
-            self.lastGrounded = nil
-        end
-    end]]
-    --self.health:setDamagePreview("a",10,{0.3,0.3,1,1},0.1,nil)
-    --self.health:setDamagePreview("b",30,{1,1,0.3,1},0.1,nil)
     
     if (not self.groundedLastFrame)  then
         if self.highestPositionBeforeFall ~= nil then
@@ -359,7 +423,7 @@ function Entity:updateFallDamage()
 
                 self.health:setDamagePreview("fallDamage",damage,{0.8,0.3,0.3,1},0.1,"hp")
                 
-                if self:isGrounded() then
+                if self:isGrounded() and damage >= 1 then
                     self:spawnBlood(1 * math.ceil(damage/ maxHealth*150),3 + damage * 5 / maxHealth)
                     self:damage(damage,"fall")
                     self.health:removeDamagePreview("fallDamage")
@@ -434,6 +498,33 @@ function Entity:entityDeathUpdate(dt)
     return dead
 end
 
+function Entity:getDamage()
+    local damage = self.attackDamage
+    --damage = damage * self:getInventoryData("damage","multiply")
+    return damage
+end
+
+function Entity:getMovementSpeed()
+    local speed = self.movevementSpeed
+    speed = speed * self:getInventoryData("movementSpeed","multiply")
+    return speed
+end
+
+function Entity:getGravity()
+    local gravity = self.gravity
+    if #self.dashes > 0 then
+        for i = 1, #self.dashes do
+            local dash = self.dashes[i]
+            if dash.dashTime > 0 then
+                gravity = gravity * dash.gravityMultiplier
+            end
+        end
+    end
+    return gravity
+end
+
+
+
 function Entity:movementUpdate(dt)
     --if love.keyboard.isDown("w") then self.velocity.y=self.velocity.y+(8*dt) end
     --if love.keyboard.isDown("s") then self.velocity.y=self.velocity.y-(8*dt) end
@@ -444,11 +535,11 @@ function Entity:movementUpdate(dt)
     
         if self.controls.right then
             self.velocity.x = self.velocity.x +
-                (self.movevementSpeed * 10 * dt / self.movementSlide)
+                (10 * dt / self.movementSlide)
         end
         if self.controls.left then
             self.velocity.x = self.velocity.x -
-                (self.movevementSpeed * 10 * dt / self.movementSlide)
+                (10 * dt / self.movementSlide)
         end
 
         --self:updateFallDamage()
@@ -459,7 +550,7 @@ function Entity:movementUpdate(dt)
             if self.velocity.y > (self.jumpStrength * 10) then self.velocity.y = (self.jumpStrength * 10) end
         end
 
-        self.velocity.y = self.velocity.y - dt * self.gravity * 50
+        self.velocity.y = self.velocity.y - dt * self:getGravity() * 50
 
         self.velocity.x = k(self.velocity.x, 0, dt / self.movementSlide)
         if self.velocity.y < -(1 / dt / 2) then self.velocity.y = -(1 / dt / 2) end
@@ -484,7 +575,42 @@ function Entity:isGrounded()
     return false
 end
 
+function Entity:dash(velocity,dashTime,direction,gravityMultiplier)
+    table.insert(self.dashes, {velocity = velocity, dashTime = dashTime, direction = direction, gravityMultiplier = gravityMultiplier})
+end
+
+function Entity:dashUpdate(dt)
+    if #self.dashes > 0 then
+        for i = #self.dashes, 1, -1 do
+            local dash = self.dashes[i]
+            if dash.dashTime > 0 then
+                dash.dashTime = dash.dashTime - dt
+            else
+                table.remove(self.dashes, i)
+            end
+        end
+    end
+end
+
+function Entity:getDashVelocity(axis)
+    local dashVelocity = Vector2(0,0)
+    if #self.dashes > 0 then
+        for i = 1, #self.dashes do
+            local dash = self.dashes[i]
+            if dash.dashTime > 0 then
+                dashVelocity:move(dash.direction, dash.velocity)
+            end
+        end
+    end
+    if axis == nil then
+        return dashVelocity
+    end
+    return dashVelocity[axis]
+end
+
 function Entity:collisionUpdate(dt)
+    self:dashUpdate(dt)
+    --self:dash(10,1,100)
     if self.flyCheat then
         if self.controls.up then
             self.position.y = self.position.y + 20 * dt
@@ -501,7 +627,7 @@ function Entity:collisionUpdate(dt)
     else
         --update Y
 
-        self.position.y = self.position.y + (self.velocity.y * dt)
+        self.position.y = self.position.y + (self.velocity.y * dt) + (self:getDashVelocity("y") * dt)
 
         if self.hasWorldCollisions then
             local x
@@ -516,7 +642,7 @@ function Entity:collisionUpdate(dt)
         end
 
         --update X
-        self.position.x = self.position.x + (self.velocity.x * dt)
+        self.position.x = self.position.x + (self.velocity.x * dt * self:getMovementSpeed()) + (self:getDashVelocity("x") * dt)
 
         if self.hasWorldCollisions then
             local x
@@ -590,6 +716,34 @@ function Entity:drawBlocPreview()
     end
 end
 
+function Entity:drawAttackPreview()
+    for ix = 1, self.inventory[1].sizeX do
+        for iy = 1, self.inventory[1].sizeY do
+            local item = items[self.inventory[1]:getItemName(ix, iy)]
+
+            if item ~= nil then
+                if item.damage > 0 and checkifinlist(self.inventory[1]:getSlotAttribute("button", ix, iy), item.desiredInventorySpots) and item.subCategory == "melee" then
+                    local targets = item:getMeleeWeaponTargets(self, self.inventory[1]:getItemAttributes(ix, iy), self:getAim("x"), self:getAim("y"))
+
+                    if #targets > 0 then
+                        for targ = 1, #targets do
+                            local x, y, size = world:getTileScreenPosition(round(targets[targ].position.x,8), round(targets[targ].position.y,8))
+
+                            if self.inventory[1]:getSlotAttribute("cooldown", ix, iy) > 0.1 then
+                                local color = { 0.8, 0.8, 0, 0.5 }
+                                textures["sprites"]["destroyPreview"]:drawSI("right", x, y, size, size, color)
+                            else
+                                local color = { 0.8, 0.8, 0, 0.8 }
+                                textures["sprites"]["destroyPreviewReady"]:drawSI("right", x, y, size, size, color)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
 function Entity:drawMinePreview()
     for ix = 1, self.inventory[1].sizeX do
         for iy = 1, self.inventory[1].sizeY do
@@ -622,6 +776,7 @@ end
 function Entity:DrawUI()
     self:drawBlocPreview()
     self:drawMinePreview()
+    self:drawAttackPreview()
 
     if self.controls.openInventory then
         self.inventoryOpened = not self.inventoryOpened
@@ -1109,6 +1264,9 @@ function Entity:drawHoldItem(spriteX, spriteY, size)
 end
 
 function Entity:drawHealthBars()
+    --love.graphics.setColor(1,1,1,1)
+    --love.graphics.print(self:getMovementSpeed(),300,0)
+    --love.graphics.print(self:getInventoryData("movementSpeed","multiply",5,2),300,10)
     --local x, y, size = world:getTileScreenPosition(round(self.position.x,8),round(self.position.y - self.size - 0.5,8) )
     local x, y = positiontoscreen(round(self.position.x * 8) / 8,
         round((self.position.y - self.size / 2 - 0.5) * 8) / 8 )
@@ -1173,7 +1331,7 @@ function Entity:draw(inInventory, customX, customY, customSize)
         if colorisationColor == nil then colorisationColor = { 1, 1, 1, 0 } end
         --self.lastDamageTakenTime = 0.1
         if self.lastDamageTakenTime < 0.5 then
-            colorisationColor = OverrideColor(colorisationColor,{10,10,10,1,(0.5-self.lastDamageTakenTime)*2})
+            colorisationColor = OverrideColor(colorisationColor,{3,3,3,1,(0.5-self.lastDamageTakenTime)*2})
         end
 
         self.sprite:draw(self.animation, self.animationTime, self.animationDirection, spriteX, spriteY, size, size,

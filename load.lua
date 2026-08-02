@@ -178,8 +178,9 @@ function LoadSpawnCards()
     EntitySpawnCard(3,100,"enemy",{"any"},"slime","slime","regular",{
       team = "enemy",
       size =  0.4,
-      health = 25,
+      health = 150,
       damage = 1.1,
+      knockbackMultiplier = 1.4,
       movevementSpeed = 0.3,
       movementType = "hoplike",
       bloodColor = {0.8,0.4,0.1,1},
@@ -187,10 +188,27 @@ function LoadSpawnCards()
     })
   )
   table.insert(GlobalEnemyCards,
+    EntitySpawnCard(12,20,"enemy",{"any"},"big slime","bigSlime","regular",{
+      team = "enemy",
+      size =  0.85,
+      health = 400,
+      damage = 1.1,
+      knockbackMultiplier = 0.4,
+      movevementSpeed = 0.2,
+      movementType = "hoplike",
+      bloodColor = {0.8,0.4,0.1,1},
+      bloodColorNoise = {0.1,0.1,0.1,0},
+      aiInfo = {
+        ["attentionTime"] = 5,
+        ["sightRange"] = 10,
+      }
+    })
+  )
+  table.insert(GlobalEnemyCards,
     EntitySpawnCard(8,60,"enemy",{"any"},"skeleton","skeleton","regular",{
       team = "enemy",
       size =  0.4,
-      health = 25,
+      health = 250,
       damage = 1.2,
       movevementSpeed = 0.5,
       movementType = "humanlike",

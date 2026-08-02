@@ -11,6 +11,7 @@ function love.load()
   require "load"
   require "Entities/entities"
   require "Entities/sprite"
+  require "Entities/ai"
   require "directors/entitySpawnDirector"
   require "directors/entitySpawnCards"
   require "items/inventory"

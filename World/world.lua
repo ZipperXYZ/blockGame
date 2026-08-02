@@ -878,9 +878,9 @@ function World:checkSpawnValidity(position,space)
     return valid
 end
 
-function World:canLineGoThrough(position1,position2)
+function World:canLineGoThrough(position1,position2,precision)
     local canGoThrough = true
-    local precision = 3
+    precision = precision or 3
     for i = 1, math.ceil(position1:dist(position2)*precision) do
         local pos = position1:copy()
         pos:moveTowards(position2,i/precision)

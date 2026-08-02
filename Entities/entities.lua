@@ -85,6 +85,7 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
 
     self.attackDamage = self.flags.attackDamage or 1
     self.miningRadius = self.flags.miningRadius or 1
+    self.knockbackMultiplier = self.flags.knockbackMultiplier or 1
 
 
     self.colorisation = self.flags.colorisation or {0,0,0,0}
@@ -94,6 +95,7 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
 
     self.directorId = self.flags.directorId or 0
     self.directorCost = self.flags.directorCost or 1
+    self.aiInfo = self.flags.aiInfo or {}
 
 
     self.controls = {}
@@ -239,6 +241,7 @@ function Entity:damage(damage,source,entitySource)
     local overflow,downflow = self.health:decrease(damage,section)
     self.lastDamageTakenTime = 0
     if entitySource ~= nil then
+        self:aiTakeDamage(entitySource)
         self.lastDamageTakenEntityId = entitySource.id
     end
 
@@ -287,12 +290,29 @@ function Entity:resetControls()
 end
 
 function Entity:getAim(axis)
-    if self.ai == "player" or true then
+    if self.ai == "player" then
         if axis == nil then
             return world:getMouseTile(false)
         else
             local returnValue = world:getMouseTile(false)
             return returnValue[axis]
+        end
+    else
+        local position = self.position:copy()
+        if axis == nil then
+            return Vector2(self:getAim("x"), self:getAim("y"))
+        end
+        if axis == "x" then
+            if self.aiInfo.aimTarget.x ~= nil then 
+                position.x = self.aiInfo.aimTarget.x 
+            end
+            return position.x
+        end
+        if axis == "y" then
+            if self.aiInfo.aimTarget.y ~= nil then 
+                position.y = self.aiInfo.aimTarget.y 
+            end
+            return position.y
         end
     end
 end
@@ -348,6 +368,9 @@ function Entity:controlsUpdate(dt)
             self.controls.c = love.keyboard.isDown("c")
         end
         self.controls.openInventory = buttonFramePress["tab"]
+    end
+    if self.ai ~= "player" then
+        self:aiUpdate(dt)
     end
 end
 

@@ -333,7 +333,7 @@ function Item:use(entity,attributes,cursorX,cursorY,slot,stacks)
                     target:spawnBlood(0.15+1 * math.ceil(damage / maxHealth * 150), 5 + damage * 5 / maxHealth, pointat180(entity.position.x,entity.position.y,target.position.x,target.position.y), 100)
                     target:damage(self:getDamage(attributes,entity),"weapon",entity)
                     if self:getKnockback(attributes,entity) > 0 then
-                        target:dash(self:getKnockback(attributes,entity)*5,0.3,pointat180(entity.position.x,entity.position.y,target.position.x,target.position.y),1)
+                        target:dash(self:getKnockback(attributes,entity)*5*target.knockbackMultiplier,0.3,pointat180(entity.position.x,entity.position.y,target.position.x,target.position.y),1)
                     end
                 end
             end

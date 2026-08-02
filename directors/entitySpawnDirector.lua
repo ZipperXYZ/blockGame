@@ -24,7 +24,6 @@ function EntitySpawnDirector:init(position,spawnRadiusMax,spawnRadiusMin,startCr
         sourceCards = GlobalEnemyCards
     end
 
-    -- Keep card object metatables intact (CopyAll strips methods like :use).
     self.cards = {}
     if sourceCards ~= nil then
         for i = 1, #sourceCards do
@@ -60,6 +59,7 @@ function EntitySpawnDirector:update(dt)
     end
 
 
+    --self.spawnFrequencyWaveTime = 0
     if self.spawnFrequencyWaveTime > 0 then
         self.timeTillNextSpawn = self.timeTillNextSpawn + dt * math.sin(self.time/self.spawnFrequencyWaveTime/math.pi) * 2
     else

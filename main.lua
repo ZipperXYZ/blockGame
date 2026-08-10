@@ -14,6 +14,9 @@ function love.load()
   require "Entities/ai"
   require "directors/entitySpawnDirector"
   require "directors/entitySpawnCards"
+  require "directors/itemAttributesDirector"
+  require "directors/itemEnchantsCards"
+  require "directors/itemCards"
   require "items/inventory"
   require "items/item"
   require "items/groundItem"
@@ -43,6 +46,10 @@ function love.load()
   --love.filesystem.setIdentity("gamename")
   tiles = {}
   items = {}
+  Enchants = {}
+  EnchantsList = {}
+  ItemCards = {}
+  ItemCardsList = {}
   MainStructureList = {}
   tilelists = {}
   ItemList = {}
@@ -78,7 +85,7 @@ function love.load()
   GlobalNoisePower = calculateNoisePower(0.25)
   
   biomelist = {}
-  GlobalWorldGenStepList = { "none", "stone", "stone2", "grass", "trees", "ores", "deco", "done" }
+  GlobalWorldGenStepList = { "none", "stone", "stone2", "grass", "trees", "structures", "ores", "deco", "done" }
   world = World(math.random() * 1000000, 10, 100, 150, {}, GlobalWorldGenStepList)
   generateBaseBiomes()
 
@@ -97,6 +104,7 @@ function love.load()
   HealthBarPosition = "bottom"
 
   CheatMode = false
+  BuilderCheat = false
   StructureMaker = {{["x"]=1,["y"]=1},{["x"]=1,["y"]=1}}
   CheatInventoryScroll = 0
 
@@ -322,8 +330,10 @@ function love.keypressed(key)
       camv = nextinlistrollreverse(camv, cameraPossibleZooms) 
     end
   end
-
-  if CheatMode then
+  if key == "3" then
+    entities[1].inventory[1]:setItemAttribute("level",entities[1].inventory[1]:getItemAttribute("level",1,1,1,1) + 1,1,1,1)
+  end
+    if CheatMode then
     if key == "1" and gamestate == "game" then
       StructureMaker[1] = {["x"] = round(mxworldpos), ["y"] = round(myworldpos)}
     end

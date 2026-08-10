@@ -33,6 +33,8 @@ function World:init(worldSeed, chunkSize, depthProgression, biomeSize, biomeList
     self.borderY = self.parameters.borderY or 0
     self.hasBorder = self.parameters.hasBorder or (self.borderX ~= 0)
     self.caveSize = self.parameters.caveSize or 1
+    self.directorCreditMultiplier = self.parameters.directorCreditMultiplier or 1
+    self.directorSpawnSpeedMultiplier = self.parameters.directorSpawnSpeedMultiplier or 1
 
     --self.barList = {}
 end
@@ -362,6 +364,37 @@ function World:generateChunk(chunkPosX,chunkPosY,force,steps)
         end
     end
     return false
+end
+
+function World:openContainer(tileName,tile, position, entity, rows, columns)
+    if self:doesTilePropretyExists(round(position.x), round(position.y), "inventory") then
+        entity:openInventory(self:getTileProprety(round(position.x), round(position.y), "inventory"))
+    else
+        self:setTileProprety(round(position.x), round(position.y), "inventory",
+        Inventory(tileName,CopyAll(tile.containerColor),Vector2(0.5, 0.95),rows,columns,1,100, (0.065), (0.065 / 8),{ ["anchorX"] = "middle", ["anchorY"] = "bottom", ["isChest"] = true, ["chestInfo"] = {x = position.x, y = position.y} },nil)
+    )
+        self:openContainer(tileName, tile, position, entity, rows, columns)
+    end
+end
+
+function World:generateContainerLoot(position,credit,itemsAmount,creditMinPerItem,creditMaxPerItem,levelBias,enchantCreditMultiplier,cards,enchantCards)
+    if position == nil then return false end
+    if cards == nil then cards = CopyAll(ItemCardsList) end
+    if enchantCards == nil then enchantCards = CopyAll(EnchantsList) end
+    if not self:doesTilePropretyExists(round(position.x), round(position.y), "lootGenerated") then
+
+        if self:doesTilePropretyExists(round(position.x), round(position.y), "inventory") then
+
+            local director = ItemDirector(credit,itemsAmount,creditMinPerItem,creditMaxPerItem,levelBias,enchantCreditMultiplier,self:getBiome(position.x,position.y),self:getDepth(position.y),cards,enchantCards)
+    
+            local itemList = director:giveItems()
+
+            if #itemList > 0 then
+                self:setTileProprety(round(position.x), round(position.y), "lootGenerated", true)
+                self:getTileProprety(round(position.x), round(position.y), "inventory"):addItems(itemList,false)
+            end
+        end 
+    end
 end
 
 -->biomes:
@@ -801,6 +834,7 @@ function World:updateEntities(dt)
         for i = 1, #entities do
             entities[i]:entityUpdate(dt)
             entities[i]:controlsUpdate(dt)
+            entities[i]:interactUpdate(dt)
             entities[i]:movementUpdate(dt)
             entities[i]:collisionWithEntities(dt)
             entities[i]:collisionUpdate(dt)

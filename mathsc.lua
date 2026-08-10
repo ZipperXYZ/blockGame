@@ -358,6 +358,19 @@ function checkifinlist(value1, list1)
     end
     return inside
 end
+function checkifanyinlist(list1, list2)
+    if list1 == nil then return false end
+    if list2 == nil then return false end
+    local inside = false
+    if #list1 > 0 then
+        for j6 = 1, #list1 do
+            for j7 = 1, #list2 do
+                if list1[j6] == list2[j7] then inside = true end
+            end
+        end
+    end
+    return inside
+end
 function getListIndex(list1, value1)
     if list1 == nil then return -1 end  -- ← ajout
     local index = 0
@@ -506,6 +519,24 @@ function checkIfVectorInList(value1, vectorList,rounded)
         end
     end
     return inside
+end
+function TableJoin(t1, t2)
+    for i = 1, #t2 do
+        t1[#t1 + 1] = t2[i]
+    end
+    return t1
+end
+function PrintTable(table,depth)
+  if depth == nil then depth = 0 end
+  local indent = string.rep("  ", depth)
+  for k, v in pairs(table) do
+    if type(v) == "table" then
+      print(indent .. tostring(k) .. ":")
+      PrintTable(v, depth + 1)
+    else
+      print(indent .. tostring(k) .. ": " .. tostring(v))
+    end
+  end
 end
 function JoinTables(tables)
     local result = {}

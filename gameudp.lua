@@ -94,12 +94,12 @@ function DirectorUpdate(dt)
         directorCount = directorCount + 1
         if directorCount == 0 then
           local depth = world:getDepth(entities[i].position.y)
-          local multiplier = 1 + math.abs((depth*1.5) ^ 2)
+          local multiplier = (1 + math.abs((depth*1.5) ^ 2)) * world.directorCreditMultiplier
           world.globalDirector.position = entities[i].position:copy()
           world.globalDirector.maxCredit = 100 + 30 * multiplier
           world.globalDirector.maxCreditBank = 40 + 30 * multiplier
           world.globalDirector.creditGain = 0.25 + 0.22 * multiplier
-          world.globalDirector.spawnFrequency = 12 / (1 + 0.035 * multiplier)
+          world.globalDirector.spawnFrequency = 12 / (1 + 0.035 * multiplier) / world.directorSpawnSpeedMultiplier
           world.globalDirector.minCreditPerSpawn = -30 + (3 * multiplier)
           world.globalDirector.maxCreditPerSpawn = 50 + (10 * multiplier)
           world.globalDirector.mobLimit = 60
@@ -111,12 +111,12 @@ function DirectorUpdate(dt)
           else
             world.directors[directorCount].position = entities[i].position:copy()
             local depth = world:getDepth(entities[i].position.y)
-            local multiplier = 1 + math.abs((depth*1.5) ^ 2)
+            local multiplier = (1 + math.abs((depth*1.5) ^ 2)) * world.directorCreditMultiplier
             world.directors[directorCount].position = entities[i].position:copy()
             world.directors[directorCount].maxCredit = 100 + 30 * multiplier
             world.directors[directorCount].maxCreditBank = 40 + 30 * multiplier
             world.directors[directorCount].creditGain = 0.25 + 0.22 * multiplier
-            world.directors[directorCount].spawnFrequency = 12 / (1 + 0.035 * multiplier)
+            world.directors[directorCount].spawnFrequency = 12 / (1 + 0.035 * multiplier) / world.directorSpawnSpeedMultiplier
             world.directors[directorCount].minCreditPerSpawn = -30 + (3 * multiplier)
             world.directors[directorCount].maxCreditPerSpawn = 50 + (10 * multiplier)
             world.directors[directorCount].mobLimit = 60
@@ -146,6 +146,8 @@ function StartGame(changeGameState,parameters)
   worldParameters.caveSize = parameters.terrainSize or 1
   worldParameters.borderX = parameters.ww
   worldParameters.borderY = parameters.wh * 1.2
+  worldParameters.directorCreditMultiplier = parameters.directorCreditMultiplier or 1
+  worldParameters.directorSpawnSpeedMultiplier = parameters.directorSpawnSpeedMultiplier or 1
   world = World(math.random() * 1000000, 10, parameters.wh/5, parameters.biomeSize, {}, GlobalWorldGenStepList, worldParameters)
   --local spawnX, spawnY = world:getSpawn()
   generateBaseBiomes()
@@ -161,7 +163,7 @@ function StartGame(changeGameState,parameters)
     EndGameWhenNoPlayer = false
   else
     --world:spawnEntity("player", 0, 0)
-    table.insert(entities, Entity("player", "player", "player", Vector2(0, 0), 100, 0.425, 0, "player", {}))
+    table.insert(entities, Entity("player", "player", "player", Vector2(0, 0), 100, 0.425, nil, "player", {}))
     --table.insert(entities, Entity("player", "player", "bigSlime", Vector2(0, 0), 100, 0.85, 0, "player", {}))
     if parameters.flyCheat then
       entities[1].flyCheat = true

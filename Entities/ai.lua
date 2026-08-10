@@ -18,6 +18,7 @@ function Entity:setupAI()
     if self.aiInfo.targetId == nil then self.aiInfo.targetId = nil end
     if self.aiInfo.positionTarget == nil then self.aiInfo.positionTarget = nil end
     if self.aiInfo.aimTarget == nil then self.aiInfo.aimTarget = nil end
+    if self.seclusionTime == nil then self.seclusionTime = 0 end
 
     if self.aiInfo.attentionTimer == nil then self.aiInfo.attentionTimer = 0 end
     if self.aiInfo.alertTimer == nil then self.aiInfo.alertTimer = 0 end
@@ -25,6 +26,10 @@ function Entity:setupAI()
     if self.aiInfo.newPositionTargetTimer == nil then self.aiInfo.newPositionTargetTimer = 0 end
 end
 
+--regular
+--ranger (keeps distance)
+--follower (has a secondary 'owner' target, and follows him when not attacking)
+--fleer (runs away)
 function Entity:aiUpdate(dt)
     self:setupAI()
     if self.ai == "regular" then
@@ -53,7 +58,13 @@ function Entity:aiUpdateRegular(dt)
             if world:canLineGoThrough(self.position, target.position, 2) then
                 self.controls.leftClick = true
                 self.controls.rightClick = true
+                self.seclusionTime = 0
             else
+                self.seclusionTime = self.seclusionTime + dt
+                if self.seclusionTime > 1.5 then
+                    --self.controls.mine = true
+                    self.controls.space = true
+                end
                 --self.controls.mine = true
                 --self.controls.space = true
             end
@@ -382,9 +393,11 @@ function Entity:stateStangeParticles(newState)
     local color = {0.8,0.8,0.8,1}
     if newState == "idle" then
         color = {0.2,0.8,0.2,1}
+        self.greenTime = 0
     end
     if newState == "attack" then
         color = {0.8,0.2,0.2,1}
+        self.redTime = 0
     end
     world:spawnParticles(12,"ai change",self.position:copy(),self.size+0.3,color, {0.05,0.05,0.05,0.05}, 1.5, 1,"fire", 0.5, 0, 360, {["weight"] = 0.15})
 end

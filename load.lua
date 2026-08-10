@@ -10,6 +10,9 @@ function loadeverything()
   --loadbiomes()
   LoadSpawnCards()
   loadEntities()
+
+  LoadItemCards()
+  LoadItemEnchantmentCards()
 end
 
 function loadtextures()
@@ -113,6 +116,8 @@ function loadtextures()
   }, {})
   textures["sprites"]["stick"] = Sprite("stick","items1.png",{["parts"] = {"small","medium","large"}},{["setupItem"] = true,["itemQuadrant"]={0,0}})
   textures["sprites"]["rock"] = Sprite("rock","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,8}})
+  textures["sprites"]["unknown"] = Sprite("unknown","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,0}})
+
   textures["sprites"]["crudePickaxe"] = Sprite("crudePickaxe","items1.png",{["parts"] = {"small","medium","large"}},{["setupItem"] = true,["itemQuadrant"]={0,4}})
   textures["sprites"]["crudeSpike"] = Sprite("crudeSpike","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,12}})
   textures["sprites"]["crudeSwayPickaxe"] = Sprite("crudeSwayPickaxe","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,16}})
@@ -122,6 +127,9 @@ function loadtextures()
   textures["sprites"]["crudeStiffPick"] = Sprite("crudeStiffPick","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,32}})
   textures["sprites"]["crudeTargetPickaxe"] = Sprite("crudeTargetPickaxe","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,36}})
   textures["sprites"]["crudeSword"] = Sprite("crudeSword","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,40}})
+
+  textures["sprites"].thunderBirdFeather = Sprite("thunderBirdFeather","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,44}})
+  textures["sprites"].angelFeather = Sprite("angelFeather","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,48}})
   
   textures["sprites"]["placementPreview"] = Sprite("placementPreview","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {0,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
   textures["sprites"]["destroyPreviewReady"] = Sprite("destroyPreviewReady","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {2,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
@@ -133,7 +141,9 @@ function loadtextures()
   textures["sprites"]["bigSlime"] = Sprite("bigSlime","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={3,0},["spriteSizes"]={2,2},["spriteCenters"]={1,2}})
   textures["sprites"]["skeleton"] = Sprite("skeleton","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={2,0},["spriteSizes"]={1,2},["spriteCenters"]={0.5,1.5}})
   textures["sprites"]["crudePickaxe_Hold"] = Sprite("crudePickaxe_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,1},["spriteSizes"]={1.5,2},["spriteCenters"]={0.75,1.5}})
-  textures["sprites"]["crudeSword_Hold"] = Sprite("crudeSword_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={1.5,1},["spriteSizes"]={1.5,2},["spriteCenters"]={0.75,1.5}})
+  textures["sprites"]["crudeSword_Hold"] = Sprite("crudeSword_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,2},["spriteSizes"]={2,2},["spriteCenters"]={1,1.5}})
+  textures["sprites"]["slimeSpike_Hold"] = Sprite("slimeSpike_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={2,2},["spriteSizes"]={2,2},["spriteCenters"]={1,1.5}})
+  textures["sprites"]["bigSlimeSpike_Hold"] = Sprite("bigSlimeSpike_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={4,2},["spriteSizes"]={3,2},["spriteCenters"]={1.5,2}})
   --[[textures["sprites"]["player"] = Sprite("player","player.png",{
     ["parts"] = {"idle","walk","jump","use"},
     ["idle"] ={
@@ -178,20 +188,27 @@ function LoadSpawnCards()
     EntitySpawnCard(3,100,"enemy",{"any"},"slime","slime","regular",{
       team = "enemy",
       size =  0.4,
-      health = 150,
+      health = 15,
       damage = 1.1,
       knockbackMultiplier = 1.4,
       movevementSpeed = 0.3,
       movementType = "hoplike",
       bloodColor = {0.8,0.4,0.1,1},
-      bloodColorNoise = {0.1,0.1,0.1,0}
+      bloodColorNoise = {0.1,0.1,0.1,0},
+      aiInfo = {
+        ["attentionTime"] = 5,
+        ["sightRange"] = 5,
+      },
+      startItems = {
+        {name = "slimeSpike", attributes = {dropOnDeath = false}}
+      }
     })
   )
   table.insert(GlobalEnemyCards,
     EntitySpawnCard(12,20,"enemy",{"any"},"big slime","bigSlime","regular",{
       team = "enemy",
       size =  0.85,
-      health = 400,
+      health = 40,
       damage = 1.1,
       knockbackMultiplier = 0.4,
       movevementSpeed = 0.2,
@@ -201,14 +218,17 @@ function LoadSpawnCards()
       aiInfo = {
         ["attentionTime"] = 5,
         ["sightRange"] = 10,
-      }
+      },
+      startItems = {
+        {name = "bigSlimeSpike", attributes = {dropOnDeath = false}}
+      },
     })
   )
   table.insert(GlobalEnemyCards,
     EntitySpawnCard(8,60,"enemy",{"any"},"skeleton","skeleton","regular",{
       team = "enemy",
       size =  0.4,
-      health = 250,
+      health = 25,
       damage = 1.2,
       movevementSpeed = 0.5,
       movementType = "humanlike",
@@ -539,6 +559,106 @@ function loadtiles()
     ["particleEmit"] = "fire",
     ["particleEmitData"] = {["amount"]=5,["radius"]=0.3,["color"]={0.9,0.9,0,0.7},["flags"]={["color2"]={0.8,0.2,0.2,0.8},["color3"]={0.4,0.4,0.4,0.9}},["timer"]=3},
   })
+  tiles.chest         = Tile("chest", "non-solid", "tiles.png", "chest", {
+    newQuad = {11, 2, 1, 1, 8 },
+    border = {
+      quad = "chest_top",
+      newQuad = {11, 3, 1, 1, 8 }
+    },
+    health = 999,
+    isContainer = true,
+    containerRows = 4,
+    containerColumns = 4,
+    actualName = "Chest",
+    onInteract = 
+      function (self, x, y, entity)
+        world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+        world:generateContainerLoot(Vector2(x,y),12,3,nil,nil,1,1)
+      end
+  })
+  tiles.blueChest         = Tile("blueChest", "non-solid", "tiles.png", "blueChest", {
+    newQuad = {12, 2, 1, 1, 8 },
+    border = {
+      quad = "blueChest_top",
+      newQuad = {12, 3, 1, 1, 8 }
+    },
+    health = 999,
+    isContainer = true,
+    containerRows = 3,
+    containerColumns = 3,
+    actualName = "Blue Chest",
+    onInteract = 
+      function (self, x, y, entity)
+        world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+        world:generateContainerLoot(Vector2(x,y),18,3,nil,nil,1,1)
+      end
+  })
+  tiles.templeBlock = Tile("templeBlock","solid","tiles.png","templeBlock", {
+    newQuad = {13,2,1,1,8},
+    border = {
+      quad = "templeBlock_top",
+      newQuad = {13, 3, 1, 1, 8}
+    },
+    health = 30,
+    actualName = "temple block"
+  })
+  tiles.rightTempleStair = Tile("rightTempleStair","solid","tiles.png","rightTempleStair", {
+    newQuad = {14,2,1,1,8},
+    borderType = "none",
+    health = 30,
+    actualName = "temple stairs"
+  })
+  tiles.leftTempleStair = Tile("leftTempleStair","solid","tiles.png","leftTempleStair", {
+    newQuad = {15,2,1,1,8},
+    borderType = "none",
+    health = 30,
+    actualName = "temple stairs"
+  })
+  tiles.templePatternBlock = Tile("templePatternBlock","solid","tiles.png","templePatternBlock", {
+    newQuad = {16,2,1,1,8},
+    borderType = "none",
+    health = 30,
+    actualName = "temple pattern block"
+  })
+  tiles.templeLateralBlock = Tile("templeLateralBlock","solid","tiles.png","templeLateralBlock", {
+    newQuad = {17,2,1,1,8},
+    border = {
+      quad = "templeLateralBlock_top",
+      newQuad = {17, 3, 1, 1, 8}
+    },
+    health = 30,
+    actualName = "temple lateral block"
+  })
+  tiles.templePlatform = Tile("templePlatform","platform","tiles.png","templePlatform", {
+    newQuad = {13,4,1,1,8},
+    borderType = "none",
+    health = 30,
+    actualName = "temple platform"
+  })
+  tiles.templeColumn = Tile("templeColumn","non-solid","tiles.png","templeColumn", {
+    newQuad = {14,4,1,1,8},
+    borderType = "none",
+    health = 30,
+    actualName = "temple column"
+  })
+  tiles.templeVines = Tile("templeVines", "top", "tiles.png", "Temple Vines",
+    {
+      newQuad = { 18, 2, 1, 1, 8 },
+      ["border type"] = "non-solid",
+      health = 0,
+      actualName = "Temple Vines",
+    })
+  tiles.templeBush = Tile("templeBush","solid","tiles.png","templeBush", {
+    newQuad = {19,2,1,1,8},
+    border = {
+      quad = "templeBush_top",
+      newQuad = {19, 3, 1, 1, 8}
+    },
+    health = 1,
+    actualName = "temple bush block",
+    secondaryDrop = "stick",
+    secondaryDropAmount = 5,
+  })
 end
 
 function loadEntities()
@@ -558,72 +678,96 @@ function loadItems()
   items["rock"] = Item("rock","rock",{["category"]="material",["placeBlock"] = "scrapBlock", ["placeBlockCost"] = 4,["fullName"] = "Scrap pebbles", ["maxStack"] = 300})
   items["crudePickaxe"] = Item("crudePickaxe","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude pickaxe",
     ["cooldown"] = 0.8,
+    ["cooldownSpeedPerLevel"] = 0.03,
     ["mineDamage"] = 0.8, --1
+    ["mineDamagePerLevel"] = 0.03,
     ["blockDamageAmount"] = 6, --6
     ["rangeLimit"] = 5,  --6
+    ["rangeLimitPerLevel"] = 0.15,
     ["mineWidth"] = 3,
     ["holdAnimation"] = "crudePickaxe_Hold",
     ["description"] = {"#silent","A crude pickaxe made of sticks and rocks. It can serve a lot more than you might think."},
   })
   items["crudeSpike"] = Item("crudeSpike","crudeSpike",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude spike",
     ["cooldown"] = 0.6,
+    ["cooldownSpeedPerLevel"] = 0.02,
     ["mineDamage"] = 1.2, --1
+    ["mineDamagePerLevel"] = 0.06,
     ["blockDamageAmount"] = 3, --6
     ["rangeLimit"] = 7,  --6
+    ["rangeLimitPerLevel"] = 0.2,
     ["mineWidth"] = 1,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
   items["crudeSwayPickaxe"] = Item("crudeSwayPickaxe","crudeSwayPickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude sway pickaxe",
     ["cooldown"] = 2.4,
     ["mineDamage"] = 0.8, --1
+    ["mineDamagePerLevel"] = 0.02,
     ["blockDamageAmount"] = 18, --6
+    ["blockDamageAmountPerLevel"] = 0.8,
     ["rangeLimit"] = 8,  --6
+    ["rangeLimitPerLevel"] = 0.3,
     ["mineWidth"] = 6,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
   items["crudeHammer"] = Item("crudeHammer","crudeHammer",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude hammer",
     ["cooldown"] = 2,
+    ["cooldownSpeedPerLevel"] = 0.05,
     ["mineDamage"] = 4, --1
+    ["mineDamagePerLevel"] = 0.1,
     ["blockDamageAmount"] = 3, --6
     ["rangeLimit"] = 5,  --6
+    ["rangeLimitPerLevel"] = 0.2,
     ["mineWidth"] = 2,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
   items["crudeScalpel"] = Item("crudeScalpel","crudeScalpel",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude scalpel",
     ["cooldown"] = 0.1,
     ["mineDamage"] = 0.6, --1
+    ["mineDamagePerLevel"] = 0.06,
     ["blockDamageAmount"] = 1, --6
     ["rangeLimit"] = 3,  --6
+    ["rangeLimitPerLevel"] = 0.03,
     ["mineWidth"] = 1,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
   items["crudeShovel"] = Item("crudeShovel","crudeShovel",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude shovel",
     ["cooldown"] = 1.8,
+    ["cooldownSpeedPerLevel"] = 0.04,
     ["mineDamage"] = 1.2, --1
     ["blockDamageAmount"] = 9, --6
+    ["blockDamageAmountPerLevel"] = 0.3,
     ["rangeLimit"] = 6,  --6
+    ["rangeLimitPerLevel"] = 0.3,
     ["mineWidth"] = 3,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
   items["crudeStiffPick"] = Item("crudeStiffPick","crudeStiffPick",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude stiff pick",
     ["cooldown"] = 1.15,
     ["mineDamage"] = 1.4, --1
+    ["mineDamagePerLevel"] = 0.08,
     ["blockDamageAmount"] = 5, --6
+    ["blockDamageAmountPerLevel"] = 0.1,
     ["rangeLimit"] = 8,  --6
+    ["rangeLimitPerLevel"] = 0.07,
     ["mineWidth"] = 3,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
   items["crudeTargetPickaxe"] = Item("crudeTargetPickaxe","crudeTargetPickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude target pickaxe",
     ["cooldown"] = 0.2,
     ["mineDamage"] = 0.25, --1
+    ["mineDamagePerLevel"] = 0.0075,
     ["blockDamageAmount"] = 5, --6
+    ["blockDamageAmountPerLevel"] = 0.2,
     ["rangeLimit"] = 5,  --6
+    ["rangeLimitPerLevel"] = 0.25,
     ["mineWidth"] = 0.8,
     ["holdAnimation"] = "crudePickaxe_Hold",
   })
   items["paws"] = Item("paws","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Paws",
     ["cooldown"] = 0.3,
     ["mineDamage"] = 1, --1
+    ["mineDamagePerLevel"] = 0.1,
     ["blockDamageAmount"] = 3, --6
     ["rangeLimit"] = 2,  --6
     ["mineWidth"] = 3,
@@ -656,6 +800,7 @@ function loadItems()
     ["holdAnimation"] = "crudePickaxe_Hold",
     ["baseColor"] = {1,0,0,1},
     ["minePierce"] = true,
+    ["mineLayer"] = {"tiles","backTiles"}
   })
   items["crudeSword"] = Item("crudeSword","crudeSword",{["category"]="weapon",["subCategory"] = "melee",["fullName"] = "Crude sword",
     cooldown = 2,
@@ -669,6 +814,44 @@ function loadItems()
     dashVelocity = 8,
     dashTime = 0.2,
     knockback = 1,
+  })
+  items.slimeSpike = Item("slimeSpike","unknown",{["category"]="weapon",["subCategory"] = "melee",["fullName"] = "Slime spike",
+    cooldown = 3,
+    damage = 3,
+    attackRange = 1,
+    attackRadius = 2.5, 
+    attackDirectionRange = 360,
+    charge = 1,
+    moveSpeedDuringCharge = 0,
+    knockback = 0.5,
+    holdAnimation = "slimeSpike_Hold",
+  })
+  items.bigSlimeSpike = Item("bigSlimeSpike","unknown",{["category"]="weapon",["subCategory"] = "melee",["fullName"] = "Big slime spike",
+    cooldown = 5,
+    damage = 6,
+    attackRange = 1,
+    attackRadius = 3, 
+    attackDirectionRange = 360,
+    charge = 0.5,
+    moveSpeedDuringCharge = 0,
+    knockback = 1.5,
+    holdAnimation = "bigSlimeSpike_Hold",
+  })
+  items.thunderBirdFeather = Item("thunderBirdFeather","thunderBirdFeather",{["category"]="movement",["subCategory"] = "dash",["fullName"] = "Thunder bird feather",
+    cooldown = 6,
+    useFreely = true,
+    dashVelocity = 15,
+    dashTime = 0.4,
+    dashGravityMultiplier = 0.2,
+  })
+  items.angelFeather = Item("angelFeather","angelFeather",{["category"]="movement",["subCategory"] = "dash",["fullName"] = "Angel feather",
+    cooldown = 3,
+    useFreely = true,
+    dashDirection = "up",
+    dashStopVelocityY = true,
+    dashVelocity = 25,
+    dashTime = 0.2,
+    dashGravityMultiplier = 0,
   })
 end
 
@@ -709,7 +892,7 @@ function GenerateTileItems()
             else
               items[tileName] = Item(tileName,tileName.."_tile",{["placeBlock"]=tileName,["category"]="bloc",["subCategory"]="front tile",["groundSize"] = 0.23}) 
             end
-            if tile.type == "solid" then 
+            if tile.type == "solid" or tile.type == "not-solid" or tile.type == "non-solid" then 
               items[tileName.." wall"] = Item(tileName.." wall",tileName.."_tile",{["placeBlock"]=tileName,["category"]="bloc",["subCategory"]="wall",["groundSize"] = 0.23,["blockPlaceLayer"]="backTiles",["baseColor"]={0.6,0.6,0.6,1}}) 
             end
           else
@@ -800,8 +983,8 @@ function LoadInterfaces()
   interfaces["pause"]:addElement("leaveGameButton","button",0.4,0.1,"Quit",{},{},nil,nil)
 
 
-  interfaces["worldCreation"] = Interface("worldCreation",0.5,0.15,0.6,0.8,"bland",{0.6,0.9,0.6,1},{1,1,1,1},{["title"]= "World Cration",["gap"]=0.00,["scrollMargin"]=0.1,["showTitle"] = true})
-  interfaces["worldCreation"]:addElement("createButton","button",0.4,0.1,"Start game",{},{},nil,nil)
+  interfaces["worldCreation"] = Interface("worldCreation",0.5,0.15,0.6,0.8,"bland",{0.6,0.9,0.6,1},{1,1,1,1},{["title"]= "World Creation",["gap"]=0.00,["scrollMargin"]=0.1,["showTitle"] = true})
+  interfaces["worldCreation"]:addElement("createButton","button",0.4,0.1,"Create world",{},{},nil,nil)
   interfaces["worldCreation"]:addElement("worldHeigth","options",0.9,0.2,"World deepness :",{"500","1000","2000","3000","4000"},{["textAlign"] = "left",["gap"]=0,["default"] = "2000"},nil,nil)
   interfaces["worldCreation"]:addElement("worldWidth","options",0.9,0.2,"World width :",{"150","300","450","600","750"},{["textAlign"] = "left",["gap"]=0,["default"] = "450"},nil,nil)
   interfaces["worldCreation"]:addElement("biomeSize","options",0.9,0.2,"Biome size :",{"50","100","150","250","400"},{["textAlign"] = "left",["gap"]=0,["default"] = "150"},nil,nil)
@@ -809,7 +992,10 @@ function LoadInterfaces()
   interfaces["worldCreation"]:addElement("cheat", "checkbox",0.9,0,"Cheat Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["worldCreation"]:addElement("freeCam","checkbox",0.9,0,"Free cam Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["worldCreation"]:addElement("flyCheat","checkbox",0.9,0,"Fly & noClip Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
+  interfaces["worldCreation"]:addElement("BuilderCheat","checkbox",0.9,0,"Builder Cheat Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["worldCreation"]:addElement("lightReach","slider",0.9,0.2,"Light reach",{["round"] = 1,["min"] = 1, ["max"]= 12,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 6},nil,nil)
+  interfaces["worldCreation"]:addElement("directorCreditMultiplier","slider",0.9,0.2,"Director credit multiplier",{["round"] = 0.1,["min"] = 0.1, ["max"]= 10,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)
+  interfaces["worldCreation"]:addElement("directorSpawnSpeedMultiplier","slider",0.9,0.2,"Director spawn speed multiplier",{["round"] = 0.1,["min"] = 0.1, ["max"]= 10,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)
   --interfaces["worldCreation"]:addElement("seed","slider",0.9,0.2,"World seed",{["round"] = 1,["min"] = 1, ["max"]= 9999999,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 6},nil,nil)
   interfaces["worldCreation"]:addElement("resetWorldCreation","button",0.3,0.08,"Default",{},{},nil,nil)
 

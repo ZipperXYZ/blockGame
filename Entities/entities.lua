@@ -32,7 +32,7 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
 
     self.size = size or 0.45
     if size == nil then size = self.flags.size or 0.45 end
-    self.level = level or 0
+    self.level = level or 1
     self.ai = ia or "none"
     self.id = math.random()
     
@@ -95,6 +95,7 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
 
     self.directorId = self.flags.directorId or 0
     self.directorCost = self.flags.directorCost or 1
+    self.startItems = self.flags.startItems or {}
     self.aiInfo = self.flags.aiInfo or {}
 
 
@@ -102,6 +103,8 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self:resetControls()
     self.mineList = {}
     self.lastDamageTakenTime = 0
+    self.redTime = 1
+    self.greenTime = 1
     self.lastDamageTakenEntityId = 0
     self.inventorySpaceHighlights = {}
     self.cursorColor = { 1, 1, 1, 1 }
@@ -112,11 +115,11 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     if (self.type == "player") then
         self.inventory = { --(inventoryName,color,screenPos,sizeX,sizeY,sizeZ,maxStack,tileSize,itemSize,flags)
             Inventory("inventory", { 0.5, 0.6, 0.7, 1 }, Vector2(0.5, 0.05), 7, 5, 1, 100, (0.065), (0.065 / 8),
-                { ["isMainInventory"] = true })
+                { ["isMainInventory"] = true },self)
             , Inventory("armor", { 0.5, 0.6, 0.7, 1 }, Vector2(0.95, 0.05), 3, 4, 1, 1, (0.065), (0.065 / 8),
-            { ["isEquipmentInventory"] = true, ["anchorX"] = "right", ["anchorY"] = "top" })
-        , Inventory("chest test", { 0.7, 0.5, 0.5, 1 }, Vector2(0.5, 0.95), 8, 3, 1, 100, (0.065), (0.065 / 8),
-            { ["anchorX"] = "middle", ["anchorY"] = "bottom" })
+            { ["isEquipmentInventory"] = true, ["anchorX"] = "right", ["anchorY"] = "top" },self)
+        , --Inventory("chest test", { 0.7, 0.5, 0.5, 1 }, Vector2(0.5, 0.95), 8, 3, 1, 100, (0.065), (0.065 / 8),
+            --{ ["anchorX"] = "middle", ["anchorY"] = "bottom" },self)
         }
         --self.inventory[1]:setupMainInventory()
         if CheatMode then
@@ -127,9 +130,9 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     else
         self.inventory = {
             Inventory("inventory", { 0.5, 0.6, 0.7, 1 }, Vector2(0.5, 0.05), 7, 2, 1, 100, (0.065), (0.065 / 8),
-                { ["isMainInventory"] = true })
+                { ["isMainInventory"] = true },self)
             , Inventory("armor", { 0.5, 0.6, 0.7, 1 }, Vector2(0.95, 0.05), 3, 4, 1, 1, (0.065), (0.065 / 8),
-            { ["isEquipmentInventory"] = true, ["anchorX"] = "right", ["anchorY"] = "top" })
+            { ["isEquipmentInventory"] = true, ["anchorX"] = "right", ["anchorY"] = "top" },self)
         }
     end
 
@@ -287,6 +290,8 @@ function Entity:resetControls()
     self.controls.r = false
     self.controls.x = false
     self.controls.c = false
+
+    self.controls.interact = false
 end
 
 function Entity:getAim(axis)
@@ -347,6 +352,8 @@ function Entity:controlsUpdate(dt)
             self.controls.r = false
             self.controls.x = false
             self.controls.c = false
+
+            self.controls.interact = buttonFramePress["e"]
         else
             self.controls.invClick = false
             self.controls.invClickHold = false
@@ -366,11 +373,42 @@ function Entity:controlsUpdate(dt)
             self.controls.r = love.keyboard.isDown("r")
             self.controls.x = love.keyboard.isDown("x")
             self.controls.c = love.keyboard.isDown("c")
+            self.controls.v = love.keyboard.isDown("v")
+            self.controls.b = love.keyboard.isDown("b")
+            self.controls.n = love.keyboard.isDown("n")
+            self.controls.m = love.keyboard.isDown("m")
+            self.controls.h = love.keyboard.isDown("h")
+            self.controls.j = love.keyboard.isDown("j")
+            self.controls.k = love.keyboard.isDown("k")
+            self.controls.l = love.keyboard.isDown("l")
+
+            self.controls.interact = buttonFramePress["e"]
         end
         self.controls.openInventory = buttonFramePress["tab"]
     end
     if self.ai ~= "player" then
         self:aiUpdate(dt)
+    end
+end
+
+function Entity:openInventory(newInventory)
+    --print("Opening inventory: "..newInventory.name)
+    if self.inventoryOpened then
+        self:closeInventory()
+        self.inventoryOpened = false
+    else
+        self:closeInventory()
+        self.inventoryOpened = true
+        table.insert(self.inventory,newInventory)
+    end
+end
+
+function Entity:closeInventory()
+    self.inventoryOpened = false
+    for i = #self.inventory, 1, -1 do
+        if self.inventory[i].isChest then
+            table.remove(self.inventory, i)
+        end
     end
 end
 
@@ -454,7 +492,7 @@ function Entity:updateFallDamage()
             end
         end
     end
-    if self.velocity.y >= -0.05 then
+    if self.velocity.y >= -0.05 or self:getDashVelocity("y") >= 0.1 then
         self.highestPositionBeforeFall = self.position:copy()
     end
     self.groundedLastFrame = self:isGrounded()
@@ -598,14 +636,25 @@ function Entity:isGrounded()
     return false
 end
 
-function Entity:dash(velocity,dashTime,direction,gravityMultiplier)
-    table.insert(self.dashes, {velocity = velocity, dashTime = dashTime, direction = direction, gravityMultiplier = gravityMultiplier})
+function Entity:dash(velocity,dashTime,direction,gravityMultiplier,dashStopVelocityX,dashStopVelocityY)
+    if dashStopVelocityX == nil then dashStopVelocityX = false end
+    if dashStopVelocityY == nil then dashStopVelocityY = false end
+    if gravityMultiplier == nil then gravityMultiplier = 0.5 end
+    table.insert(self.dashes, {velocity = velocity, dashTime = dashTime, direction = direction, gravityMultiplier = gravityMultiplier, dashStopVelocityX = dashStopVelocityX, dashStopVelocityY = dashStopVelocityY})
 end
 
 function Entity:dashUpdate(dt)
     if #self.dashes > 0 then
         for i = #self.dashes, 1, -1 do
             local dash = self.dashes[i]
+
+            if dash.dashStopVelocityX then
+                self.velocity.x = 0
+            end
+            if dash.dashStopVelocityY then
+                self.velocity.y = 0
+            end
+
             if dash.dashTime > 0 then
                 dash.dashTime = dash.dashTime - dt
             else
@@ -683,7 +732,24 @@ function Entity:collisionUpdate(dt)
         --s'assurer que le joueur n'est toujours pas coincé dans un block
         if self.hasWorldCollisions then
             if world:getColision(self.position.x, self.position.y) then
-                self.position.y = self.position.y + 1
+                for distan = 1, 10 do
+                    if not world:getColision(self.position.x, self.position.y-distan) then
+                        self.position.y = self.position.y - distan
+                        return
+                    end
+                    if not world:getColision(self.position.x, self.position.y+distan) then
+                        self.position.y = self.position.y + distan
+                        return
+                    end
+                    if not world:getColision(self.position.x+distan, self.position.y) then
+                        self.position.x = self.position.x + distan
+                        return
+                    end
+                    if not world:getColision(self.position.x-distan, self.position.y) then
+                        self.position.x = self.position.x - distan
+                        return
+                    end
+                end
             end
         end
     end
@@ -708,6 +774,102 @@ function Entity:camUpdate()
         if (camEntityFollow == 0) then
             camEntityFollow = self.id
         end
+    end
+end
+
+function Entity:interactUpdate(dt)
+    if self.controls.interact then
+        local success, interactable, interactablePosition = self:getInteractable(self.position, self:getAim(), 8)
+        if success and interactable ~= nil and interactablePosition ~= nil then
+            interactable:interact(interactablePosition.x, interactablePosition.y, self)
+        end
+    end
+end
+
+function Entity:getInteractable(entityPosition, aimPosition, interactionRange)
+    local interactable = nil
+    local interactablePosition = nil
+    local success = false
+
+    if entityPosition == nil then return false, nil, nil end
+    if aimPosition == nil then aimPosition = entityPosition end
+
+    local aimDirection = pointat180(entityPosition.x, entityPosition.y, aimPosition.x, aimPosition.y)
+    local interactionRadius = 1
+
+    local function checkTileAt(position)
+        if position == nil then return false end
+        local tile = world:getTile(round(position.x), round(position.y), "tiles")
+        if tile ~= nil and tile ~= tiles["none"] and tile.interactable then
+            interactable = tile
+            interactablePosition = Vector2(round(position.x), round(position.y))
+            return true
+        end
+        return false
+    end
+
+    if checkTileAt(aimPosition) and aimPosition:dist(entityPosition) <= interactionRange and world:canLineGoThrough(entityPosition, aimPosition) then
+        return true, interactable, interactablePosition
+    end
+
+    for i = 0, interactionRange, 0.5 do
+        local checkPosition = entityPosition:copy()
+        checkPosition:move(aimDirection, i)
+        checkPosition.x = round(checkPosition.x)
+        checkPosition.y = round(checkPosition.y)
+
+        if checkTileAt(checkPosition) and world:canLineGoThrough(entityPosition, checkPosition) then
+            success = true
+            break
+        end
+
+        for ix = -interactionRadius, interactionRadius do
+            for iy = -interactionRadius, interactionRadius do
+                local offsetPosition = checkPosition:copy()
+                offsetPosition.x = round(offsetPosition.x + ix)
+                offsetPosition.y = round(offsetPosition.y + iy)
+
+                if checkTileAt(offsetPosition) and world:canLineGoThrough(entityPosition, checkPosition) then
+                    success = true
+                    break
+                end
+            end
+            if success then break end
+        end
+
+        if success then break end
+    end
+
+    if success then
+        return true, interactable, interactablePosition
+    end
+
+    --[[for ix = -interactionRange, interactionRange do
+        for iy = -interactionRange, interactionRange do
+            local offsetPosition = entityPosition:copy()
+            offsetPosition.x = round(offsetPosition.x + ix)
+            offsetPosition.y = round(offsetPosition.y + iy)
+
+            if checkTileAt(offsetPosition) then
+                return true, interactable, interactablePosition
+            end
+        end
+    end]]
+
+    return false, nil, nil
+end
+
+function Entity:drawInteractionPreview()
+    local success, interactable, interactablePosition = self:getInteractable(self.position, self:getAim(), 8)
+    if success and interactablePosition ~= nil then
+        local x, y, size = world:getTileScreenPosition(round(interactablePosition.x), round(interactablePosition.y))
+        local color = { 0.8, 0.8, 0, 0.8 }
+        if textures["sprites"]["placementPreview"] ~= nil then
+            textures["sprites"]["placementPreview"]:drawSI("right", x, y, size, size, color)
+        end
+        local textSize = size / 4
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.printf("Press E to interact", x - size * 2, y + size * 1.5, (size * 15)/textSize, "left",0,textSize,textSize)
     end
 end
 
@@ -799,10 +961,15 @@ end
 function Entity:DrawUI()
     self:drawBlocPreview()
     self:drawMinePreview()
+    self:drawInteractionPreview()
     self:drawAttackPreview()
 
     if self.controls.openInventory then
-        self.inventoryOpened = not self.inventoryOpened
+        if self.inventoryOpened then
+            self:closeInventory()
+        else
+            self.inventoryOpened = true
+        end
     end
 
     local itemToolTipOffset = 0
@@ -1011,6 +1178,8 @@ function Entity:entityUpdate(dt)
         self:damage(20,"dev")
     end]]
     self.lastDamageTakenTime = self.lastDamageTakenTime + dt
+    self.greenTime = self.greenTime + dt
+    self.redTime = self.redTime + dt
     self.health:update(dt)
 end
 
@@ -1355,6 +1524,12 @@ function Entity:draw(inInventory, customX, customY, customSize)
         --self.lastDamageTakenTime = 0.1
         if self.lastDamageTakenTime < 0.5 then
             colorisationColor = OverrideColor(colorisationColor,{3,3,3,1,(0.5-self.lastDamageTakenTime)*2})
+        end
+        if self.redTime < 0.5 then
+            colorisationColor = OverrideColor(colorisationColor,{3,0,0,1,(0.5-self.redTime)*2})
+        end
+        if self.greenTime < 0.5 then
+            colorisationColor = OverrideColor(colorisationColor,{0,3,0,1,(0.5-self.greenTime)*2})
         end
 
         self.sprite:draw(self.animation, self.animationTime, self.animationDirection, spriteX, spriteY, size, size,

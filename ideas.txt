@@ -1,0 +1,36 @@
+Shrines :
+    Shrines may use your dedicated mana bar, gained by fueling items into them.
+    the shrine of evil is a special shrine as it is required for game progression, it doesn't spawn the same way.
+
+    special :
+        shrine of evil (start boss fight)
+        shrine of resurrection (remove permanent health or use mana to resurrect a dead ally)
+
+    items :
+        shrine of mana (fuel items to gain mana, usually giving more mana than normal)
+        shrine of enchanting (use mana, two item slots, the attributes of one will swap with the other)
+        shrine of super enchanting (use mana, will scrap an item and give all its attributes to another item, can only be used once per shrine)
+        shrine of reforge (use mana to reroll the attributes of an item)
+        shrine of leveling (use mana for an item to level up)
+
+    challenge :
+        shrine of territory (locks player into a circular zone, spawning invincible enemies, surviving for a certain amount of time to win powerful items)
+        shrine of vermins (spawn enemy for items)
+        shrine of curse (remove permanent health for powerful items)
+        shrine of the deep (for every shrine of the deep activated, the shrine of evil will have double credits to spawn bosses, but bosses item drop will also double)
+        shrine of the abyss (will darken the area around in a 100 tile radius, all enemies will be elites, but bosses item drop will also double)
+        shrine of the void (the shrine of evil boss will be elite, but bosses item drop will also double)
+
+    helpful :
+        shrine of vivality (use mana to create a healing aura zone)
+        shrine of resort (use mana to create a safe zone for a certain amount of time)
+        shrine of explosion (use mana to create a large explosion)
+        shrine of teleportation (use mana to teleport away to a random location)
+        shrine of mining (use mana to mine a trench deep down)
+    
+    allies :
+        shrine of summoning (use mana to summon allies)
+        shrine of transformation (captures the essence of nearby enemies, use the mana to transform into them)
+        shrine of capture (use mana to convert all nearby non-boss enemies into allies)
+        
+        

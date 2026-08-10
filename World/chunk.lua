@@ -435,6 +435,10 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
         self:advanceGenerationStatus(stepList)
         return (self.generationStatus == "done"), true
     end
+    if step == "structures" and world:getNeighboringChunks(self.chunkX, self.chunkY, "structures") then
+        self:advanceGenerationStatus(stepList)
+        return (self.generationStatus == "done"), true
+    end
 
     return (self.generationStatus == "done"), false
 end

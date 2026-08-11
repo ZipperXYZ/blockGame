@@ -195,6 +195,54 @@ function Entity:spawnEntity(name, x, y)
     self.position = Vector2(x, y)
 end
 
+function Entity:applyEnchantSignal(signal,signalInfo,item,itemAttributes)
+    local success
+
+    if item ~= nil and itemAttributes ~= nil then
+        if itemAttributes.enchants ~= nil then
+            if #itemAttributes.enchants > 0 then
+                for i = 1, #itemAttributes.enchants do
+                    local enchant = itemAttributes.enchants[i]
+                    if enchant ~= nil then
+                        success, signalInfo = enchantReceiveSignal(signal,signalInfo,enchant.cause,enchant.condition,enchant.reaction,itemAttributes,item,self)
+                    end
+                end
+            end
+        end
+    end
+
+    for i = 1,#self.inventory do
+        local inventory = self.inventory[i]
+        if inventory ~= nil then
+            for ix = 1,inventory.sizeX do
+                for iy = 1,inventory.sizeY do
+                    local item = inventory:getActualItem(ix,iy)
+                    local attributes = inventory:getItemAttributes(ix,iy)
+                    local slot = inventory:getSlotAttribute("button",ix,iy)..""
+                    if item.itemName ~= nil and item.itemName ~= "none" then
+                        if item.applyEnchantFromAnyItem and checkifinlist(slot,item.desiredInventorySpots) then
+                            
+                            if attributes.enchants ~= nil then
+                                if #attributes.enchants > 0 then
+                                    for i = 1, #attributes.enchants do
+                                        local enchant = attributes.enchants[i]
+                                        if enchant ~= nil then
+                                            success, signalInfo = enchantReceiveSignal(signal,signalInfo,enchant.cause,enchant.condition,enchant.reaction,attributes,item,self)
+                                        end
+                                    end
+                                end
+                            end
+
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return signalInfo
+end
+
 function Entity:canAttack(otherEntity)
     local canAttack = true
     if otherEntity == nil then
@@ -228,12 +276,22 @@ end
 
 function Entity:damage(damage,source,entitySource)
     local section = nil
+    local death = false
 
     --damage health first :
     if checkifinlist(source,{"fall"}) then
         section = "hp"
     end
 
+    local signalInfo = {
+        position = self.position:copy(),
+        damageReceiver = self,
+        damageValue = damage,
+    }
+    signalInfo = self:applyEnchantSignal("takingDamage",signalInfo)
+    if signalInfo.damageValue ~= nil then
+        damage = signalInfo.damageValue
+    end
 
 
     local damageColor = {1,1,1,1}
@@ -242,12 +300,19 @@ function Entity:damage(damage,source,entitySource)
 
 
     local overflow,downflow = self.health:decrease(damage,section)
+
+    if self.health:isEmpty("hp") then
+        death = true
+    end
+
+
     self.lastDamageTakenTime = 0
     if entitySource ~= nil then
         self:aiTakeDamage(entitySource)
         self.lastDamageTakenEntityId = entitySource.id
     end
 
+    return death
 end
 
 function Entity:gainHealth(value,hpType,source,entitySource)

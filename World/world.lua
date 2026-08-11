@@ -252,8 +252,9 @@ function World:clearTileProprerties(worldPosX, worldPosY, property)
     return success
 end
 
-function World:damageBlock(worldPosX, worldPosY, damage,layer,destroyTopAsWell)
-    local destroyed
+function World:damageBlock(worldPosX, worldPosY, damage,layer,destroyTopAsWell,damageSourceInfo)
+    local destroyed = false
+    --local returnInfo = {}
 
     if layer == nil then layer = "tiles" end
     if destroyTopAsWell == nil then destroyTopAsWell = true end
@@ -267,6 +268,12 @@ function World:damageBlock(worldPosX, worldPosY, damage,layer,destroyTopAsWell)
         self:setTileProprety(worldPosX, worldPosY, "health"..layer, self:getTile(worldPosX, worldPosY,layer).health)
         self:tilePropretyAdd(worldPosX, worldPosY, "health"..layer, -damage)
         self:setTileProprety(worldPosX, worldPosY, "healthMineTimer"..layer, 5)
+    end
+
+    if damageSourceInfo ~= nil then
+        if damageSourceInfo.item ~= nil and damageSourceInfo.entity ~= nil then
+            damageSourceInfo.signalInfo = damageSourceInfo.entity:applyEnchantSignal("damagingTile",damageSourceInfo.signalInfo,damageSourceInfo.item,damageSourceInfo.attributes)
+        end
     end
 
     world:spawnTextParticle((round(damage*10)/10).."",Vector2(worldPosX,worldPosY))
@@ -285,6 +292,13 @@ function World:damageBlock(worldPosX, worldPosY, damage,layer,destroyTopAsWell)
         self:destroyTile(worldPosX, worldPosY,layer,false)
         self:clearTileProprerties(worldPosX, worldPosY,"health"..layer)
         self:clearTileProprerties(worldPosX, worldPosY,"healthMineTimer"..layer)
+        if damageSourceInfo ~= nil then
+            if damageSourceInfo.item ~= nil and damageSourceInfo.entity ~= nil then
+                damageSourceInfo.signalInfo = damageSourceInfo.entity:applyEnchantSignal("breakingTile",damageSourceInfo.signalInfo,damageSourceInfo.item,damageSourceInfo.attributes)
+            end
+        end
+
+
         tile:tileDestroyed(worldPosX, worldPosY)
         if layer == "tiles" and destroyTopAsWell then 
             self:destroyTile(worldPosX, worldPosY,"topTiles",false)
@@ -294,7 +308,7 @@ function World:damageBlock(worldPosX, worldPosY, damage,layer,destroyTopAsWell)
         end
     end
     
-    return destroyed
+    return destroyed, damageSourceInfo
 end
 
 --generate(centerX,centerY,length,heigth,biomeList, boolean: force, step) --génére (ou essaille) de générer tout les chunks à l'écran, ou de progresser la génération

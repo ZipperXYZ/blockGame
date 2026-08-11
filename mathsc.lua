@@ -540,12 +540,22 @@ function PrintTable(table,depth)
 end
 function JoinTables(tables)
     local result = {}
-    for i = 1, #tables do
-        local t = tables[i]
-        for j = 1, #t do
-            table.insert(result, t[j])
-        end
+    local index = 0
+
+    if type(tables) ~= "table" then
+      return result
     end
+
+    for i = 1, #tables do
+      local t = tables[i]
+      if type(t) == "table" then
+        for j = 1, #t do
+          index = index + 1
+          result[index] = t[j]
+        end
+      end
+    end
+
     return result
 end
 function getRandom(values,seed)

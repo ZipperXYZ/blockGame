@@ -275,6 +275,15 @@ function Bar:setValue(value,sectionName)
     end
 end
 
+function Bar:isFull(sectionName)
+    return self:getValue(sectionName) >= self:getMax(sectionName)
+end
+
+function Bar:isEmpty(sectionName)
+    return self:getValue(sectionName) <= 0
+end
+
+
 function Bar:setMax(value,sectionName)
     if sectionName == nil or sectionName == "any" or sectionName == "all" then
         if #self.sections > 0 then

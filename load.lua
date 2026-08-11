@@ -128,9 +128,11 @@ function loadtextures()
   textures["sprites"]["crudeTargetPickaxe"] = Sprite("crudeTargetPickaxe","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,36}})
   textures["sprites"]["crudeSword"] = Sprite("crudeSword","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,40}})
 
-  textures["sprites"].thunderBirdFeather = Sprite("thunderBirdFeather","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,44}})
-  textures["sprites"].angelFeather = Sprite("angelFeather","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,48}})
-  
+  textures.sprites.thunderBirdFeather = Sprite("thunderBirdFeather","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,44}})
+  textures.sprites.angelFeather = Sprite("angelFeather","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,48}})
+  textures.sprites.clearRing = Sprite("clearRing","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,4}})
+
+
   textures["sprites"]["placementPreview"] = Sprite("placementPreview","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {0,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
   textures["sprites"]["destroyPreviewReady"] = Sprite("destroyPreviewReady","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {2,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
   textures["sprites"]["destroyPreview"] = Sprite("destroyPreview","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {1,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
@@ -852,6 +854,9 @@ function loadItems()
     dashVelocity = 25,
     dashTime = 0.2,
     dashGravityMultiplier = 0,
+  })
+  items.clearRing = Item("clearRing","clearRing",{["category"]="accessory",["subCategory"] = "ring",["fullName"] = "Clear ring",
+    description = {"#silent","A ring with no innate properties. Can be used to hold enchants"},
   })
 end
 

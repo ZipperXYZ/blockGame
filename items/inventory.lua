@@ -174,17 +174,17 @@ function Inventory:setUpEquipmentInventory()
                 }
             end
         end
-        self.items[page][1][1]["slotAttributes"] = {["lock"] = "necklace", ["icon"] = "necklace"}
-        self.items[page][1][2]["slotAttributes"] = {["lock"] = "armlet", ["icon"] = "armlet"}
-        self.items[page][1][3]["slotAttributes"] = {["lock"] = "armlet", ["icon"] = "armlet"}
+        --self.items[page][1][1]["slotAttributes"] = {["lock"] = "necklace", ["icon"] = "necklace"}
+        --self.items[page][1][2]["slotAttributes"] = {["lock"] = "armlet", ["icon"] = "armlet"}
+        --self.items[page][1][3]["slotAttributes"] = {["lock"] = "armlet", ["icon"] = "armlet"}
 
         self.items[page][2][2]["slotAttributes"] = {["disabled"] = true}
         self.items[page][2][3]["slotAttributes"] = {["disabled"] = true, ["showCharacter"] = true}
-        self.items[page][2][1]["slotAttributes"] = {["lock"] = "charm", ["icon"] = "charm"}
+        self.items[page][2][1]["slotAttributes"] = {lock = "charm", icon = "charm"}
 
-        self.items[page][3][1]["slotAttributes"] = {["lock"] = "headplate",["icon"] = "headplate"}
-        self.items[page][3][2]["slotAttributes"] = {["lock"] = "chestplate",["icon"] = "chestplate"}
-        self.items[page][3][3]["slotAttributes"] = {["lock"] = "leggings",["icon"] = "leggings"}
+        --self.items[page][3][1]["slotAttributes"] = {["lock"] = "headplate",["icon"] = "headplate"}
+        --self.items[page][3][2]["slotAttributes"] = {["lock"] = "chestplate",["icon"] = "chestplate"}
+        --self.items[page][3][3]["slotAttributes"] = {["lock"] = "leggings",["icon"] = "leggings"}
     end
     
 
@@ -516,9 +516,9 @@ function Inventory:draw(mode,entity,flags)
                     end
                 end
 
-                if self:getSlotAttribute("button",ix,iy).."" ~= "0" then
-                    --draw highligts
-                    if checkifinlist(self:getSlotAttribute("button",ix,iy),flags.hightlights) then
+                if self:getSlotAttribute("button",ix,iy).."" ~= "0" or self:getSlotAttribute("icon",ix,iy).."" ~= "0" then
+                    --draw highligts 
+                    if checkifinlist(self:getSlotAttribute("button",ix,iy),flags.hightlights) or checkifinlist(self:getSlotAttribute("icon",ix,iy),flags.hightlights) then
                         love.graphics.setColor(1,1,0,0.1+gettimeloop(1,0.3,true))
                         love.graphics.rectangle("fill"
                             ,(actualScreenPosX + actualTileSize * 0.1) + (ix-1)*(actualTileSize*1.1)

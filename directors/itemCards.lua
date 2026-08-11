@@ -1,7 +1,7 @@
 function LoadItemCards()
     ItemCards = {}
     ItemCardsList = {}
-    
+
     ItemCard.crudePickaxe = ItemCard(10,5,"crudePickaxe","common","tool",1,{"any"},{})
     ItemCard.crudeSpike = ItemCard(10,5,"crudeSpike","common","tool",1,{"any"},{})
     ItemCard.crudeSwayPickaxe = ItemCard(10,5,"crudeSwayPickaxe","common","tool",1,{"any"},{})
@@ -13,6 +13,9 @@ function LoadItemCards()
 
 
     ItemCard.crudeSword = ItemCard(10,40,"crudeSword","common","weapon",1,{"any"},{})
+
+
+    ItemCard.clearRing = ItemCard(10,15,"clearRing","common","accessory",2.5,{"any"},{})
 end
 
 require "class/superClass"

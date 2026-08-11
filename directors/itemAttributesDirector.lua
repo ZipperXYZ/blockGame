@@ -24,7 +24,7 @@ function ItemDirector:giveItems()
     --local credit = self.credit
     for i = 1, math.ceil(self.itemsAmount) do
         local creditLimit = maximum((math.random()^1.25)*(self.creditMaxPerItem-self.creditMinPerItem)+self.creditMinPerItem,self.creditMaxPerItem)
-        local enchantCredit = (math.random()^0.75)*(self.creditMaxPerItem - creditLimit)+4
+        local enchantCredit = (((math.random()^0.75)*(self.creditMaxPerItem - creditLimit)*1.75)^0.75)+6
 
         local item, success, remaingCredit = self:rollItem(self.cards,credit,creditLimit,self.enchantCards,enchantCredit,self.enchantCreditMultiplier,self.depth,self.levelBias,self.biome)
         if success then 
@@ -60,6 +60,27 @@ end
 
 function ItemDirector:getAllAvailableEnchantCards(enchantCards,credit,multiplier,biome,itemName,item,enchantType,previousEnchants)
     local cardPool = {}
+    local previousEnchant = previousEnchants ~= nil and previousEnchants[1] or nil
+    local previousEnchant2 = previousEnchants ~= nil and previousEnchants[2] or nil
+    local previousCardSubTypes = nil
+    local previousCardSubTypes2 = nil
+
+    if previousEnchant ~= nil then
+        if previousEnchant.cardSubTypes ~= nil then
+            previousCardSubTypes = previousEnchant.cardSubTypes
+        elseif previousEnchant.card ~= nil then
+            previousCardSubTypes = previousEnchant.card.cardSubTypes
+        end
+    end
+
+    if previousEnchant2 ~= nil then
+        if previousEnchant2.cardSubTypes ~= nil then
+            previousCardSubTypes2 = previousEnchant2.cardSubTypes
+        elseif previousEnchant2.card ~= nil then
+            previousCardSubTypes2 = previousEnchant2.card.cardSubTypes
+        end
+    end
+
     if enchantCards == nil then enchantCards = EnchantsList end
     if #enchantCards > 0 then
         for i = 1, #enchantCards do
@@ -78,18 +99,26 @@ function ItemDirector:getAllAvailableEnchantCards(enchantCards,credit,multiplier
                             end
                             if enchantType == "condition" then
                                 if card.cardType == "condition" then
-                                    if previousEnchants[1] ~= nil then
-                                        if #card.previousCardFilter == 0 or checkifanyinlist(card.previousCardFilter,previousEnchants[1].cardSubTypes) or checkifinlist("any",card.previousCardFilter) then
-                                            cardValid = true
+                                    if previousEnchant ~= nil then
+                                        if #card.previousCardFilter == 0 or checkifanyinlist(card.previousCardFilter,previousCardSubTypes) or checkifinlist("any",card.previousCardFilter) then
+                                            if #card.previousCardAntiFilter == 0 or (not checkifanyinlist(card.previousCardAntiFilter,previousCardSubTypes)) then 
+                                                cardValid = true
+                                            end
                                         end
                                     end
                                 end
                             end
                             if enchantType == "reaction" then
                                 if card.cardType == "reaction" then
-                                    if previousEnchants[1] ~= nil then
-                                        if #card.previousCardFilter == 0 or checkifanyinlist(card.previousCardFilter,previousEnchants[1].cardSubTypes) or checkifinlist("any",card.previousCardFilter) then
-                                            cardValid = true
+                                    if previousEnchant ~= nil then
+                                        if #card.previousCardFilter == 0 or checkifanyinlist(card.previousCardFilter,previousCardSubTypes) or checkifinlist("any",card.previousCardFilter)
+                                            or checkifanyinlist(card.previousCardFilter,previousCardSubTypes2)
+                                        then
+                                            if #card.previousCardAntiFilter == 0 or ((not checkifanyinlist(card.previousCardAntiFilter,previousCardSubTypes)) 
+                                                and (not checkifanyinlist(card.previousCardAntiFilter,previousCardSubTypes2)))
+                                            then 
+                                                cardValid = true
+                                            end
                                         end
                                     end
                                 end
@@ -184,10 +213,11 @@ function ItemDirector:rollItem(cards,credit,creditLimit,enchantCards,enchantCred
     if actualItem ~= nil then
         if actualItem.canBeEnchanted then
             --print("ItemDirector:rollItem() - Enchanting item: "..item.name.." with enchantCredit: "..(enchantCredit).." and enchantCreditMultiplier: "..enchantCreditMultiplier)
-            local enchant, enchantSuccess = self:enchant(item.name,items[item.name],item.attributes,enchantCards,enchantCredit*10,enchantCreditMultiplier,biome)
+            local enchant, enchantSuccess = self:enchant(item.name,items[item.name],item.attributes,enchantCards,enchantCredit,enchantCreditMultiplier,biome)
             
             if enchantSuccess then
                 item.attributes.enchants = enchant
+                --print("enchant :"..PrintTable(enchant))
             end
         end
     end
@@ -201,18 +231,19 @@ function ItemDirector:enchant(itemName,item,attributes,enchantCards,enchantCredi
     --more or less credit depending on level
     local enchant = {}
     local success = false
-    local numberOfEnchants = math.floor((math.random()^1.25)*math.floor(enchantCredit*(multiplier^0.75)/4))
+    local numberOfEnchants = math.ceil((math.random()^1.75)*math.floor(enchantCredit*(multiplier^0.75)/4))
     local creditPerEnchant = enchantCredit / numberOfEnchants
 
     --repeat until no more credit 
     if numberOfEnchants > 0 then
         for i = 1, numberOfEnchants do
 
-            local newEnchant, enchantSuccess = self:rollCompleteEnchant(itemName,item,attributes,enchantCards,enchantCredit,multiplier,biome)
+            local newEnchant, enchantSuccess = self:rollCompleteEnchant(itemName,item,attributes,enchantCards,enchantCredit,maximum(enchantCredit,creditPerEnchant),multiplier,biome)
             
             if enchantSuccess then
                 enchantCredit = enchantCredit - creditPerEnchant
                 table.insert(enchant,newEnchant)
+                success = true
                 --enchantCredit = enchantCredit - (newEnchant.cause.cardCost * multiplier) - (newEnchant.condition.cardCost * multiplier) - (newEnchant.reaction.cardCost * multiplier)
             end
 
@@ -222,7 +253,7 @@ function ItemDirector:enchant(itemName,item,attributes,enchantCards,enchantCredi
     return enchant, success
 end
 
-function ItemDirector:rollCompleteEnchant(itemName,item,attributes,enchantCards,enchantCredit,multiplier,biome)
+function ItemDirector:rollCompleteEnchant(itemName,item,attributes,enchantCards,enchantCredit,powerCredit,multiplier,biome)
     local causeEnchant = nil
     local conditionEnchant = nil
     local reactionEnchant = nil
@@ -239,6 +270,7 @@ function ItemDirector:rollCompleteEnchant(itemName,item,attributes,enchantCards,
         completeEnchant.cause.card = causeEnchant
         completeEnchant.cause.power = 0
         enchantCredit = enchantCredit - (causeEnchant.cardCost / multiplier)
+        --powerCredit = powerCredit - (causeEnchant.cardCost / multiplier) / 3
         --print("ItemDirector:rollCompleteEnchant() - Rolled cause enchant: "..causeEnchant.name.." with cardCost: "..causeEnchant.cardCost.." and remaining enchantCredit: "..enchantCredit)
     end
 
@@ -252,6 +284,7 @@ function ItemDirector:rollCompleteEnchant(itemName,item,attributes,enchantCards,
             completeEnchant.condition.card = conditionEnchant
             completeEnchant.condition.power = 0
             enchantCredit = enchantCredit - (conditionEnchant.cardCost / multiplier)
+            --powerCredit = powerCredit - (conditionEnchant.cardCost / multiplier) / 3
             --print("ItemDirector:rollCompleteEnchant() - Rolled condition enchant: "..conditionEnchant.name.." with cardCost: "..conditionEnchant.cardCost.." and remaining enchantCredit: "..enchantCredit)
         end
     end
@@ -266,17 +299,18 @@ function ItemDirector:rollCompleteEnchant(itemName,item,attributes,enchantCards,
             completeEnchant.reaction.card = reactionEnchant
             completeEnchant.reaction.power = 0
             enchantCredit = enchantCredit - (reactionEnchant.cardCost / multiplier)
+            --powerCredit = powerCredit - (reactionEnchant.cardCost / multiplier) / 3
             --print("ItemDirector:rollCompleteEnchant() - Rolled reaction enchant: "..reactionEnchant.name.." with cardCost: "..reactionEnchant.cardCost.." and remaining enchantCredit: "..enchantCredit)
         end
     end
 
     if completeEnchant.cause ~= nil and completeEnchant.condition ~= nil and completeEnchant.reaction ~= nil then
         success = true
-        print("ItemDirector:rollCompleteEnchant() - Rolled complete enchant with cause: "..completeEnchant.cause.name.." condition: "..completeEnchant.condition.name.." reaction: "..completeEnchant.reaction.name.." and remaining enchantCredit: "..enchantCredit)
-        if enchantCredit > 0 then
-            completeEnchant.cause.power = (math.random()^1.25)*enchantCredit
-            completeEnchant.condition.power = (math.random()^1.25)*enchantCredit
-            completeEnchant.reaction.power = (math.random()^1.25)*enchantCredit
+        --print("ItemDirector:rollCompleteEnchant() - Rolled complete enchant with cause: "..completeEnchant.cause.name.." condition: "..completeEnchant.condition.name.." reaction: "..completeEnchant.reaction.name.." and remaining enchantCredit: "..enchantCredit)
+        if enchantCredit > 0 and powerCredit > 0 then
+            completeEnchant.cause.power = (math.random()^1.25)*powerCredit
+            completeEnchant.condition.power = (math.random()^1.25)*powerCredit * completeEnchant.cause.card.creditMultiplier
+            completeEnchant.reaction.power = (math.random()^1.25)*powerCredit * completeEnchant.cause.card.creditMultiplier * completeEnchant.condition.card.creditMultiplier
         end
     end
 

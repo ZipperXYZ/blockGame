@@ -28,7 +28,7 @@ function Item:init(itemName,sprite,flags)
 
     self.unique = self.flags.unique or false
 
-    if checkifinlist(self.category, {"tool","weapon","movement"}) then
+    if checkifinlist(self.category, {"tool","weapon","movement","accessory"}) then
         self.unique = true
     end
 
@@ -77,9 +77,12 @@ function Item:init(itemName,sprite,flags)
     if self.category == "tool" then self.desiredInventorySpots = {"space"} end
     if self.category == "weapon" then self.desiredInventorySpots = {"leftClick"} end
     if self.category == "movement" then self.desiredInventorySpots = {"shift"} end
+    if self.category == "accessory" then self.desiredInventorySpots = {"accessory"} end
 
-    self.canBeEnchanted = checkifinlist(self.category, {"tool","weapon"})
+    self.canBeEnchanted = checkifinlist(self.category, {"tool","weapon","accessory"})
+    self.applyEnchantFromAnyItem = checkifinlist(self.category, {"accessory"})
     if self.flags.canBeEnchanted ~= nil then self.canBeEnchanted = self.flags.canBeEnchanted end
+    if self.flags.applyEnchantFromAnyItem ~= nil then self.applyEnchantFromAnyItem = self.flags.applyEnchantFromAnyItem end
 
     if self.placeBlock ~= "none" then self.desiredInventorySpots = {"space","x","c","v","b","n","m","h","j","k","l"} end
 
@@ -341,8 +344,9 @@ end
 
 function Item:use(entity,attributes,cursorX,cursorY,slot,stacks)
     local stacksRemove = 0
-    local setCooldown = self.cooldown
+    local setCooldown = self:getCooldown(attributes,entity)
     local useSuccess = false
+    local overrideCooldown = nil
     --print("use item",self.itemName,slot,stacks)
 
     if checkifinlist(slot,self.desiredInventorySpots)then
@@ -380,10 +384,23 @@ function Item:use(entity,attributes,cursorX,cursorY,slot,stacks)
         local destroyedAtLeastATile = false
 
         local targets = self:getPickaxeTargets(entity,attributes,cursorX,cursorY)
+        local signalInfo = {
+            position = Vector2(cursorX,cursorY),
+            entity = entity,
+            item = self,
+            attributes = attributes,
+            cooldownValue = self:getCooldown(attributes,entity),
+        }
         if #targets > 0 then
             for targ= 1,#targets do
                 for lay = 1, #self.mineLayer do
-                    if world:damageBlock(targets[targ].x, targets[targ].y, self:getMineDamage(attributes,entity),self.mineLayer[lay],true) then
+                    local destroyed, damageSourceInfo = world:damageBlock(targets[targ].x, targets[targ].y, self:getMineDamage(attributes,entity),self.mineLayer[lay],true,{signalInfo = signalInfo, entity = entity, item = self, attributes = attributes})
+                    if destroyed then
+
+                        if damageSourceInfo.signalInfo ~= nil then
+                            signalInfo = damageSourceInfo.signalInfo
+                        end
+
                         destroyedAtLeastATile = true
                     end
                 end
@@ -391,6 +408,9 @@ function Item:use(entity,attributes,cursorX,cursorY,slot,stacks)
         end
 
         if destroyedAtLeastATile then
+            if signalInfo.cooldownValue > 0 then
+                overrideCooldown = signalInfo.cooldownValue
+            end
             world:updateLights(cursorX,cursorY)
         end
 
@@ -411,10 +431,36 @@ function Item:use(entity,attributes,cursorX,cursorY,slot,stacks)
                     local target = targets[i].entity
                     local maxHealth = target.health:getMax()
                     local damage = self:getDamage(attributes,entity)
+
+                    local signalInfo = {
+                        position = target.position:copy(),
+                        target = target,
+                        damageValue = damage,
+                        cooldownValue = self:getCooldown(attributes,entity),
+                    }
+                    signalInfo = entity:applyEnchantSignal("enemyHit",signalInfo,self,attributes)
+
+                    if signalInfo.cooldownValue > 0 then
+                        overrideCooldown = signalInfo.cooldownValue
+                    end
+                    if signalInfo.damageValue > 0 then
+                        damage = signalInfo.damageValue
+                    else
+                        damage = 0
+                    end
+
                     target:spawnBlood(0.15+1 * math.ceil(damage / maxHealth * 150), 5 + damage * 5 / maxHealth, pointat180(entity.position.x,entity.position.y,target.position.x,target.position.y), 100)
-                    target:damage(self:getDamage(attributes,entity),"weapon",entity)
+                    local death = target:damage(damage,"weapon",entity)
                     if self:getKnockback(attributes,entity) > 0 then
                         target:dash(self:getKnockback(attributes,entity)*5*target.knockbackMultiplier,0.3,pointat180(entity.position.x,entity.position.y,target.position.x,target.position.y),1)
+                    end
+
+                    if death then
+                        local signalInfo = {
+                            position = target.position:copy(),
+                            damageReceiver = target,
+                        }
+                        signalInfo = entity:applyEnchantSignal("enemyKill",signalInfo,self,attributes)
                     end
                 end
             end
@@ -449,6 +495,10 @@ function Item:use(entity,attributes,cursorX,cursorY,slot,stacks)
 
 
     if useSuccess then
+
+        if overrideCooldown ~= nil then
+            setCooldown = overrideCooldown
+        end
 
         entity:setAnimation("use",1/maximum(setCooldown,0.8))
         
@@ -615,7 +665,7 @@ function Item:drawToolTip(draw,screenX,screenY,sizeMultiplyer,maxX,attributes,am
         if attributes.enchants ~= nil then
             if #attributes.enchants > 0 then
                 y = y + self:getLineReturnHeight(sizeMultiplyer) * 0.5
-                y = y + self:printInfo(draw,{"#silent","Enchants :"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+                y = y + self:printInfo(draw,{"#enchant","Enchants :"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
 
                 for i = 1, #attributes.enchants do
                     local enchant = attributes.enchants[i]
@@ -623,10 +673,24 @@ function Item:drawToolTip(draw,screenX,screenY,sizeMultiplyer,maxX,attributes,am
 
                     if enchant ~= nil then
                         y = y + self:getLineReturnHeight(sizeMultiplyer) * 0.5
-                        local cause = {enchant.cause.card:print(attributes,self,enchant.cause.power,entity)}
-                        local condition = {enchant.condition.card:print(attributes,self,enchant.condition.power,entity)}
-                        local reaction = {enchant.reaction.card:print(attributes,self,enchant.reaction.power,entity)}
-                        y = y + self:printInfo(draw,JoinTables({cause,condition,reaction}),screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+                        local cause = enchant.cause.card:print(attributes,self,enchant.cause.power,entity)
+                        local condition = enchant.condition.card:print(attributes,self,enchant.condition.power,entity)
+                        local reaction = enchant.reaction.card:print(attributes,self,enchant.reaction.power,entity)
+                        local completeText = JoinTables({cause, condition, reaction})
+                        y = y + self:printInfo(draw,{"\n"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+                        local enchantTextScale = 0.015 * sizeMultiplyer
+                        local enchantTextMaxX = windowSizeX - badgeSize - textXOffset - padding * 5
+                        local width, height = GetTextSize(normalizeRichText(completeText),enchantTextMaxX / enchantTextScale,enchantTextScale)
+                        if draw then
+                            --love.graphics.setColor(0.8,0.6,1,0.25)
+                            --love.graphics.rectangle("fill",screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,width+padding*2,height+padding*2,5,5)
+                            --love.graphics.setColor(0.8,0.8,0.8,1)
+                            love.graphics.setColor(0.8,0.6,1,1)
+                            love.graphics.rectangle("line",screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,width+padding*2,height+padding*2,5,5)
+                        end
+                        y = y + padding
+                        y = y + self:printInfo(draw,completeText,screenX + badgeSize + textXOffset + padding * 3,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 5)
+                        y = y + padding
                     end
                 end
             end
@@ -643,7 +707,7 @@ function Item:getLineReturnHeight(sizeMultiplyer)
     return self:printInfo(false,{"123"},0,0,"base",sizeMultiplyer,100)
 end
 
-local function normalizeRichText(textTable)
+function normalizeRichText(textTable)
     if type(textTable) ~= "table" then
         return textTable
     end
@@ -661,6 +725,27 @@ local function normalizeRichText(textTable)
         if value == "#base" then value = {0.8,0.8,0.8,1} end
         if value == "#muted" then value = {0.6,0.6,0.6,1} end
         if value == "#silent" then value = {0.4,0.4,0.4,1} end
+
+
+        --if value == "#enchant" then value = {0.7,0.3,1,1} end
+        if value == "#enchant" then value = {0.8,0.6,1,1} end
+
+        if value == "#ally" then value = {0.6,1,0.8,1} end
+        if value == "#enemy" then value = {1,0.6,0.3,1} end
+
+        if value == "#health" then value = {0.6,1,0.6,1} end
+        if value == "#life" then value = {0.3,0.6,0.3,1} end
+
+        if value == "#damage" then value = {1,0.6,0.6,1} end
+        if value == "#kill" then value = {0.8,0.3,0.3,1} end
+        if value == "#death" then value = {0.6,0,0,1} end
+
+        if value == "#cooldown" then value = {1,1,0.3,1} end
+
+        if value == "#condition" then value = {0.2,0.6,1,1} end
+        if value == "#value" then value = {0.8,0.6,1,1} end
+
+
 
         if value == "#red" then value = {1,0.6,0.6,1} end
         if value == "#red!" then value = {1,0,0,1} end

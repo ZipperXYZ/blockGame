@@ -10,7 +10,6 @@ ItemEnchantCard.className = "ItemEnchantCard"
     --when taking damage
     --on enemy kill
     --breaking a tile
-    --taking fall damage
     --on jump
     --using said item
     --using any item
@@ -72,7 +71,7 @@ function LoadItemEnchantmentCards()
                 return 0
             end,
     })
-    Enchants.takingDamage = ItemEnchantCard(1, 10, "takingDamage", "cause", {"player","playerDamage","damageValue"}, {"accessory"}, 2.5, {"any"}, {
+    Enchants.takingDamage = ItemEnchantCard(1, 10, "takingDamage", "cause", {"player","playerDamage","damageValue","preventHealthGain"}, {"accessory"}, 2.5, {"any"}, {
         checkSignal =
             function (self,signal,signalInfo,power,itemAttributes,item,entity)
                 local accepted = false
@@ -129,7 +128,7 @@ function LoadItemEnchantmentCards()
                 return 0
             end,
     })
-    Enchants.damagingTile = ItemEnchantCard(1, 10, "damagingTile", "cause", {"tile","tileDamageValue","itemUse"}, {"tool","accessory"}, 0.08, {"any"}, {
+    Enchants.damagingTile = ItemEnchantCard(1, 10, "damagingTile", "cause", {"tile","tileDamageValue","itemUse","preventHealthGain"}, {"tool","accessory"}, 0.06, {"any"}, {
         checkSignal =
             function (self,signal,signalInfo,power,itemAttributes,item,entity)
                 local accepted = false
@@ -142,6 +141,25 @@ function LoadItemEnchantmentCards()
         print = 
             function (self,itemAttributes,item,power,entity)
                 return {"#muted"," When ","#info","damaging a tile"}
+            end,
+        getValue =  
+            function (self,power,itemAttributes,item,entity)
+                return 0
+            end,
+    })
+    Enchants.jump = ItemEnchantCard(1, 10, "jump", "cause", {"player","playerJump","preventHealthGain"}, {"accessory"}, 0.5, {"any"}, {
+        checkSignal =
+            function (self,signal,signalInfo,power,itemAttributes,item,entity)
+                local accepted = false
+                if signal == "jump" then
+                    accepted = true
+                end
+
+                return accepted, signalInfo
+            end,
+        print = 
+            function (self,itemAttributes,item,power,entity)
+                return {"#muted"," When ","#info","jumping"}
             end,
         getValue =  
             function (self,power,itemAttributes,item,entity)
@@ -206,7 +224,7 @@ function LoadItemEnchantmentCards()
                 return 0
             end,
     })
-    Enchants.fullHealth = ItemEnchantCard(1, 15, "fullHealth", "condition", {"playerFullHealth"}, {"any"}, 2, {"any"}, {
+    Enchants.fullHealth = ItemEnchantCard(1, 15, "fullHealth", "condition", {"playerFullHealth","preventHealthGain"}, {"any"}, 2, {"any"}, {
         checkCondition =
             function (self,power,itemAttributes,item,entity,signalInfo)
                 local success = false
@@ -254,8 +272,35 @@ function LoadItemEnchantmentCards()
                 return value
             end,
     })
-    Enchants.giveHealth = ItemEnchantCard(2, 7, "giveHealth", "reaction", {}, {"any"}, nil, {"any"}, {
-        previousCardAntiFilter = {"playerFullHealth","playerDamage"},
+    Enchants.increaseCriticalStrikeChance = ItemEnchantCard(1, 10, "increaseCriticalStrikeChance", "reaction", {}, {"any"}, nil, {"any"}, {
+        previousCardFilter = {"enemyDamage"},
+        use =
+            function (self,power,itemAttributes,item,entity,signalInfo)
+                local success = false
+
+                if signalInfo ~= nil and signalInfo.criticalChance ~= nil then
+                    signalInfo.criticalChance = k(signalInfo.criticalChance, 1 , self:getValue(power,itemAttributes,item,entity)/100)
+                    success = true
+                end
+
+                return success, signalInfo
+            end,
+        print = 
+            function (self,itemAttributes,item,power,entity)
+                return {"#muted",", increase ","#damage"," critical strike ","#muted","chance by ","#value",self:getValue(power,itemAttributes,item,entity).."%"}
+            end,
+        getValue = 
+            function (self,power,itemAttributes,item,entity)
+                local kv = 0.05
+                local multiplier = 2
+                local value = 100 * (math.log(1 + kv * (power*multiplier))/ (1 + math.log(1 + kv * (power*multiplier))))
+                value = round(value)
+
+                return value
+            end,
+    })
+    Enchants.giveHealth = ItemEnchantCard(2, 5, "giveHealth", "reaction", {}, {"any"}, nil, {"any"}, {
+        previousCardAntiFilter = {"playerFullHealth","playerDamage","preventHealthGain"},
         use =
             function (self,power,itemAttributes,item,entity,signalInfo)
                 local success = false
@@ -312,7 +357,7 @@ function LoadItemEnchantmentCards()
                 return value
             end,
     })
-    Enchants.decreaseCooldown = ItemEnchantCard(1, 10, "decreaseCooldown", "reaction", {}, {"tool"}, nil, {"any"}, {
+    Enchants.decreaseCooldown = ItemEnchantCard(1, 10, "decreaseCooldown", "reaction", {}, {"tool","accessory"}, nil, {"any"}, {
         previousCardFilter = {"itemUse"},
         use =
             function (self,power,itemAttributes,item,entity,signalInfo)

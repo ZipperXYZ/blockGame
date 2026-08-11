@@ -147,7 +147,8 @@ function ItemDirector:rollItem(cards,credit,creditLimit,enchantCards,enchantCred
 
     
     local randomLevel = (math.random()^(1/levelBias) +0.5)/1
-    local actualLevel = minimum(randomLevel * math.abs(depth) * 20, 1)
+    local actualLevel = minimum(randomLevel * math.abs(depth) * 32, 1)
+    local enchantFactor = 1 + (actualLevel * 0.1)
     local itemCreditCostMultiplier = randomLevel
     
     --get available cards
@@ -168,7 +169,8 @@ function ItemDirector:rollItem(cards,credit,creditLimit,enchantCards,enchantCred
                 --if tries > 50 then randomLevel = randomLevel / ((1+(tries-50))^1.75) end
                 if tries > 200 then randomLevel = randomLevel / ((1+(tries-200))^1.75) end
                 --if tries > 150 then randomLevel = randomLevel / ((1+(tries-150))^2) end
-                actualLevel = minimum(randomLevel * math.abs(depth) * 20, 1)
+                actualLevel = minimum(randomLevel * math.abs(depth) * 32, 1)
+                enchantFactor = 1 + (actualLevel * 0.1)
                 itemCreditCostMultiplier = randomLevel
 
                 cardPool = self:getAllAvailableCardsPool(cards,credit,creditLimit,itemCreditCostMultiplier,biome,actualLevel)
@@ -179,7 +181,8 @@ function ItemDirector:rollItem(cards,credit,creditLimit,enchantCards,enchantCred
                 --if tries > 50 then randomLevel = randomLevel * ((1+(tries-50))^1.75) end
                 if tries > 200 then randomLevel = randomLevel * ((1+(tries-200))^1.75) end
                 --if tries > 150 then randomLevel = randomLevel * ((1+(tries-150))^2) end
-                actualLevel = minimum(randomLevel * math.abs(depth) * 20, 1)
+                actualLevel = minimum(randomLevel * math.abs(depth) * 32, 1)
+                enchantFactor = 1 + (actualLevel * 0.1)
                 itemCreditCostMultiplier = randomLevel
 
                 cardPool = self:getAllAvailableCardsPool(cards,credit,creditLimit,itemCreditCostMultiplier,biome,actualLevel)
@@ -213,7 +216,7 @@ function ItemDirector:rollItem(cards,credit,creditLimit,enchantCards,enchantCred
     if actualItem ~= nil then
         if actualItem.canBeEnchanted then
             --print("ItemDirector:rollItem() - Enchanting item: "..item.name.." with enchantCredit: "..(enchantCredit).." and enchantCreditMultiplier: "..enchantCreditMultiplier)
-            local enchant, enchantSuccess = self:enchant(item.name,items[item.name],item.attributes,enchantCards,enchantCredit,enchantCreditMultiplier,biome)
+            local enchant, enchantSuccess = self:enchant(item.name,items[item.name],item.attributes,enchantCards,enchantCredit,enchantCreditMultiplier*enchantFactor,biome)
             
             if enchantSuccess then
                 item.attributes.enchants = enchant
@@ -231,7 +234,7 @@ function ItemDirector:enchant(itemName,item,attributes,enchantCards,enchantCredi
     --more or less credit depending on level
     local enchant = {}
     local success = false
-    local numberOfEnchants = math.ceil((math.random()^1.75)*math.floor(enchantCredit*(multiplier^0.75)/4))
+    local numberOfEnchants = math.ceil((math.random()^4)*math.floor(enchantCredit*(multiplier^0.75)/4))
     local creditPerEnchant = enchantCredit / numberOfEnchants
 
     --repeat until no more credit 

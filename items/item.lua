@@ -6,8 +6,39 @@ Item.className = "Item"
 function Item:init(itemName,sprite,flags)
     self.itemName = itemName
     self.flags = flags or {}
-    self.sprite = textures["sprites"][sprite] or "none"
-    self.spriteName = sprite or "none"
+    --self.sprite = textures["sprites"][sprite] or "none"
+    --self.spriteName = sprite or "none"
+    self.textureType = "singular"
+    if type(sprite) == "table" then
+        if type(sprite[1]) == "table" then
+            self.textureType = "complex"
+            self.spriteName = {}
+            self.sprite = {}
+            self.spriteColor = {}
+            self.spriteColorisation = {}
+            for i = 1, #sprite do
+                self.spriteName[i] = sprite[i].sprite or "none"
+                self.sprite[i]={}
+                self.sprite[i].sprite = textures["sprites"][sprite[i].sprite] or "none"
+                self.sprite[i].color = sprite[i].color or {1,1,1,1}
+                self.sprite[i].colorisation = sprite[i].colorisation or {0,0,0,0}
+            end
+        else
+            self.textureType = "multiple"
+            self.spriteName = {}
+            self.sprite = {}
+            for i = 1, #sprite do
+                self.spriteName[i] = sprite[i] or "none"
+                self.sprite[i] = textures["sprites"][sprite[i]] or "none"
+            end
+        end
+    else
+        self.sprite = textures["sprites"][sprite] or "none"
+        self.spriteName = sprite or "none"
+    end
+
+
+
     self.description = self.flags.description or {""}
 
 
@@ -20,7 +51,34 @@ function Item:init(itemName,sprite,flags)
     self.subCategory = self.flags.subCategory or "none"
 
     if self.flags.holdAnimation ~= nil then
-        self.holdAnimation = textures["sprites"][self.flags.holdAnimation]
+        --self.holdAnimation = textures["sprites"][self.flags.holdAnimation]
+        local holdAnimationSprite = self.flags.holdAnimation
+        self.holdAnimationtextureType = "singular"
+        if type(holdAnimationSprite) == "table" then
+            if type(holdAnimationSprite[1]) == "table" then
+                self.holdAnimationtextureType = "complex"
+                self.holdAnimationSpriteName = {}
+                self.holdAnimation = {}
+                for i = 1, #holdAnimationSprite do
+                    self.holdAnimationSpriteName[i] = holdAnimationSprite[i].sprite or "none"
+                    self.holdAnimation[i]={}
+                    self.holdAnimation[i].sprite = textures["sprites"][holdAnimationSprite[i].sprite] or "none"
+                    self.holdAnimation[i].color = holdAnimationSprite[i].color or {1,1,1,1}
+                    self.holdAnimation[i].colorisation = holdAnimationSprite[i].colorisation or {0,0,0,0}
+                end
+            else
+                self.holdAnimationtextureType = "multiple"
+                self.holdAnimationSpriteName = {}
+                self.holdAnimation = {}
+                for i = 1, #holdAnimationSprite do
+                    self.holdAnimationSpriteName[i] = holdAnimationSprite[i] or "none"
+                    self.holdAnimation[i] = textures["sprites"][holdAnimationSprite[i]] or "none"
+                end
+            end
+        else
+            self.holdAnimation = textures["sprites"][holdAnimationSprite] or "none"
+            self.holdAnimationSpriteName = holdAnimationSprite or "none"
+        end
     end
 
 
@@ -133,6 +191,7 @@ end
 
 function Item:getDamage(attributes,entity)
     local damage = self.damage
+    damage = damage + self.damagePerLevel * (self:getLevel(attributes) - 1)
     if entity ~= nil then
         damage = damage * entity:getDamage()
     end
@@ -431,26 +490,29 @@ function Item:use(entity,attributes,cursorX,cursorY,slot,stacks)
                     local target = targets[i].entity
                     local maxHealth = target.health:getMax()
                     local damage = self:getDamage(attributes,entity)
+                    local criticalChance = 0
+                    local critical = false
 
                     local signalInfo = {
                         position = target.position:copy(),
                         target = target,
                         damageValue = damage,
+                        criticalChance = criticalChance,
                         cooldownValue = self:getCooldown(attributes,entity),
                     }
                     signalInfo = entity:applyEnchantSignal("enemyHit",signalInfo,self,attributes)
 
-                    if signalInfo.cooldownValue > 0 then
-                        overrideCooldown = signalInfo.cooldownValue
-                    end
-                    if signalInfo.damageValue > 0 then
-                        damage = signalInfo.damageValue
-                    else
-                        damage = 0
+                    if signalInfo.cooldownValue > 0 then overrideCooldown = signalInfo.cooldownValue end
+                    if signalInfo.damageValue > 0 then damage = signalInfo.damageValue end
+                    if signalInfo.criticalChance > 0 then criticalChance = signalInfo.criticalChance end
+
+                    if math.random() < criticalChance then
+                        damage = damage * 2
+                        critical = true
                     end
 
                     target:spawnBlood(0.15+1 * math.ceil(damage / maxHealth * 150), 5 + damage * 5 / maxHealth, pointat180(entity.position.x,entity.position.y,target.position.x,target.position.y), 100)
-                    local death = target:damage(damage,"weapon",entity)
+                    local death = target:damage(damage,"weapon",entity,{critical = critical})
                     if self:getKnockback(attributes,entity) > 0 then
                         target:dash(self:getKnockback(attributes,entity)*5*target.knockbackMultiplier,0.3,pointat180(entity.position.x,entity.position.y,target.position.x,target.position.y),1)
                     end
@@ -549,9 +611,18 @@ function Item:drawToolTip(draw,screenX,screenY,sizeMultiplyer,maxX,attributes,am
     if self.sprite ~= nil and self.itemName ~= "none" then
         local displaySize = nil
         local itemSizeMultiplyer = 1
-        if self.sprite:doesAnimationExist("small") then displaySize = "small" itemSizeMultiplyer = 0.25 end
-        if self.sprite:doesAnimationExist("medium") then displaySize = "medium" itemSizeMultiplyer = 0.5 end
-        if self.sprite:doesAnimationExist("large") then displaySize = "large" itemSizeMultiplyer = 1 end
+
+        local currentSprite = self.sprite
+        if self.textureType == "multiple" then
+            currentSprite = self.sprite[1]
+        end
+        if self.textureType == "complex" then
+            currentSprite = self.sprite[1].sprite
+        end
+
+        if currentSprite:doesAnimationExist("small") then displaySize = "small" itemSizeMultiplyer = 0.25 end
+        if currentSprite:doesAnimationExist("medium") then displaySize = "medium" itemSizeMultiplyer = 0.5 end
+        if currentSprite:doesAnimationExist("large") then displaySize = "large" itemSizeMultiplyer = 1 end
 
         badgeSize = sizeMultiplyer * itemSizeMultiplyer
             
@@ -847,7 +918,19 @@ end
 function Item:drawHolding(entity,spriteX,spriteY,size,attributes,quantity)
     if self.holdAnimation ~= nil then
         
-        self.holdAnimation:draw(entity.animation,entity.animationTime,entity.animationDirection,spriteX,spriteY,size,size,self.baseColor,self.baseColorisation)
+        if self.holdAnimationtextureType == "singular" then
+            self.holdAnimation:draw(entity.animation,entity.animationTime,entity.animationDirection,spriteX,spriteY,size,size,self.baseColor,self.baseColorisation)
+        end
+        if self.holdAnimationtextureType == "multiple" then
+            for i = 1, #self.holdAnimation do
+                self.holdAnimation[i]:draw(entity.animation,entity.animationTime,entity.animationDirection,spriteX,spriteY,size,size,self.baseColor,self.baseColorisation)
+            end
+        end
+        if self.holdAnimationtextureType == "complex" then
+            for i = 1, #self.holdAnimation do
+                self.holdAnimation[i].sprite:draw(entity.animation,entity.animationTime,entity.animationDirection,spriteX,spriteY,size,size,self.holdAnimation[i].color,self.holdAnimation[i].colorisation)
+            end
+        end
 
     end
 end
@@ -859,9 +942,17 @@ function Item:draw(state,posX,posY,size,attributes, amount,centerX,centerY,ignor
     if ignoreSizeRounding == nil then ignoreSizeRounding = false end
     if self.itemName ~= "none" then
 
-        if state == "large" and (not self.sprite:doesAnimationExist("large")) then state = "medium" end
-        if state == "small" and (not self.sprite:doesAnimationExist("small")) then state = "medium" end
-        if state == "medium" and (not self.sprite:doesAnimationExist("medium")) then state = "small" end
+        local currentSprite = self.sprite
+        if self.textureType == "multiple" then
+            currentSprite = self.sprite[1]
+        end
+        if self.textureType == "complex" then
+            currentSprite = self.sprite[1].sprite
+        end
+
+        if state == "large" and (not currentSprite:doesAnimationExist("large")) then state = "medium" end
+        if state == "small" and (not currentSprite:doesAnimationExist("small")) then state = "medium" end
+        if state == "medium" and (not currentSprite:doesAnimationExist("medium")) then state = "small" end
 
         local drawSize = size/8
         if state == "small" then drawSize = size / 8 end
@@ -878,6 +969,18 @@ function Item:draw(state,posX,posY,size,attributes, amount,centerX,centerY,ignor
         if not ignoreSizeRounding then
             drawSize = round(drawSize)
         end
-        self.sprite:draw(state,0,"right",posX,posY,drawSize,drawSize,self.baseColor,self.baseColorisation)
+        if self.textureType == "singular" then
+            self.sprite:draw(state,0,"right",posX,posY,drawSize,drawSize,self.baseColor,self.baseColorisation)
+        end
+        if self.textureType == "multiple" then
+            for i = 1, #self.sprite do
+                self.sprite[i]:draw(state,0,"right",posX,posY,drawSize,drawSize,self.baseColor,self.baseColorisation)
+            end
+        end
+        if self.textureType == "complex" then
+            for i = 1, #self.sprite do
+                self.sprite[i].sprite:draw(state,0,"right",posX,posY,drawSize,drawSize,self.sprite[i].color,self.sprite[i].colorisation)
+            end
+        end
     end
 end

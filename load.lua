@@ -13,6 +13,8 @@ function loadeverything()
 
   LoadItemCards()
   LoadItemEnchantmentCards()
+
+  LoadItemSets()
 end
 
 function loadtextures()
@@ -130,7 +132,24 @@ function loadtextures()
 
   textures.sprites.thunderBirdFeather = Sprite("thunderBirdFeather","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,44}})
   textures.sprites.angelFeather = Sprite("angelFeather","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,48}})
+  
   textures.sprites.clearRing = Sprite("clearRing","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,4}})
+  textures.sprites.pickaxeTop = Sprite("pickaxeTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,8}})
+  textures.sprites.spikeTop = Sprite("spikeTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,12}})
+  textures.sprites.swayPickaxeTop = Sprite("swayPickaxeTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,16}})
+  textures.sprites.hammerTop = Sprite("hammerTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,20}})
+  textures.sprites.chiselTop = Sprite("chiselTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,24}})
+  textures.sprites.shovelTop = Sprite("shovelTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,28}})
+  textures.sprites.stiffPickTop = Sprite("stiffPickTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,32}})
+  textures.sprites.targetPickaxeTop = Sprite("targetPickaxeTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,36}})
+  textures.sprites.smallSwordTop = Sprite("smallSwordTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,40}})
+  textures.sprites.swordTop = Sprite("swordTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,44}})
+  textures.sprites.bigSwordTop = Sprite("bigSwordTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,48}})
+  textures.sprites.lanceTop = Sprite("lanceTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,52}})
+  
+  textures.sprites.toolBase = Sprite("toolBase","items1.png",{parts = {"small","medium"}},{setupItem = true,itemQuadrant={14,0}})
+  textures.sprites.toolBaseSmall = Sprite("toolBaseSmall","items1.png",{parts = {"small","medium"}},{setupItem = true,itemQuadrant={14,4}})
+  textures.sprites.toolBaseSmall2 = Sprite("toolBaseSmall2","items1.png",{parts = {"small","medium"}},{setupItem = true,itemQuadrant={14,8}})
 
 
   textures["sprites"]["placementPreview"] = Sprite("placementPreview","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {0,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
@@ -143,6 +162,11 @@ function loadtextures()
   textures["sprites"]["bigSlime"] = Sprite("bigSlime","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={3,0},["spriteSizes"]={2,2},["spriteCenters"]={1,2}})
   textures["sprites"]["skeleton"] = Sprite("skeleton","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={2,0},["spriteSizes"]={1,2},["spriteCenters"]={0.5,1.5}})
   textures["sprites"]["crudePickaxe_Hold"] = Sprite("crudePickaxe_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,1},["spriteSizes"]={1.5,2},["spriteCenters"]={0.75,1.5}})
+  
+  textures["sprites"]["toolBase_Hold"] = Sprite("toolBase_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,3},["spriteSizes"]={1.5,2},["spriteCenters"]={0.75,1.5}})
+  textures["sprites"]["toolTop_Hold"] = Sprite("toolTop_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={1.5,3},["spriteSizes"]={1.5,2},["spriteCenters"]={0.75,1.5}})
+  
+  
   textures["sprites"]["crudeSword_Hold"] = Sprite("crudeSword_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,2},["spriteSizes"]={2,2},["spriteCenters"]={1,1.5}})
   textures["sprites"]["slimeSpike_Hold"] = Sprite("slimeSpike_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={2,2},["spriteSizes"]={2,2},["spriteCenters"]={1,1.5}})
   textures["sprites"]["bigSlimeSpike_Hold"] = Sprite("bigSlimeSpike_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={4,2},["spriteSizes"]={3,2},["spriteCenters"]={1.5,2}})
@@ -678,17 +702,17 @@ function loadItems()
   --items["stick"] = Item("stick","stick",{["category"]="material"})
   items["stick"] = Item("stick","stick",{["category"]="material",["placeBlock"] = "essenceWoodBricks", ["placeBlockCost"] = 5, ["maxStack"] = 300})
   items["rock"] = Item("rock","rock",{["category"]="material",["placeBlock"] = "scrapBlock", ["placeBlockCost"] = 4,["fullName"] = "Scrap pebbles", ["maxStack"] = 300})
-  items["crudePickaxe"] = Item("crudePickaxe","crudePickaxe",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude pickaxe",
-    ["cooldown"] = 0.8,
-    ["cooldownSpeedPerLevel"] = 0.03,
-    ["mineDamage"] = 0.8, --1
-    ["mineDamagePerLevel"] = 0.03,
-    ["blockDamageAmount"] = 6, --6
-    ["rangeLimit"] = 5,  --6
-    ["rangeLimitPerLevel"] = 0.15,
-    ["mineWidth"] = 3,
-    ["holdAnimation"] = "crudePickaxe_Hold",
-    ["description"] = {"#silent","A crude pickaxe made of sticks and rocks. It can serve a lot more than you might think."},
+  items.crudePickaxe = Item("crudePickaxe","crudePickaxe",{category="tool",subCategory = "pickaxe",fullName = "Crude pickaxe",
+    cooldown = 0.8,
+    cooldownSpeedPerLevel = 0.03,
+    mineDamage = 0.8, --1
+    mineDamagePerLevel = 0.03,
+    blockDamageAmount = 6, --6
+    rangeLimit = 5,  --6
+    rangeLimitPerLevel = 0.15,
+    mineWidth = 3,
+    holdAnimation = "crudePickaxe_Hold",
+    description = {"#silent","A crude pickaxe made of sticks and rocks. It can serve a lot more than you might think."},
   })
   items["crudeSpike"] = Item("crudeSpike","crudeSpike",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude spike",
     ["cooldown"] = 0.6,
@@ -804,9 +828,10 @@ function loadItems()
     ["minePierce"] = true,
     ["mineLayer"] = {"tiles","backTiles"}
   })
-  items["crudeSword"] = Item("crudeSword","crudeSword",{["category"]="weapon",["subCategory"] = "melee",["fullName"] = "Crude sword",
+  items.crudeSword = Item("crudeSword","crudeSword",{["category"]="weapon",["subCategory"] = "melee",["fullName"] = "Crude sword",
     cooldown = 2,
     damage = 8,
+    damagePerLevel = 2,
     attackRange = 3.2,
     attackRadius = 1, 
     attackDirectionRange = 100,
@@ -1026,4 +1051,324 @@ function LoadInterfaces()
   interfaces["back"] = Interface("back",0.1,-0.05,0.3,0.3,"invisible",{0.6,0.6,0.9,1},{1,1,1,1},{["gap"]=0.03,["scrollMargin"]=0,["elementsStayInBound"]=false})
   interfaces["back"]:addElement("back","button",0.4,0.075,"Back",{},{["gap"]=0},nil,nil)
 
+end
+function LoadItemSets()
+  LoadItemSet("copper",nil,{0.7,0.35,0,0.65},nil,{0.8,0.4,0.05,0.5},{damageM=1.2,cooldownM=1.4,rangeM=0.9,blockAmountM=1.2,weightM=0.8,enchantM=1.2,minLevel=0,maxLevel = 10})
+  LoadItemSet("iron",nil,{0.8,0.85,0.9,0.65},nil,{0.8,0.4,0.05,0.5},{damageM=1.5,cooldownM=1.3,rangeM=0.9,blockAmountM=1.2,weightM=0.6,enchantM=1.2,minLevel=4,maxLevel = 17})
+  LoadItemSet("silver",nil,{0.5,0.63,0.8,0.65},nil,{0.8,0.4,0.05,0.5},{damageM=1.3,cooldownM=1.15,rangeM=0.8,blockAmountM=0.7,weightM=0.55,enchantM=0.75,minLevel=8,maxLevel=20})
+  LoadItemSet("lead",nil,{0.2,0.22,0.6,0.65},nil,{0.8,0.4,0.05,0.5},{damageM=2,cooldownM=1.6,rangeM=0.7,blockAmountM=1.2,weightM=0.5,enchantM=1.8,minLevel=10,maxLevel=24})
+  LoadItemSet("gold",nil,{1,0.85,0.5,0.75},nil,{0.8,0.4,0.05,0.5},{damageM=1.9,cooldownM=0.8,rangeM=1.2,blockAmountM=1,weightM=0.2,enchantM=1.6,minLevel=14,maxLevel=30})
+  LoadItemSet("mithril",nil,{0.3,0.9,0.7,0.65},nil,{0.5,0.4,0.05,0.5},{damageM=2.5,cooldownM=1.4,rangeM=1,blockAmountM=1,weightM=0.08,enchantM=2.5,minLevel=22,maxLevel=45})
+
+  LoadItemSet("tin",nil,{0.85,0.83,0.78,0.65},nil,{0.8,0.4,0.05,0.5},{damageM=1.22,cooldownM=1.35,rangeM=0.92,blockAmountM=1.15,weightM=0.75,enchantM=1.25,minLevel=1,maxLevel=12})
+  LoadItemSet("bronze",nil,{0.8,0.48,0.2,0.7},{0.34,0.2,0.1,1},{0.75,0.45,0.18,0.6},{damageM=1.35,cooldownM=1.25,rangeM=0.95,blockAmountM=1.1,weightM=0.68,enchantM=1.3,minLevel=3,maxLevel=15})
+  LoadItemSet("nickel",nil,{0.7,0.74,0.72,0.7},nil,{0.8,0.4,0.05,0.5},{damageM=1.45,cooldownM=1.18,rangeM=0.94,blockAmountM=1.05,weightM=0.58,enchantM=1.45,minLevel=6,maxLevel=18})
+  LoadItemSet("cobalt",nil,{0.25,0.45,0.9,0.72},{0.08,0.18,0.36,1},{0.3,0.5,0.9,0.62},{damageM=1.55,cooldownM=1.05,rangeM=1.03,blockAmountM=0.95,weightM=0.46,enchantM=1.7,minLevel=10,maxLevel=26})
+  LoadItemSet("steel",nil,{0.55,0.6,0.66,0.72},nil,{0.8,0.4,0.05,0.5},{damageM=1.7,cooldownM=1.22,rangeM=0.96,blockAmountM=1.15,weightM=0.42,enchantM=1.6,minLevel=12,maxLevel=28})
+  LoadItemSet("electrum",nil,{0.95,0.88,0.62,0.75},{0.22,0.2,0.14,1},{0.9,0.82,0.5,0.58},{damageM=1.6,cooldownM=0.88,rangeM=1.12,blockAmountM=0.85,weightM=0.33,enchantM=1.95,minLevel=15,maxLevel=32})
+  LoadItemSet("obsidian",nil,{0.22,0.1,0.35,0.78},{0.06,0.03,0.1,1},{0.25,0.12,0.4,0.62},{damageM=2.2,cooldownM=1.3,rangeM=0.93,blockAmountM=1.2,weightM=0.26,enchantM=2.4,minLevel=20,maxLevel=42})
+  LoadItemSet("quartz",nil,{0.9,0.95,1,0.6},nil,{0.8,0.4,0.05,0.5},{damageM=1.5,cooldownM=0.92,rangeM=1.16,blockAmountM=0.78,weightM=0.24,enchantM=2.1,minLevel=18,maxLevel=36})
+  LoadItemSet("moonstone",nil,{0.66,0.76,1,0.72},{0.1,0.12,0.2,1},{0.6,0.72,1,0.52},{damageM=1.75,cooldownM=0.82,rangeM=1.08,blockAmountM=0.8,weightM=0.19,enchantM=2.6,minLevel=24,maxLevel=46})
+  LoadItemSet("sunsteel",nil,{1,0.76,0.32,0.74},{0.28,0.16,0.06,1},{1,0.7,0.25,0.58},{damageM=2.1,cooldownM=0.95,rangeM=1.1,blockAmountM=0.9,weightM=0.16,enchantM=2.8,minLevel=28,maxLevel=50})
+  LoadItemSet("jade",nil,{0.2,0.8,0.5,0.7},nil,{0.8,0.4,0.05,0.5},{damageM=1.65,cooldownM=1.1,rangeM=1,blockAmountM=1,weightM=0.28,enchantM=2.2,minLevel=16,maxLevel=34})
+  LoadItemSet("amethyst",nil,{0.7,0.45,0.92,0.75},{0.18,0.08,0.28,1},{0.74,0.5,0.96,0.56},{damageM=1.85,cooldownM=0.9,rangeM=1.05,blockAmountM=0.82,weightM=0.15,enchantM=3,minLevel=30,maxLevel=54})
+  LoadItemSet("topaz",nil,{1,0.82,0.35,0.72},nil,{0.8,0.4,0.05,0.5},{damageM=1.95,cooldownM=0.78,rangeM=1.18,blockAmountM=0.75,weightM=0.12,enchantM=2.7,minLevel=26,maxLevel=48})
+  LoadItemSet("garnet",nil,{0.78,0.2,0.26,0.75},nil,{0.8,0.4,0.05,0.5},{damageM=2.05,cooldownM=1.02,rangeM=0.98,blockAmountM=1.05,weightM=0.14,enchantM=2.9,minLevel=27,maxLevel=49})
+  LoadItemSet("tungsten",nil,{0.3,0.34,0.38,0.8},nil,{0.8,0.4,0.05,0.5},{damageM=2.4,cooldownM=1.28,rangeM=0.95,blockAmountM=1.18,weightM=0.1,enchantM=2.6,minLevel=32,maxLevel=58})
+  LoadItemSet("titanium",nil,{0.52,0.72,0.86,0.7},{0.16,0.2,0.24,1},{0.56,0.78,0.9,0.5},{damageM=2.3,cooldownM=0.74,rangeM=1.1,blockAmountM=0.88,weightM=0.09,enchantM=3.1,minLevel=34,maxLevel=62})
+  LoadItemSet("platinum",nil,{0.86,0.9,0.95,0.75},nil,{0.8,0.4,0.05,0.5},{damageM=2,cooldownM=0.7,rangeM=1.15,blockAmountM=0.8,weightM=0.07,enchantM=3.2,minLevel=38,maxLevel=70})
+  LoadItemSet("orichalcum",nil,{0.28,0.9,0.82,0.75},{0.08,0.22,0.2,1},{0.3,0.95,0.85,0.58},{damageM=2.6,cooldownM=0.98,rangeM=1.04,blockAmountM=0.92,weightM=0.06,enchantM=3.3,minLevel=40,maxLevel=78})
+  LoadItemSet("voidstone",nil,{0.18,0.08,0.24,0.85},{0.03,0.01,0.06,1},{0.2,0.1,0.3,0.65},{damageM=2.75,cooldownM=1.12,rangeM=0.9,blockAmountM=1.1,weightM=0.05,enchantM=3.4,minLevel=44,maxLevel=90})
+  LoadItemSet("adamantite",nil,{1,0.15,0.15,0.78},{0.2,0.1,0.1,1},{0.78,0.98,1,0.55},{damageM=2.85,cooldownM=0.62,rangeM=1.2,blockAmountM=0.72,weightM=0.04,enchantM=3.45,minLevel=50,maxLevel=999})
+
+  LoadItemSet("diamond",nil,{0.7,1,1,0.75},nil,{0.3,0.4,0.4,0.5},{damageM=3,cooldownM=0.5,rangeM=1.2,blockAmountM=0.7,weightM=0.03,enchantM=3.5,minLevel=50,maxLevel=999})
+
+  
+end
+function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,flags)
+  topColor = topColor or nil
+  topColorisation = topColorisation or nil
+  baseColor = baseColor or nil
+  baseColorisation = baseColorisation or nil
+  flags = flags or {}
+  damageM = flags.damageM or 1
+  cooldownM = flags.cooldownM or 1
+  rangeM = flags.rangeM or 1
+  blockAmountM = flags.blockAmountM or 1
+  weightM = flags.weightM or 1
+  costM = flags.costM or 1
+  enchantM = flags.enchantM or 1
+  minLevel = flags.minLevel or 0
+  maxLevel = flags.maxLevel or 999
+
+  local function addSetTool(toolName, topSprite,baseSprite, stats)
+    items[toolName] = Item(toolName,
+    {
+      {sprite = baseSprite,colorisation = baseColorisation, color = baseColor},
+      {sprite = topSprite,colorisation = topColorisation, color = topColor},
+    }
+    ,{category = "tool",subCategory = "pickaxe",fullName = toolName,
+      cooldown = stats.cooldown * cooldownM,
+      mineDamage = stats.mineDamage * damageM,
+      blockDamageAmount = stats.blockDamageAmount * blockAmountM,
+      rangeLimit = stats.rangeLimit * rangeM,
+      mineWidth = stats.mineWidth,
+      holdAnimation =
+      {
+        {sprite = "toolBase_Hold",colorisation = baseColorisation, color = baseColor},
+        {sprite = "toolTop_Hold",colorisation = topColorisation, color = topColor},
+      },
+    })
+
+    if stats.cooldownSpeedPerLevel ~= nil then
+      items[toolName].cooldownSpeedPerLevel = stats.cooldownSpeedPerLevel / cooldownM
+    end
+    if stats.mineDamagePerLevel ~= nil then
+      items[toolName].mineDamagePerLevel = stats.mineDamagePerLevel * damageM
+    end
+    if stats.blockDamageAmountPerLevel ~= nil then
+      items[toolName].blockDamageAmountPerLevel = stats.blockDamageAmountPerLevel * blockAmountM
+    end
+    if stats.rangeLimitPerLevel ~= nil then
+      items[toolName].rangeLimitPerLevel = stats.rangeLimitPerLevel * rangeM
+    end
+    ItemCard[toolName] = ItemCard(10*costM,math.ceil(200*weightM),toolName,"common","tool",1*enchantM,{"any"},{
+      minLevel = minLevel,
+      maxLevel = maxLevel,
+    })
+  end
+
+  local function addSetWeapon(toolName, topSprite,baseSprite, subCategory, stats)
+    local weaponFlags = {
+      category = "weapon",
+      subCategory = subCategory,
+      fullName = toolName,
+      holdAnimation = {
+        {sprite = "toolBase_Hold",colorisation = baseColorisation, color = baseColor},
+        {sprite = "toolTop_Hold",colorisation = topColorisation, color = topColor},
+      },
+    }
+
+    if stats.cooldown ~= nil then
+      weaponFlags.cooldown = stats.cooldown * cooldownM
+    end
+    if stats.damage ~= nil then
+      weaponFlags.damage = stats.damage * damageM
+    end
+    if stats.damagePerLevel ~= nil then
+      weaponFlags.damagePerLevel = stats.damagePerLevel * damageM
+    end
+    if stats.blockDamageAmount ~= nil then
+      weaponFlags.blockDamageAmount = stats.blockDamageAmount * blockAmountM
+    end
+    if stats.blockDamageAmountPerLevel ~= nil then
+      weaponFlags.blockDamageAmountPerLevel = stats.blockDamageAmountPerLevel * blockAmountM
+    end
+    if stats.rangeLimit ~= nil then
+      weaponFlags.rangeLimit = stats.rangeLimit * rangeM
+    end
+    if stats.rangeLimitPerLevel ~= nil then
+      weaponFlags.rangeLimitPerLevel = stats.rangeLimitPerLevel * rangeM
+    end
+    if stats.attackRange ~= nil then
+      weaponFlags.attackRange = stats.attackRange * rangeM
+    end
+    if stats.attackRadius ~= nil then
+      weaponFlags.attackRadius = stats.attackRadius
+    end
+    if stats.attackDirectionRange ~= nil then
+      weaponFlags.attackDirectionRange = stats.attackDirectionRange
+    end
+    if stats.charge ~= nil then
+      weaponFlags.charge = stats.charge
+    end
+    if stats.moveSpeedDuringCharge ~= nil then
+      weaponFlags.moveSpeedDuringCharge = stats.moveSpeedDuringCharge
+    end
+    if stats.dashVelocity ~= nil then
+      weaponFlags.dashVelocity = stats.dashVelocity
+    end
+    if stats.dashTime ~= nil then
+      weaponFlags.dashTime = stats.dashTime
+    end
+    if stats.dashGravityMultiplier ~= nil then
+      weaponFlags.dashGravityMultiplier = stats.dashGravityMultiplier
+    end
+    if stats.knockback ~= nil then
+      weaponFlags.knockback = stats.knockback
+    end
+
+    items[toolName] = Item(toolName,
+    {
+      {sprite = baseSprite,colorisation = baseColorisation, color = baseColor},
+      {sprite = topSprite,colorisation = topColorisation, color = topColor},
+    }
+    ,weaponFlags)
+
+    if stats.cooldownSpeedPerLevel ~= nil then
+      items[toolName].cooldownSpeedPerLevel = stats.cooldownSpeedPerLevel / cooldownM
+    end
+    ItemCard[toolName] = ItemCard(10*costM,math.ceil(400*weightM),toolName,"common","weapon",1*enchantM,{"any"},{
+      minLevel = minLevel,
+      maxLevel = maxLevel,
+    })
+  end
+
+  addSetTool(name.." pickaxe", "pickaxeTop", "toolBase", {
+    cooldown = 0.8,
+    cooldownSpeedPerLevel = 0.03,
+    mineDamage = 0.8,
+    mineDamagePerLevel = 0.03,
+    blockDamageAmount = 6,
+    rangeLimit = 5,
+    rangeLimitPerLevel = 0.15,
+    mineWidth = 3,
+  })
+
+  addSetTool(name.." spike", "spikeTop", "toolBase", {
+    cooldown = 0.6,
+    cooldownSpeedPerLevel = 0.02,
+    mineDamage = 1.2,
+    mineDamagePerLevel = 0.06,
+    blockDamageAmount = 3,
+    rangeLimit = 7,
+    rangeLimitPerLevel = 0.2,
+    mineWidth = 1,
+  })
+
+  addSetTool(name.." sway pickaxe", "swayPickaxeTop", "toolBase", {
+    cooldown = 2.4,
+    mineDamage = 0.8,
+    mineDamagePerLevel = 0.02,
+    blockDamageAmount = 18,
+    blockDamageAmountPerLevel = 0.8,
+    rangeLimit = 8,
+    rangeLimitPerLevel = 0.3,
+    mineWidth = 6,
+  })
+
+  addSetTool(name.." hammer", "hammerTop", "toolBase", {
+    cooldown = 2,
+    cooldownSpeedPerLevel = 0.05,
+    mineDamage = 4,
+    mineDamagePerLevel = 0.1,
+    blockDamageAmount = 3,
+    rangeLimit = 5,
+    rangeLimitPerLevel = 0.2,
+    mineWidth = 2,
+  })
+
+  addSetTool(name.." scalpel", "chiselTop", "toolBaseSmall", {
+    cooldown = 0.1,
+    mineDamage = 0.6,
+    mineDamagePerLevel = 0.06,
+    blockDamageAmount = 1,
+    rangeLimit = 3,
+    rangeLimitPerLevel = 0.03,
+    mineWidth = 1,
+  })
+
+  addSetTool(name.." shovel", "shovelTop", "toolBase", {
+    cooldown = 1.8,
+    cooldownSpeedPerLevel = 0.04,
+    mineDamage = 1.2,
+    blockDamageAmount = 9,
+    blockDamageAmountPerLevel = 0.3,
+    rangeLimit = 6,
+    rangeLimitPerLevel = 0.3,
+    mineWidth = 3,
+  })
+
+  addSetTool(name.." stiff pick", "stiffPickTop", "toolBase", {
+    cooldown = 1.15,
+    mineDamage = 1.4,
+    mineDamagePerLevel = 0.08,
+    blockDamageAmount = 5,
+    blockDamageAmountPerLevel = 0.1,
+    rangeLimit = 8,
+    rangeLimitPerLevel = 0.07,
+    mineWidth = 3,
+  })
+
+  addSetTool(name.." target pickaxe", "targetPickaxeTop", "toolBase", {
+    cooldown = 0.2,
+    mineDamage = 0.25,
+    mineDamagePerLevel = 0.0075,
+    blockDamageAmount = 5,
+    blockDamageAmountPerLevel = 0.2,
+    rangeLimit = 5,
+    rangeLimitPerLevel = 0.25,
+    mineWidth = 0.8,
+  })
+
+
+
+  addSetWeapon(name.." small sword", "smallSwordTop", "toolBase", "melee", {
+    cooldown = 1,
+    cooldownSpeedPerLevel = 0.05,
+    damage = 6,
+    damagePerLevel = 1.5,
+    attackRange = 2.5,
+    attackRadius = 1, 
+    charge = 0.2,
+    moveSpeedDuringCharge = 0.8,
+    dashVelocity = 8,
+    dashTime = 0.2,
+    knockback = 0.6,
+  })
+  addSetWeapon(name.." sword", "swordTop", "toolBase", "melee", {
+    cooldown = 2.4,
+    cooldownSpeedPerLevel = 0,
+    damage = 10,
+    damagePerLevel = 2.8,
+    attackRange = 4,
+    attackRadius = 1, 
+    charge = 0.5,
+    moveSpeedDuringCharge = 0.4,
+    dashVelocity = 8,
+    dashTime = 0.3,
+    knockback = 1.2,
+  })
+  addSetWeapon(name.." big sword", "bigSwordTop", "toolBase", "melee", {
+    cooldown = 4.3,
+    cooldownSpeedPerLevel = 0,
+    damage = 18,
+    damagePerLevel = 6,
+    attackRange = 2.5,
+    attackRadius = 2, 
+    charge = 0.8,
+    moveSpeedDuringCharge = 0.15,
+    dashVelocity = 8,
+    dashTime = 0.15,
+    dashGravityMultiplier = 0.75,
+    knockback = 2,
+  })
+  addSetWeapon(name.." lance", "lanceTop", "toolBase", "melee", {
+    cooldown = 2,
+    cooldownSpeedPerLevel = 0,
+    damage = 14,
+    damagePerLevel = 3.2,
+    attackRange = 8,
+    attackRadius = 1, 
+    charge = 0.3,
+    moveSpeedDuringCharge = 0.5,
+    dashVelocity = 10,
+    dashTime = 0.5,
+    dashGravityMultiplier = 0.01,
+    knockback = 1,
+  })
+  --[[items.crudeSword = Item("crudeSword","crudeSword",{["category"]="weapon",["subCategory"] = "melee",["fullName"] = "Crude sword",
+    cooldown = 2,
+    damage = 8,
+    damagePerLevel = 2,
+    attackRange = 3.2,
+    attackRadius = 1, 
+    attackDirectionRange = 100,
+    holdAnimation = "crudeSword_Hold",
+    charge = 0.3,
+    moveSpeedDuringCharge = 0.4,
+    dashVelocity = 8,
+    dashTime = 0.2,
+    knockback = 1,
+  })]]
 end

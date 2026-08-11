@@ -2,20 +2,20 @@ function LoadItemCards()
     ItemCards = {}
     ItemCardsList = {}
 
-    ItemCard.crudePickaxe = ItemCard(10,5,"crudePickaxe","common","tool",1,{"any"},{})
-    ItemCard.crudeSpike = ItemCard(10,5,"crudeSpike","common","tool",1,{"any"},{})
-    ItemCard.crudeSwayPickaxe = ItemCard(10,5,"crudeSwayPickaxe","common","tool",1,{"any"},{})
-    ItemCard.crudeHammer = ItemCard(10,5,"crudeHammer","common","tool",1,{"any"},{})
-    ItemCard.crudeScalpel = ItemCard(10,5,"crudeScalpel","common","tool",1,{"any"},{})
-    ItemCard.crudeShovel = ItemCard(10,5,"crudeShovel","common","tool",1,{"any"},{})
-    ItemCard.crudeStiffPick = ItemCard(10,5,"crudeStiffPick","common","tool",1,{"any"},{})
-    ItemCard.crudeTargetPickaxe = ItemCard(10,5,"crudeTargetPickaxe","common","tool",1,{"any"},{})
+    ItemCard.crudePickaxe = ItemCard(10,200,"crudePickaxe","common","tool",1,{"any"},{maxLevel = 8})
+    ItemCard.crudeSpike = ItemCard(10,200,"crudeSpike","common","tool",1,{"any"},{maxLevel = 8})
+    ItemCard.crudeSwayPickaxe = ItemCard(10,200,"crudeSwayPickaxe","common","tool",1,{"any"},{maxLevel = 8})
+    ItemCard.crudeHammer = ItemCard(10,200,"crudeHammer","common","tool",1,{"any"},{maxLevel = 8})
+    ItemCard.crudeScalpel = ItemCard(10,200,"crudeScalpel","common","tool",1,{"any"},{maxLevel = 8})
+    ItemCard.crudeShovel = ItemCard(10,200,"crudeShovel","common","tool",1,{"any"},{maxLevel = 8})
+    ItemCard.crudeStiffPick = ItemCard(10,200,"crudeStiffPick","common","tool",1,{"any"},{maxLevel = 8})
+    ItemCard.crudeTargetPickaxe = ItemCard(10,200,"crudeTargetPickaxe","common","tool",1,{"any"},{maxLevel = 8})
 
 
-    ItemCard.crudeSword = ItemCard(10,40,"crudeSword","common","weapon",1,{"any"},{})
+    ItemCard.crudeSword = ItemCard(10,1600,"crudeSword","common","weapon",1,{"any"},{maxLevel = 8})
 
 
-    ItemCard.clearRing = ItemCard(10,15,"clearRing","common","accessory",2.5,{"any"},{})
+    ItemCard.clearRing = ItemCard(10,800,"clearRing","common","accessory",2.5,{"any"},{maxLevel = 8})
 end
 
 require "class/superClass"

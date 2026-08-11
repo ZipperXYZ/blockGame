@@ -419,6 +419,12 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                 local tileRaw = self:getRawTile(ix, iy, "tiles")
                 local topTileUnderRaw = world:getRawTile(wx, wy-1, "topTiles")
 
+                if CheatMode then
+                    if wx == 0 then
+                        self:placeTile("chest",ix, iy,"tiles",true)
+                    end
+                end
+
                 if tiles[tileRaw]:canTileBeOverWritten() and topTileUnderRaw == "purplegrass" then
                     if love.math.noise(wx / 0.6, wy / 0.6, worldSeed + 152) < 0.2 then
                         self:placeTile("magicKelp",ix, iy,"tiles",true)

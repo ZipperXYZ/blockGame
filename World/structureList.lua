@@ -473,7 +473,7 @@ function LoadStructureList()
     )
 
 table.insert(MainStructureList, 
-        Structure("chest1","unique",8,"structures",1,0.13,10,
+        Structure("chest1","unique",8,"structures",1,0.3,10,
         {
             ["minY"] = 0,
             ["maxY"] = 1,
@@ -507,7 +507,7 @@ table.insert(MainStructureList,
 			--[0] = { ["bloc"] = "dirt", ["replace"] = "air" | "solid" | "stone" | "all" ]},
 			--[0] = { ["blocs"] = { { ["bloc"] = "dirt", ["weight"] = 2 }, { ["bloc"] = "stone", ["weight"] = 1 }}, ["replace"] = "air"},
 			[0] = { ["bloc"] = "none", ["replace"] = "all"},
-			[1] = { ["bloc"] = "chest", ["replace"] = "all"},
+			[1] = { ["blocs"] = { { ["bloc"] = "chest", ["weight"] = 3 }, { ["bloc"] = "blueChest", ["weight"] = 1 }}, ["replace"] = "all"},
 			[2] = { ["bloc"] = "darkstone", ["replace"] = "all"},
 			[3] = { ["bloc"] = "none", ["replace"] = "all"},
 		},

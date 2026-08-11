@@ -559,21 +559,48 @@ function JoinTables(tables)
     return result
 end
 function getRandom(values,seed)
-  table1={}
-  for iv=1,#values do
-    if values[iv][2]>1 then
-  if values[iv][2]>1000 then values[iv][2]=1000 end 
-  for iv2=1,math.ceil(values[iv][2]) do
-  table.insert(table1,values[iv][1])
-  end end
+  if type(values) ~= "table" or #values == 0 then
+    return nil
   end
-  if seed == nil then
-  t=round(math.random(#table1))
-  else
-  t=round(noise(seed,0,0,0)*#table1)
+
+  local function getSeededIndex(listSize, seedValue)
+    if seedValue == nil then
+      return math.random(listSize)
+    end
+
+    -- Deterministic, approximately uniform index from seed.
+    local n = math.sin((seedValue + 1) * 12.9898) * 43758.5453
+    local fraction = n - math.floor(n)
+    return math.floor(fraction * listSize) + 1
   end
-  if t<1 then t=1 end
-  if t>#table1 then t=#table1 end
+
+  -- Support plain lists (e.g. {"stone", "dirt"})
+  if type(values[1]) ~= "table" then
+    local t = getSeededIndex(#values, seed)
+    return values[t]
+  end
+
+  -- Support weighted lists (e.g. {{value, weight}, ...})
+  local table1 = {}
+  for iv = 1, #values do
+    local entry = values[iv]
+    if type(entry) == "table" then
+      local value = entry[1]
+      local weight = entry[2] or 0
+      if weight >= 1 then
+        if weight > 1000 then weight = 1000 end
+        for iv2 = 1, math.ceil(weight) do
+          table.insert(table1, value)
+        end
+      end
+    end
+  end
+
+  if #table1 == 0 then
+    return nil
+  end
+
+  local t = getSeededIndex(#table1, seed)
   return table1[t]
 end
 function pickrandomvalued(values)

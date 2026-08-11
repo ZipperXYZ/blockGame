@@ -219,13 +219,15 @@ function Entity:applyEnchantSignal(signal,signalInfo,item,itemAttributes)
                     local item = inventory:getActualItem(ix,iy)
                     local attributes = inventory:getItemAttributes(ix,iy)
                     local slot = inventory:getSlotAttribute("button",ix,iy)..""
+                    local icon = inventory:getSlotAttribute("icon",ix,iy)..""
                     if item.itemName ~= nil and item.itemName ~= "none" then
-                        if item.applyEnchantFromAnyItem and checkifinlist(slot,item.desiredInventorySpots) then
-                            
+                        if item.applyEnchantFromAnyItem and (checkifinlist(slot,item.desiredInventorySpots) or checkifinlist(icon,item.desiredInventorySpots)) then
+                            --print("Applying enchant signal from item: "..item.itemName)
                             if attributes.enchants ~= nil then
                                 if #attributes.enchants > 0 then
                                     for i = 1, #attributes.enchants do
                                         local enchant = attributes.enchants[i]
+                                        --print("    Applying enchant signal from enchant")
                                         if enchant ~= nil then
                                             success, signalInfo = enchantReceiveSignal(signal,signalInfo,enchant.cause,enchant.condition,enchant.reaction,attributes,item,self)
                                         end
@@ -274,9 +276,11 @@ function Entity:canAttack(otherEntity)
     return canAttack
 end
 
-function Entity:damage(damage,source,entitySource)
+function Entity:damage(damage,source,entitySource,info)
     local section = nil
     local death = false
+    if info == nil then info = {} end
+    if info.critical == nil then info.critical = false end
 
     --damage health first :
     if checkifinlist(source,{"fall"}) then
@@ -295,8 +299,10 @@ function Entity:damage(damage,source,entitySource)
 
 
     local damageColor = {1,1,1,1}
+    local outlineColor = nil
+    if info.critical then outlineColor = {1,0,0,1} end
     if self.type == "player" then damageColor = {1,0,0,1} end
-    world:spawnTextParticle(round(damage),self.position:copy(), 1.5, 0.4,nil,damageColor)
+    world:spawnTextParticle(round(damage),self.position:copy(), 1.5, 0.4,nil,damageColor,outlineColor)
 
 
     local overflow,downflow = self.health:decrease(damage,section)
@@ -671,6 +677,14 @@ function Entity:movementUpdate(dt)
         --self:updateFallDamage()
 
         if self.controls.jump and self:canJump() then
+
+            local signalInfo = {
+                position = self.position:copy(),
+                jumpStrength = self.jumpStrength,
+                entity = self,
+            }
+            signalInfo = self:applyEnchantSignal("jump",signalInfo)
+
             if self.velocity.y < 0 then self.velocity.y = 0 end
             self.velocity.y = self.velocity.y + (self.jumpStrength * 10)
             if self.velocity.y > (self.jumpStrength * 10) then self.velocity.y = (self.jumpStrength * 10) end

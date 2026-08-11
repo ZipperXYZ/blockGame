@@ -117,6 +117,7 @@ function Inventory:setupMainInventory(entity)
             local itemName = entity.startItems[i]["name"]
             local itemAmount = entity.startItems[i]["amount"] or 1
             local itemAttributes = entity.startItems[i]["attributes"] or {}
+            itemAttributes.dropOnDeath = entity.startItems[i]["dropOnDeath"] or false
             local slotX = entity.startItems[i]["slotX"] or 0
             local slotY = entity.startItems[i]["slotY"] or 1
             if slotX == 0 then
@@ -925,7 +926,7 @@ function Inventory:throwEveryItem(x,y)
     for ip=1, #self.items do
         for ix=1, self.sizeX do
             for iy=1, self.sizeY do
-                if self.items[ip][ix][iy]["amount"] > 0  then
+                if self:getItemAmount(ix,iy,ip) > 0 and (self:getItemAttribute("dropOnDeath",true,ix,iy,ip))  then
                     world:spawnGroundItem(self.items[ip][ix][iy]["name"], Vector2(x,y), Vector2((math.random()-0.5)*50,10+ math.random(10)), self.items[ip][ix][iy]["amount"], self.items[ip][ix][iy]["attributes"], {["pickupTimer"] = 1})
                 end
                 self.items[ip][ix][iy]["name"] = "none"

@@ -1,3 +1,6 @@
+require "class/superClass"
+require "lighting/raycast"
+
 function love.load()
   --bonjour
 
@@ -346,11 +349,14 @@ function love.mousepressed(x, y, b)
   if b == 1 then clicktick = true end
   if b == 3 then middleclicktick = true end
   if b == 2 then rightclicktick = "none" end
-
   if b == 1 and not love.keyboard.isDown("lshift") then buttonFramePress["click"] = true end
   if b == 2 and not love.keyboard.isDown("lshift") then buttonFramePress["rclick"] = true end
   if b == 1 and love.keyboard.isDown("lshift") then buttonFramePress["shiftclick"] = true end
   if b == 2 and love.keyboard.isDown("lshift") then buttonFramePress["shiftrclick"] = true end
+
+  if b == 1 and gamestate == "game" then
+    local raycastTest = Raycast:new(Vector2:new(x,y), Vector2:new(1,0), nil, 100)
+  end
 end
 
 function love.wheelmoved(x, y)

@@ -67,6 +67,10 @@ function Vector2:dist(other)
     return self:distance(other)
 end
 
+function Vector2:getDistance(other)
+    return self:distance(other)
+end
+
 function Vector2:move(direction360,length)
     self.x = self.x + length * math.cos((direction360*math.pi)/180)
     self.y = self.y + length * math.sin((direction360*math.pi)/180)
@@ -93,6 +97,11 @@ end
 
 function Vector2:getDirection360Towards(other)
     return (math.atan2(other.y-self.y,other.x-self.x)*180)/math.pi
+end
+
+function Vector2:pointInAngleRange(other, direction, range)
+    local targetDirection = self:getDirectionTowards(other)
+    return angleDifference(direction, targetDirection) <= range / 2
 end
 
 function Vector2:__tostring()

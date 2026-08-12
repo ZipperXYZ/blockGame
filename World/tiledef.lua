@@ -6,13 +6,16 @@ Tile.className = "Tile"
 --init()
 function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.name = tilename or "none"
+    if tiletype == "non-solid" or tiletype == "not-solid" then
+        tiletype = "non-solid"
+    end
     self.type = tiletype or "empty"
     self.mapColor = nil
     self.textureName = textureName or "tiles.png"
     self.quadName = quadName or "none"
-    self.flags = flags or {}
+    self.flags = CopyAll(flags) or {}
     self.properties = {}
-    self.borderType = self.flags["border type"] or "same block"
+    self.borderType = self.flags["border type"] or self.flags.borderType or "same block"
     self.border = self.flags["border"] or {}
     self.actualName = self.flags.actualName or self.name
     if self.border == {} then self.borderType = "none" end
@@ -57,8 +60,8 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     end
     self.isStone = self.flags.isStone or false
     self.isDirt = self.flags.isDirt or false
-    self.hasCollisions = self.flags.hasCollisions or (self.type == "solid")
-    self.canBeMined = self.flags.canBeMined or ((self.type == "not-solid") or (self.type == "solid") or (self.textureName ~= "none"))
+    self.hasCollisions = self.flags.hasCollisions or (self.type == "solid") 
+    self.canBeMined = self.flags.canBeMined or ((self.type == "   ") or (self.type == "solid") or (self.textureName ~= "none"))
     self.color = self.flags.color or { 1, 1, 1, 1 }
     self.canbeWall = self.flags.canBeWall or self.type == "solid"
     self.lightCanGoThrough = self.flags.lightCanGoThrough or self.type ~= "solid"
@@ -70,6 +73,16 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.actualDropeRate = self.flags.actualDropeRate or 0.1
     self.secondaryDropAmount = self.flags.secondaryDropAmount or 1
     self.secondaryDrop = self.flags.secondaryDrop or "rock"
+
+    self.onInteract = self.flags.onInteract or function(self,x,y,entity) end
+
+
+    self.interactable = self.flags.interactable or false
+    self.isContainer = self.flags.isContainer or false
+    self.containerRows = self.flags.containerRows or 1
+    self.containerColumns = self.flags.containerColumns or 1
+    if self.isContainer then self.interactable = true end
+    self.containerColor = self.flags.containerColor or CopyAll(self.mapColor)
 
 
     self.particleEmit = self.flags.particleEmit or "none"
@@ -128,6 +141,14 @@ function Tile:tileDestroyed(x,y)
             end
             
         end
+    end
+    
+end
+
+function Tile:interact(x,y,entity)
+    --print("Interacting with tile: "..self.name.." at position: "..x..","..y.." by entity: "..entity.name)
+    if self.interactable then
+        self:onInteract(x,y,entity)
     end
     
 end

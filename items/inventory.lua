@@ -3,7 +3,7 @@ Inventory = SuperClass:extend()
 Inventory.className = "Inventory"
 
 
-function Inventory:init(inventoryName,color,screenPos,sizeX,sizeY,sizeZ,maxStack,tileSize,itemSize,flags)
+function Inventory:init(inventoryName,color,screenPos,sizeX,sizeY,sizeZ,maxStack,tileSize,itemSize,flags,entity)
     self.inventoryName = inventoryName or ""
     self.id = math.random()
     self.color = color or {0.65,0.65,0.65,1}
@@ -15,7 +15,12 @@ function Inventory:init(inventoryName,color,screenPos,sizeX,sizeY,sizeZ,maxStack
     self.sizeZ = sizeZ or 1
     self.currentPage = 1
     self.screenPos = screenPos or Vector2(0.5,0.5)
+    if BuilderCheat then self.sizeX = 15 end
+    if BuilderCheat then self.sizeY = 8 end
+    if BuilderCheat then self.tileSize = self.tileSize * 0.7 end
+    if BuilderCheat then self.itemSize = self.itemSize * 0.7 end
     self.flags = flags or {}
+    self.passData = {}
     self.items = {}
     for page=1,self.sizeZ do
         self.items[page]={}
@@ -36,6 +41,8 @@ function Inventory:init(inventoryName,color,screenPos,sizeX,sizeY,sizeZ,maxStack
     self.isEquipmentInventory = self.flags["isEquipmentInventory"] or false
     self.isMainInventory = self.flags["isMainInventory"] or false
     self.cheat = self.flags["cheat"] or false
+    self.isChest = self.flags.isChest or false
+    self.chestInfo = self.flags.chestInfo or {}
 
     if self.isEquipmentInventory then
         self:setUpEquipmentInventory()
@@ -43,9 +50,9 @@ function Inventory:init(inventoryName,color,screenPos,sizeX,sizeY,sizeZ,maxStack
         --self.items[1][1][1] = {["amount"]=10,["name"]="stick",["attributes"]={},["slotAttributes"]={}}
     end
 
-    if self.isMainInventory then
+    if self.isMainInventory and entity ~= nil then
         self:setupIcons()
-        self:setupMainInventory()
+        self:setupMainInventory(entity)
     end
 end
 
@@ -81,18 +88,65 @@ function Inventory:setupIcons()
     self:setSlotAttribute("disableItemPickup",true,5,1)
     self:setSlotAttribute("disableItemPickup",true,6,1)
     self:setSlotAttribute("disableItemPickup",true,7,1)
+
+    if BuilderCheat then
+        self:setSlotAttribute("button","x",2,1)
+        self:setSlotAttribute("button","c",3,1)
+        self:setSlotAttribute("button","v",4,1)
+        self:setSlotAttribute("button","b",5,1)
+        self:setSlotAttribute("button","n",6,1)
+        self:setSlotAttribute("button","m",7,1)
+        self:setSlotAttribute("button","h",8,1)
+        self:setSlotAttribute("button","j",9,1)
+        self:setSlotAttribute("button","k",10,1)
+        self:setSlotAttribute("button","l",11,1)
+    end
     --self:setItem("crudePickaxe",999,{},1,1,1)
 end
 
-function Inventory:setupMainInventory()
+function Inventory:setupMainInventory(entity)
 
+    self:setItem("crudePickaxe",1,{dropOnDeath = false},1,1)
+    self:setItem("crudeSword",1,{dropOnDeath = false},2,1)
+    if BuilderCheat then
+        self:setItem("devPickaxe",1,{dropOnDeath = false},1,1)
+    end
 
-    self:setItem("crudePickaxe",1,{},1,1)
+    if #entity.startItems > 0 then
+        for i=1,#entity.startItems do
+            local itemName = entity.startItems[i]["name"]
+            local itemAmount = entity.startItems[i]["amount"] or 1
+            local itemAttributes = entity.startItems[i]["attributes"] or {}
+            itemAttributes.dropOnDeath = entity.startItems[i]["dropOnDeath"] or false
+            local slotX = entity.startItems[i]["slotX"] or 0
+            local slotY = entity.startItems[i]["slotY"] or 1
+            if slotX == 0 then
+                slotX = 1
+                local item = items[itemName]
+                if item ~= nil and itemName ~= "none" then
+                    local itemCategory = item.category
+                    if itemCategory == "weapon" then
+                        slotX = 2
+                    elseif itemCategory == "movement" then
+                        slotX = 4
+                    elseif itemCategory == "tool" then
+                        slotX = 1
+                    end
+                end
+            end
+            self:setItem(itemName,itemAmount,itemAttributes,slotX,slotY)
+        end
+    else
+        self:addItem("stick",10,{})
+    end
+    --self:setItem("thunderBirdFeather",1,{},4,1)
+    --self:setItem("angelFeather",1,{},4,2)
     --self:setItemName("crudePickaxe",1,1)
     --self:setItemAmount(1,1,1)
     ---self.items[1][1][1]["amount"] = 1
     --self.items[1][1][1]["name"] = "crudePickaxe"
     --self:addItem("crudePickaxe",1,{})
+   
 
 end
 
@@ -121,21 +175,69 @@ function Inventory:setUpEquipmentInventory()
                 }
             end
         end
-        self.items[page][1][1]["slotAttributes"] = {["lock"] = "necklace", ["icon"] = "necklace"}
-        self.items[page][1][2]["slotAttributes"] = {["lock"] = "armlet", ["icon"] = "armlet"}
-        self.items[page][1][3]["slotAttributes"] = {["lock"] = "armlet", ["icon"] = "armlet"}
+        --self.items[page][1][1]["slotAttributes"] = {["lock"] = "necklace", ["icon"] = "necklace"}
+        --self.items[page][1][2]["slotAttributes"] = {["lock"] = "armlet", ["icon"] = "armlet"}
+        --self.items[page][1][3]["slotAttributes"] = {["lock"] = "armlet", ["icon"] = "armlet"}
 
         self.items[page][2][2]["slotAttributes"] = {["disabled"] = true}
         self.items[page][2][3]["slotAttributes"] = {["disabled"] = true, ["showCharacter"] = true}
-        self.items[page][2][1]["slotAttributes"] = {["lock"] = "charm", ["icon"] = "charm"}
+        self.items[page][2][1]["slotAttributes"] = {lock = "charm", icon = "charm"}
 
-        self.items[page][3][1]["slotAttributes"] = {["lock"] = "headplate",["icon"] = "headplate"}
-        self.items[page][3][2]["slotAttributes"] = {["lock"] = "chestplate",["icon"] = "chestplate"}
-        self.items[page][3][3]["slotAttributes"] = {["lock"] = "leggings",["icon"] = "leggings"}
+        --self.items[page][3][1]["slotAttributes"] = {["lock"] = "headplate",["icon"] = "headplate"}
+        --self.items[page][3][2]["slotAttributes"] = {["lock"] = "chestplate",["icon"] = "chestplate"}
+        --self.items[page][3][3]["slotAttributes"] = {["lock"] = "leggings",["icon"] = "leggings"}
     end
     
 
     
+end
+
+function Inventory:getPassData(data,default)
+    if self.passData == nil then
+        self.passData = {}
+    end
+    if self.passData[data] == nil then
+        return default
+    else
+        return self.passData[data]
+    end
+end
+
+function Inventory:resetPassData(data,default)
+    if self.passData == nil then
+        self.passData = {}
+    end
+    self.passData[data] = default
+end
+
+function Inventory:setPassData(data,value,type)
+    if type == nil then type = "set" end
+    if self.passData == nil then
+        self.passData = {}
+    end
+    if self.passData[data] == nil then
+        self.passData[data] = 0
+        if type == "multiply" then self.passData[data] = 1 end
+        if type == "divide" then self.passData[data] = 1 end
+        if type == "add" then self.passData[data] = 0 end
+    end
+    if type == "set" then
+        self.passData[data] = value
+    end
+    if type == "multiply" then
+        self.passData[data] = self.passData[data] * value
+    end
+    if type == "add" then
+        self.passData[data] = self.passData[data] + value
+    end
+    if type == "divide" then
+        self.passData[data] = self.passData[data] / value
+    end
+end
+
+function Inventory:resetDefaultPassData()
+    self:resetPassData("movementSpeed",1)
+    --self:resetPassData("movementSpeed",1)
 end
 
 function Inventory:slotUpdate(dt,entity,ix,iy,page)
@@ -166,6 +268,17 @@ function Inventory:slotUpdate(dt,entity,ix,iy,page)
         end
 
 
+        if self:doesSlotAttributeExists("charge",ix,iy,page) then
+            self:setSlotAttribute("charge",self:getSlotAttribute("charge",ix,iy,page) + dt,ix,iy,page)
+            if self:getSlotAttribute("charge",ix,iy,page) > self:getSlotAttribute("chargeMax",ix,iy,page) then
+                self:setSlotAttribute("charge",self:getSlotAttribute("chargeMax",ix,iy,page) + dt,ix,iy,page)
+            end
+        else
+            self:setSlotAttribute("charge",0,ix,iy,page)
+            self:setSlotAttribute("chargeMax",0,ix,iy,page)
+        end
+
+
         if (not self:getSlotAttribute("disabled",ix,iy,page)) or (self:getSlotAttribute("disabled",ix,iy,page) == 0) then
 
             local button = self:getSlotAttribute("button",ix,iy,page)..""
@@ -175,17 +288,32 @@ function Inventory:slotUpdate(dt,entity,ix,iy,page)
                 
                 if items[itemName] ~= nil and itemName ~= "none" and entity.controls[button] and self:getSlotAttribute("cooldown",ix,iy,page) <= 0 then
                     local item = items[itemName]
-                    local useSuccess, setCooldown, stacksRemove = item:use(entity,itemAttributes,entity:getAim().x,entity:getAim().y,button,itemAmount)
-                    if useSuccess then
+                    local charge = item:getCharge(itemAttributes,entity)
+                    if charge > 0 then
+                        --self:setSlotAttribute("cooldown",charge,ix,iy,page)
+                        self:setSlotAttribute("chargeMax",charge,ix,iy,page)
+                    else
+                        self:slotUse(dt,entity,ix,iy,page)
+                        self:setSlotAttribute("chargeMax",0,ix,iy,page)
+                        self:setSlotAttribute("charge",0,ix,iy,page)
+                    end
+                end
+            end
 
-                        self:setSlotAttribute("cooldown",setCooldown,ix,iy,page)
-                        self:setSlotAttribute("cooldownMax",setCooldown,ix,iy,page)
 
-                        self:setItem(nil,itemAmount-stacksRemove,nil,ix,iy,page)
+            local chargeMax = self:getSlotAttribute("chargeMax",ix,iy,page)
+            local charge = self:getSlotAttribute("charge",ix,iy,page)
+            local itemName, itemAmount, itemAttributes = self:getItem(ix,iy,page)
+            local item = items[itemName]
 
-                        self:setSlotAttribute("useAnimation",minimum(maximum(setCooldown,1),0.25),ix,iy,page)
-                        self:setSlotAttribute("useAnimationMax",minimum(maximum(setCooldown,1),0.25),ix,iy,page)
-
+            if chargeMax > 0 then
+                if charge >= chargeMax then
+                    self:slotUse(dt,entity,ix,iy,page)
+                    self:setSlotAttribute("charge",0,ix,iy,page)
+                    self:setSlotAttribute("chargeMax",0,ix,iy,page)
+                else
+                    if item ~= nil then
+                        self:setPassData("movementSpeed",item.moveSpeedDuringCharge,"multiply")
                     end
                 end
             end
@@ -198,6 +326,26 @@ function Inventory:slotUpdate(dt,entity,ix,iy,page)
 
         end
 
+    end
+end
+
+function Inventory:slotUse(dt,entity,ix,iy,page)
+    local itemName, itemAmount, itemAttributes = self:getItem(ix,iy,page)
+    local button = self:getSlotAttribute("button",ix,iy,page)..""
+
+    local item = items[itemName]
+    --local charge = item:getCharge(itemAttributes,entity)
+
+    local useSuccess, setCooldown, stacksRemove = item:use(entity,itemAttributes,entity:getAim().x,entity:getAim().y,button,itemAmount)
+    if useSuccess then
+
+        self:setSlotAttribute("cooldown",setCooldown,ix,iy,page)
+        self:setSlotAttribute("cooldownMax",setCooldown,ix,iy,page)
+
+        self:setItemAmount(itemAmount-stacksRemove,ix,iy,page)
+
+        self:setSlotAttribute("useAnimation",minimum(maximum(setCooldown,1),0.25),ix,iy,page)
+        self:setSlotAttribute("useAnimationMax",minimum(maximum(setCooldown,1),0.25),ix,iy,page)
     end
 end
 
@@ -320,6 +468,23 @@ function Inventory:draw(mode,entity,flags)
                     )
                 end
 
+                --draw charge
+                if self:getSlotAttribute("charge",ix,iy)>0 then
+
+                    local chargeRatio = self:getSlotAttribute("charge",ix,iy)/self:getSlotAttribute("chargeMax",ix,iy)
+
+                    love.graphics.setColor(1,1,1,0.5)
+
+                    love.graphics.rectangle("fill"
+                        ,(actualScreenPosX + actualTileSize * 0.1) + (ix-1)*(actualTileSize*1.1)
+                        ,(actualScreenPosY + (actualTileSize * 0.1) + actualTileSize*(1-chargeRatio)) + (iy-1)*(actualTileSize*1.1)
+                        ,(actualTileSize)
+                        ,(actualTileSize*chargeRatio)
+                        ,actualTileSize * 0.1
+                        ,actualTileSize * 0.1
+                    )
+                end
+
                 --light up for button press
                 if self:getSlotAttribute("button",ix,iy).."" ~= "0" then
                     if entity.controls[self:getSlotAttribute("button",ix,iy)] then
@@ -350,9 +515,11 @@ function Inventory:draw(mode,entity,flags)
                         size/16 * 0.85,
                         {1,1,1,0.5})
                     end
+                end
 
-                    --draw highligts
-                    if checkifinlist(self:getSlotAttribute("icon",ix,iy),flags.hightlights) then
+                if self:getSlotAttribute("button",ix,iy).."" ~= "0" or self:getSlotAttribute("icon",ix,iy).."" ~= "0" then
+                    --draw highligts 
+                    if checkifinlist(self:getSlotAttribute("button",ix,iy),flags.hightlights) or checkifinlist(self:getSlotAttribute("icon",ix,iy),flags.hightlights) then
                         love.graphics.setColor(1,1,0,0.1+gettimeloop(1,0.3,true))
                         love.graphics.rectangle("fill"
                             ,(actualScreenPosX + actualTileSize * 0.1) + (ix-1)*(actualTileSize*1.1)
@@ -544,7 +711,7 @@ function Inventory:setSlotAttribute(attribute,value,ix,iy,page)
     end
 end
 
-function Inventory:getSlotAttribute(attribute,ix,iy,page)
+function Inventory:getSlotAttribute(attribute,ix,iy,page,default)
     if page == nil then page = self.currentPage end
     if ix <= self.sizeX and ix >= 1 and iy >= 1 and iy <= self.sizeY then
         if attribute ~= nil then 
@@ -553,7 +720,7 @@ function Inventory:getSlotAttribute(attribute,ix,iy,page)
             end
         end
     end
-    return 0
+    return default or 0
 end
 
 function Inventory:doesSlotAttributeExists(attribute,ix,iy,page)
@@ -666,22 +833,59 @@ function Inventory:setItemAttributes(attributes,ix,iy,page)
     end
 end
 
-function Inventory:addItem(name,amount,attributes)
-    local available,success,slotX, slotY
+function Inventory:setItemAttribute(attribute,value,ix,iy,page)
+    if page == nil then page = self.currentPage end
+    if ix <= self.sizeX and ix >= 1 and iy >= 1 and iy <= self.sizeY then
+        if (not self:getSlotAttribute("disabled",ix,iy,page)) or (self:getSlotAttribute("disabled",ix,iy,page) == 0) then
+            self.items[page][ix][iy]["attributes"][attribute] = value
+        end
+    end
+end
+
+function Inventory:getItemAttribute(attribute,default,ix,iy,page)
+    if page == nil then page = self.currentPage end
+    if ix <= self.sizeX and ix >= 1 and iy >= 1 and iy <= self.sizeY then
+        if (not self:getSlotAttribute("disabled",ix,iy,page)) or (self:getSlotAttribute("disabled",ix,iy,page) == 0) then
+            if self.items[page][ix][iy]["attributes"][attribute] ~= nil then
+                return self.items[page][ix][iy]["attributes"][attribute]
+            else
+                return default
+            end
+        end
+    end
+    return default
+end
+
+function Inventory:addItems(itemList,automaticPickup)
+    for _, item in ipairs(itemList) do
+        local name = item.name or "none"
+        if item.itemName ~= nil then name = item.itemName end
+        local amount = item.amount or 1
+        if item.quantity ~= nil then amount = item.quantity end
+        local attributes = item.attributes or {} 
+        --print("Adding item:", name, "Amount:", amount, "Attributes:", PrintTable(attributes))
+        self:addItem(name, amount, attributes, automaticPickup)
+    end
+end
+
+function Inventory:addItem(name,amount,attributes,automaticPickup)
+    local available,success,slotX, slotY, page
+    if automaticPickup == nil then automaticPickup = true end
     available = false
     success = false
+    page = self.currentPage
 
     for iy=1 ,self.sizeY do
         for ix=1 ,self.sizeX do
-            if (not self:getSlotAttribute("disabled",ix,iy)) or (self:getSlotAttribute("disabled",ix,iy) == 0) then
+            if (not self:getSlotAttribute("disabled",ix,iy,page,false)) or true then
 
                 if amount > 0 then
-                    if (self.items[self.currentPage][ix][iy]["name"] == name and self:getItemAmount(ix,iy) < items[name].maxStack) and (not available) then
+                    if (self:getItemName(ix,iy,page) == name and self:getItemAmount(ix,iy,page) < items[name].maxStack) then
                         available = true
                         slotX = ix
                         slotY = iy
                     end
-                    if self.items[self.currentPage][ix][iy]["name"] == "none" and (not self:getSlotAttribute("disableItemPickup",ix,iy)) then
+                    if self:getItemName(ix,iy,page) == "none" and ((not self:getSlotAttribute("disableItemPickup",ix,iy,page,false)) or (not automaticPickup)) then
                         if not available then
                             available = true
                             slotX = ix
@@ -693,6 +897,14 @@ function Inventory:addItem(name,amount,attributes)
             end
         end
     end
+    
+    --[[
+    if available then
+        print("available",slotX,slotY)
+    else
+        print("not available", self.sizeX, self.sizeY)
+    end]]
+    
 
     if available then
         local add = maximum(amount, items[name].maxStack - self:getItemAmount(slotX,slotY))
@@ -714,7 +926,7 @@ function Inventory:throwEveryItem(x,y)
     for ip=1, #self.items do
         for ix=1, self.sizeX do
             for iy=1, self.sizeY do
-                if self.items[ip][ix][iy]["amount"] > 0  then
+                if self:getItemAmount(ix,iy,ip) > 0 and (self:getItemAttribute("dropOnDeath",true,ix,iy,ip))  then
                     world:spawnGroundItem(self.items[ip][ix][iy]["name"], Vector2(x,y), Vector2((math.random()-0.5)*50,10+ math.random(10)), self.items[ip][ix][iy]["amount"], self.items[ip][ix][iy]["attributes"], {["pickupTimer"] = 1})
                 end
                 self.items[ip][ix][iy]["name"] = "none"
@@ -732,7 +944,7 @@ function Inventory:drawItem(page,tileX,tileY,positionX,positionY,size)
             
             local drawFormat = medium
             if items[self.items[page][tileX][tileY]["name"]] ~= nil then
-                items[self.items[page][tileX][tileY]["name"]]:draw("medium",positionX,positionY,size,self.items[page][tileX][tileY]["attributes"])
+                items[self.items[page][tileX][tileY]["name"]]:draw("medium",positionX,positionY,size,self:getItemAttributes(tileX,tileY,page),self:getItemAmount(tileX,tileY,page),nil,nil,false,true)
                 if self.items[page][tileX][tileY]["amount"] > 1 then
                     love.graphics.setColor(1,1,1,1)
                     love.graphics.printf("x"..self.items[page][tileX][tileY]["amount"],positionX-size/2,positionY+size/2 - 15,size/(InventoryTextSize),"right",0,InventoryTextSize,InventoryTextSize)

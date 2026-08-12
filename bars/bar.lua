@@ -275,6 +275,15 @@ function Bar:setValue(value,sectionName)
     end
 end
 
+function Bar:isFull(sectionName)
+    return self:getValue(sectionName) >= self:getMax(sectionName)
+end
+
+function Bar:isEmpty(sectionName)
+    return self:getValue(sectionName) <= 0
+end
+
+
 function Bar:setMax(value,sectionName)
     if sectionName == nil or sectionName == "any" or sectionName == "all" then
         if #self.sections > 0 then
@@ -422,7 +431,7 @@ function Bar:draw(x,y,width,height,sectionTypes,textType,textSize,corners,draw)
     textType = textType or "total"
     corners = corners or 0
     textSize = textSize or height/30
-    local yText = y + ((Font:getHeight()*textSize)/2)
+    local yText = y + (height-(Font:getHeight()*textSize))/2
 
     local total = self:getMaxTotal()
     

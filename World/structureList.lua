@@ -417,6 +417,108 @@ function LoadStructureList()
         ,{})
     )
 
+
+    table.insert(MainStructureList, 
+        Structure("campfire","unique",7,"structures",1,0.065,10,
+        {
+            ["minY"] = 0,
+            ["maxY"] = 1,
+            ["biomes"] = {"essenceLand","none","desert","duneland","coldland"},
+            ["needsGround"] = true,
+            ["checkAir"] = "above",
+            ["airNeededX"] = 3,
+            ["airNeededY"] = 3,
+        }
+        ,
+        {
+            ["structure"] = 
+		{
+			["tiles"] = 
+			{
+				{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+				{ 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, },
+				{ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, },
+				{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, },
+				{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, },
+				{ 0, 0, 0, 4, 4, 1, 3, 1, 4, 4, 0, 0, 0, },
+				{ 0, 0, 0, 0, 4, 2, 2, 2, 4, 0, 0, 0, 0, },
+			},
+            ["topTiles"] = 
+			{
+				{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+				{ 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, },
+				{ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, },
+				{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, },
+				{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, },
+				{ 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, },
+				{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+			},
+		},
+		["tileTable"] = 
+		{
+			--[0] = nil, -- doesn't place anything
+			--[0] = { ["bloc"] = "none", ["replace"] = "all" ]}, -- places air
+			--[0] = { ["bloc"] = "dirt", ["replace"] = "air" | "solid" | "stone" | "all" ]},
+			--[0] = { ["blocs"] = { { ["bloc"] = "dirt", ["weight"] = 2 }, { ["bloc"] = "stone", ["weight"] = 1 }}, ["replace"] = "air"},
+			[0] = nil,
+			[1] = { ["bloc"] = "none", ["replace"] = "all"},
+			[2] = { ["bloc"] = "wood", ["replace"] = "all"},
+			[3] = { ["bloc"] = "campfire", ["replace"] = "all"},
+			[4] = { ["bloc"] = "wood", ["replace"] = "solid"},
+		},
+		["center"] = {["x"] = 7, ["y"] = 6},
+		--["chests"] = {  },
+        }
+        ,{} )
+    )
+
+table.insert(MainStructureList, 
+        Structure("chest1","unique",8,"structures",1,0.3,10,
+        {
+            ["minY"] = 0,
+            ["maxY"] = 1,
+            ["biomes"] = {"all"},
+            ["needsGround"] = false,
+            ["checkAir"] = "above",
+            ["airNeededX"] = 2,
+            ["airNeededY"] = 2,
+        }
+        ,
+        {
+    ["structure"] = 
+		{
+			["tiles"] = 
+			{
+				{ 0, 0, 0, },
+				{ 0, 1, 0, },
+				{ 2, 2, 2, },
+			},
+			["topTiles"] = 
+			{
+				{ 3, 3, 3, },
+				{ 3, 3, 3, },
+				{ 3, 3, 3, },
+			},
+		},
+		["tileTable"] = 
+		{
+			--[0] = nil, -- doesn't place anything
+			--[0] = { ["bloc"] = "none", ["replace"] = "all" ]}, -- places air
+			--[0] = { ["bloc"] = "dirt", ["replace"] = "air" | "solid" | "stone" | "all" ]},
+			--[0] = { ["blocs"] = { { ["bloc"] = "dirt", ["weight"] = 2 }, { ["bloc"] = "stone", ["weight"] = 1 }}, ["replace"] = "air"},
+			[0] = { ["bloc"] = "none", ["replace"] = "all"},
+			[1] = { ["blocs"] = { { ["bloc"] = "chest", ["weight"] = 3 }, { ["bloc"] = "blueChest", ["weight"] = 1 }}, ["replace"] = "all"},
+			[2] = { ["bloc"] = "darkstone", ["replace"] = "all"},
+			[3] = { ["bloc"] = "none", ["replace"] = "all"},
+		},
+		["center"] = {["x"] = 2, ["y"] = 2},
+		--["chests"] = {  },
+    }
+        ,{})
+    )
+
+
+
     --[[table.insert(MainStructureList, 
         Structure("cactus1","unique",2,"trees",6,0.15,100,
         {

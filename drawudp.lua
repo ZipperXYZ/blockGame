@@ -1,18 +1,20 @@
 function drawgame()
   local drawdistanceX = math.ceil(szx / camv / 2)
   local drawdistanceY = math.ceil(szy / camv / 2)
-  if love.keyboard.isDown("n") or love.keyboard.isDown("b") then
+  if false and (love.keyboard.isDown("n") or love.keyboard.isDown("b")) then
     drawBiomeMap()
   else
-    if love.keyboard.isDown("m") then
+    if true and love.keyboard.isDown("m") then
       drawWorldMap()
     else
       world:drawTiles(camx, camy, drawdistanceX, drawdistanceY, {})
       world:drawParticles()
       world:DrawEntities()
       world:drawGroundItems()
+      world:drawTextParticles()
       world:drawEntitiesHealthBars()
       world:DrawUi()
+      world.globalDirector:print()
     end
   end
 end
@@ -110,6 +112,7 @@ end
 function WorldCreationUpdate(dt)
 
   interfaces["worldCreation"]:passDataToElement("cheat",CheatMode)
+  interfaces["worldCreation"]:passDataToElement("BuilderCheat",BuilderCheat)
   local results = interfaces["worldCreation"]:updateAndDraw()
 
   if results["resetWorldCreation"] then
@@ -124,11 +127,15 @@ function WorldCreationUpdate(dt)
     parameters.freeCam = results["freeCam"]
     parameters.flyCheat = results["flyCheat"]
     parameters.biomeSize = results["biomeSize"]
+    parameters.terrainSize = results["terrainSize"]
+    parameters.directorCreditMultiplier = results["directorCreditMultiplier"]
+    parameters.directorSpawnSpeedMultiplier = results["directorSpawnSpeedMultiplier"]
 
     StartGame(true,parameters)
   end
 
   CheatMode = results["cheat"]
+  BuilderCheat = results["BuilderCheat"]
   lightreach = results["lightReach"]
 
   
@@ -155,6 +162,7 @@ function SettingsUpdate()
   interfaces["settings"]:passDataToElement("SelectedFont",SelectedFont)
   interfaces["settings"]:passDataToElement("fullscreen",fullscreen)
   interfaces["settings"]:passDataToElement("HealthBarStyle",HealthBarStyle)
+  interfaces["settings"]:passDataToElement("HealthBarPosition",HealthBarPosition)
   local lastFont = SelectedFont
   local lastFullscreen = fullscreen
   
@@ -171,6 +179,7 @@ function SettingsUpdate()
   
   MapZoom = results["MapZoom"]
   HealthBarStyle = results["HealthBarStyle"]
+  HealthBarPosition = results["HealthBarPosition"]
   InventorySize = results["InventorySize"]
   InventoryTextSize = results["InventoryTextSize"]
   SelectedFont = results["SelectedFont"]

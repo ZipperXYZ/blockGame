@@ -6,14 +6,20 @@ function love.load()
 
   require "lume"
   require "gameudp"
-  require "drawudp" --là ou tout le code de dessins
-  require "mathsc"  --math comprend plusieurs truc bien qui sont pas dans lua de base
+  require "drawudp"
+  require "mathsc" 
   require "World/worldgeneration"
   require "World/structureList"
   require "World/structure"
   require "load"
   require "Entities/entities"
   require "Entities/sprite"
+  require "Entities/ai"
+  require "directors/entitySpawnDirector"
+  require "directors/entitySpawnCards"
+  require "directors/itemAttributesDirector"
+  require "directors/itemEnchantsCards"
+  require "directors/itemCards"
   require "items/inventory"
   require "items/item"
   require "items/groundItem"
@@ -21,6 +27,7 @@ function love.load()
   require "class/utility/eventEmitter"
   require "class/utility/vector2"
   require "particles/particles"
+  require "particles/textParticles"
   require "interfaces/interface"
   require "bars/bar"
   love.graphics.setDefaultFilter("nearest", "nearest")
@@ -42,6 +49,10 @@ function love.load()
   --love.filesystem.setIdentity("gamename")
   tiles = {}
   items = {}
+  Enchants = {}
+  EnchantsList = {}
+  ItemCards = {}
+  ItemCardsList = {}
   MainStructureList = {}
   tilelists = {}
   ItemList = {}
@@ -50,6 +61,7 @@ function love.load()
   sprites = {}
   textures = {}
   interfaces = {}
+  GlobalEnemyCards = {}
 
   --[[
   --commandes:
@@ -76,7 +88,7 @@ function love.load()
   GlobalNoisePower = calculateNoisePower(0.25)
   
   biomelist = {}
-  GlobalWorldGenStepList = { "none", "stone", "stone2", "grass", "trees", "ores", "deco", "done" }
+  GlobalWorldGenStepList = { "none", "stone", "stone2", "grass", "trees", "structures", "ores", "deco", "done" }
   world = World(math.random() * 1000000, 10, 100, 150, {}, GlobalWorldGenStepList)
   generateBaseBiomes()
 
@@ -92,8 +104,10 @@ function love.load()
   MapZoom = 2
   MapQuality = 0.4 --0.2
   HealthBarStyle = "seperated"
+  HealthBarPosition = "bottom"
 
   CheatMode = false
+  BuilderCheat = false
   StructureMaker = {{["x"]=1,["y"]=1},{["x"]=1,["y"]=1}}
   CheatInventoryScroll = 0
 
@@ -319,8 +333,10 @@ function love.keypressed(key)
       camv = nextinlistrollreverse(camv, cameraPossibleZooms) 
     end
   end
-
-  if CheatMode then
+  if key == "3" then
+    entities[1].inventory[1]:setItemAttribute("level",entities[1].inventory[1]:getItemAttribute("level",1,1,1,1) + 1,1,1,1)
+  end
+    if CheatMode then
     if key == "1" and gamestate == "game" then
       StructureMaker[1] = {["x"] = round(mxworldpos), ["y"] = round(myworldpos)}
     end

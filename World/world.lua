@@ -22,12 +22,19 @@ function World:init(worldSeed, chunkSize, depthProgression, biomeSize, biomeList
     self.chunks = {}
     self.groundItems = {}
     self.particles = {}
+    self.textParticles = {}
+
+    self.globalDirector = EntitySpawnDirector(Vector2(0,0),50,15,25,3,12,nil,60,95,0,100,200,150,999999999,40)
+    self.directors = {}
 
     self.parameters = parameters or {}
     self.borderX = self.parameters.borderX or 0
     self.loopX = self.parameters.loopX or (self.borderX*1.4)
     self.borderY = self.parameters.borderY or 0
     self.hasBorder = self.parameters.hasBorder or (self.borderX ~= 0)
+    self.caveSize = self.parameters.caveSize or 1
+    self.directorCreditMultiplier = self.parameters.directorCreditMultiplier or 1
+    self.directorSpawnSpeedMultiplier = self.parameters.directorSpawnSpeedMultiplier or 1
 
     --self.barList = {}
 end
@@ -131,6 +138,7 @@ end
 --uniques qui sont nécessaires pour mettons l'information unique à une tile, comme son orientation, peut être un getTilePropreties
 --qui retourne les propriétés et setTilePropriety(propriety, value) qui set une propriété de la tile, comme l'inventaire d'un
 --coffre ou l'orientation d'un bloc)
+
 function World:getBiome(worldPosX, worldPosY)
     local biome = "none"
     local nearCenter = 0.5
@@ -244,8 +252,9 @@ function World:clearTileProprerties(worldPosX, worldPosY, property)
     return success
 end
 
-function World:damageBlock(worldPosX, worldPosY, damage,layer,destroyTopAsWell)
-    local destroyed
+function World:damageBlock(worldPosX, worldPosY, damage,layer,destroyTopAsWell,damageSourceInfo)
+    local destroyed = false
+    --local returnInfo = {}
 
     if layer == nil then layer = "tiles" end
     if destroyTopAsWell == nil then destroyTopAsWell = true end
@@ -261,6 +270,14 @@ function World:damageBlock(worldPosX, worldPosY, damage,layer,destroyTopAsWell)
         self:setTileProprety(worldPosX, worldPosY, "healthMineTimer"..layer, 5)
     end
 
+    if damageSourceInfo ~= nil then
+        if damageSourceInfo.item ~= nil and damageSourceInfo.entity ~= nil then
+            damageSourceInfo.signalInfo = damageSourceInfo.entity:applyEnchantSignal("damagingTile",damageSourceInfo.signalInfo,damageSourceInfo.item,damageSourceInfo.attributes)
+        end
+    end
+
+    world:spawnTextParticle((round(damage*10)/10).."",Vector2(worldPosX,worldPosY))
+
     local tile = self:getTile(worldPosX, worldPosY,layer)
 
     self:spawnParticles(5,"stoneDust",Vector2(worldPosX, worldPosY),0.5,
@@ -275,6 +292,13 @@ function World:damageBlock(worldPosX, worldPosY, damage,layer,destroyTopAsWell)
         self:destroyTile(worldPosX, worldPosY,layer,false)
         self:clearTileProprerties(worldPosX, worldPosY,"health"..layer)
         self:clearTileProprerties(worldPosX, worldPosY,"healthMineTimer"..layer)
+        if damageSourceInfo ~= nil then
+            if damageSourceInfo.item ~= nil and damageSourceInfo.entity ~= nil then
+                damageSourceInfo.signalInfo = damageSourceInfo.entity:applyEnchantSignal("breakingTile",damageSourceInfo.signalInfo,damageSourceInfo.item,damageSourceInfo.attributes)
+            end
+        end
+
+
         tile:tileDestroyed(worldPosX, worldPosY)
         if layer == "tiles" and destroyTopAsWell then 
             self:destroyTile(worldPosX, worldPosY,"topTiles",false)
@@ -284,7 +308,7 @@ function World:damageBlock(worldPosX, worldPosY, damage,layer,destroyTopAsWell)
         end
     end
     
-    return destroyed
+    return destroyed, damageSourceInfo
 end
 
 --generate(centerX,centerY,length,heigth,biomeList, boolean: force, step) --génére (ou essaille) de générer tout les chunks à l'écran, ou de progresser la génération
@@ -354,6 +378,37 @@ function World:generateChunk(chunkPosX,chunkPosY,force,steps)
         end
     end
     return false
+end
+
+function World:openContainer(tileName,tile, position, entity, rows, columns)
+    if self:doesTilePropretyExists(round(position.x), round(position.y), "inventory") then
+        entity:openInventory(self:getTileProprety(round(position.x), round(position.y), "inventory"))
+    else
+        self:setTileProprety(round(position.x), round(position.y), "inventory",
+        Inventory(tileName,CopyAll(tile.containerColor),Vector2(0.5, 0.95),rows,columns,1,100, (0.065), (0.065 / 8),{ ["anchorX"] = "middle", ["anchorY"] = "bottom", ["isChest"] = true, ["chestInfo"] = {x = position.x, y = position.y} },nil)
+    )
+        self:openContainer(tileName, tile, position, entity, rows, columns)
+    end
+end
+
+function World:generateContainerLoot(position,credit,itemsAmount,creditMinPerItem,creditMaxPerItem,levelBias,enchantCreditMultiplier,cards,enchantCards)
+    if position == nil then return false end
+    if cards == nil then cards = CopyAll(ItemCardsList) end
+    if enchantCards == nil then enchantCards = CopyAll(EnchantsList) end
+    if not self:doesTilePropretyExists(round(position.x), round(position.y), "lootGenerated") then
+
+        if self:doesTilePropretyExists(round(position.x), round(position.y), "inventory") then
+
+            local director = ItemDirector(credit,itemsAmount,creditMinPerItem,creditMaxPerItem,levelBias,enchantCreditMultiplier,self:getBiome(position.x,position.y),self:getDepth(position.y),cards,enchantCards)
+    
+            local itemList = director:giveItems()
+
+            if #itemList > 0 then
+                self:setTileProprety(round(position.x), round(position.y), "lootGenerated", true)
+                self:getTileProprety(round(position.x), round(position.y), "inventory"):addItems(itemList,false)
+            end
+        end 
+    end
 end
 
 -->biomes:
@@ -704,20 +759,20 @@ function World:generateTerrainTile(tileX, tileY)
     local dp   = self.depthProgression
     local name = "none"
 
-    if love.math.noise(tileX / 20, tileY / 20, seed) >= 0.25 then
+    if love.math.noise(tileX / 20 / self.caveSize, tileY / 20 / self.caveSize, seed) >= 0.25 then
         name = "dirt"
     end
-    if love.math.noise(tileX / 40, tileY / 40, seed - 100) < 0.3 then
+    if love.math.noise(tileX / 40 / self.caveSize, tileY / 40 / self.caveSize, seed - 100) < 0.3 then
         name = "none"
     end
-    if love.math.noise(tileX / 12, tileY / 12, seed - 500) < 0.35 then
+    if love.math.noise(tileX / 12 / self.caveSize, tileY / 12 / self.caveSize, seed - 500) < 0.35 then
         name = "none"
     end
-    if love.math.noise(tileX / 5, tileY / 5, seed - 600) < 0.35 and
-        love.math.noise(tileX / 15, tileY / 15, seed + 100) < (tileY / (dp * 2)) + 1 then
+    if love.math.noise(tileX / 5 / self.caveSize, tileY / 5 / self.caveSize, seed - 600) < 0.35 and
+        love.math.noise(tileX / 15 / self.caveSize, tileY / 15 / self.caveSize, seed + 100) < (tileY / (dp * 2)) + 1 then
         name = "none"
     end
-    local n = love.math.noise(tileX / 25, tileY / 90, seed - 200)
+    local n = love.math.noise(tileX / 25 / self.caveSize, tileY / 90 / self.caveSize, seed - 200)
     if n < 0.4 and n > 0.36 then
         name = "none"
     end
@@ -730,39 +785,39 @@ function World:generateTerrainTile(tileX, tileY)
             name = "dirt"
         else
             name = "dirt"
-            if love.math.noise(tileX / 25, tileY / 15, seed - 225) < 0.4
-                or love.math.noise(tileX / 25, tileY / 15, seed - 225) > 0.6 then
+            if love.math.noise(tileX / 25 / self.caveSize, tileY / 15 / self.caveSize, seed - 225) < 0.4
+                or love.math.noise(tileX / 25 / self.caveSize, tileY / 15 / self.caveSize, seed - 225) > 0.6 then
                 name = "none"
             end
         end
     end
 
     if biome == "coldland" then
-        if love.math.noise(tileX / 7, tileY / 7, seed - 1055) < 0.4 * distanceFromBiomeEdge then
+        if love.math.noise(tileX / 7 / self.caveSize, tileY / 7 / self.caveSize, seed - 1055) < 0.4 * distanceFromBiomeEdge then
             name = "none"
         end
     end
 
     if biome == "darkland" then
         name = "dirt"
-        if love.math.noise(tileX / 20, tileY / 20, seed - 805) < 0.45 and distanceFromBiomeEdge > 0.2 then
+        if love.math.noise(tileX / 20 / self.caveSize, tileY / 20 / self.caveSize, seed - 805) < 0.45 and distanceFromBiomeEdge > 0.2 then
             name = "none"
         end
     end
 
     if biome == "ancientland" then
         name = "dirt"
-        if love.math.noise(tileX / 15, tileY / 5, seed - 505) < 1.3 * distanceFromBiomeEdge then
+        if love.math.noise(tileX / 15 / self.caveSize, tileY / 5 / self.caveSize, seed - 505) < 1.3 * distanceFromBiomeEdge then
             name = "none"
         end
-        if love.math.noise(tileX / 10, tileY / 10, seed - 570) < 0.38 * distanceFromBiomeEdge then
+        if love.math.noise(tileX / 10 / self.caveSize, tileY / 10 / self.caveSize, seed - 570) < 0.38 * distanceFromBiomeEdge then
             name = "dirt"
         end
     end
 
     --ground
 
-    if love.math.noise(tileX / 15, tileY / 30, seed + 100) > (-tileY / 20) then
+    if love.math.noise(tileX / 15 / self.caveSize, tileY / 30 / self.caveSize, seed + 100) > (-tileY / 20) then
         name = "none"
     end
 
@@ -793,6 +848,7 @@ function World:updateEntities(dt)
         for i = 1, #entities do
             entities[i]:entityUpdate(dt)
             entities[i]:controlsUpdate(dt)
+            entities[i]:interactUpdate(dt)
             entities[i]:movementUpdate(dt)
             entities[i]:collisionWithEntities(dt)
             entities[i]:collisionUpdate(dt)
@@ -804,11 +860,22 @@ function World:updateEntities(dt)
         end
     end
     if #entities > 0 then
-        for i = 1, #entities do
+        for i = #entities, 1, -1 do
             local remove = entities[i]:entityDeathUpdate(dt)
             if remove then
                 table.remove(entities,i)
             end
+        end
+    end
+end
+
+function World:updateDirectors(dt)
+    if self.globalDirector then
+        self.globalDirector:update(dt)
+    end
+    if self.directors then
+        for i = 1, #self.directors do
+            self.directors[i]:update(dt)
         end
     end
 end
@@ -818,11 +885,65 @@ function World:getColision(worldPosX, worldPosY)
     return tile:getColision()
 end
 
+function World:getDepth(y)
+    return -y / self.depthProgression
+end
+
+function World:getEnvironmentLevel(y)
+    --example :
+    --depth 0 : 1
+    --depth 0.5 : 5
+    --depth 1 : 11
+    --depth 2 : 27
+    --depth 3 : 50
+    --depth 4 : 78
+    --depth 5 : 111
+    --depth 6 : 150
+    return (1 + math.abs(self:getDepth(y)* 3)^ 1.7)
+end
+
+function World:checkSpawnValidity(position,space)
+    local valid = false
+    if space == nil then space = 1 end
+    if self:getColision(position.x - math.floor(space/2), position.y - math.floor(space/2)) == false then
+        if self:getColision(position.x - math.floor(space/2), position.y - 1 - math.floor(space/2)) == true then
+            valid = true
+        end
+    end
+    if space >= 2 then
+        for ix = 1, space do
+            for iy = 1, space do
+                if self:getColision(position.x - math.floor(space/2) + ix - 1, position.y + iy - math.floor(space/2) - 1) then
+                    valid = false
+                end
+            end
+            if not self:getColision(position.x - math.floor(space/2) + ix - 1, position.y - math.floor(space/2) - 1) then
+                valid = false
+            end
+        end
+    end
+
+    return valid
+end
+
+function World:canLineGoThrough(position1,position2,precision)
+    local canGoThrough = true
+    precision = precision or 3
+    for i = 1, math.ceil(position1:dist(position2)*precision) do
+        local pos = position1:copy()
+        pos:moveTowards(position2,i/precision)
+        if self:getColision(pos.x,pos.y) then
+            canGoThrough = false
+        end
+    end
+    return canGoThrough
+end
+
 function World:spawnEntity(type, worldPosX, worldPosY)
     aiType = "none"
-    if type == "player" then aiType = "human" end
+    if type == "player" then aiType = "player" end
     --table.insert(entities,Entity(type, type, "none", Vector2(worldPosX, worldPosY), 1, 0.9, 0, aiType, {}))
-    table.insert(entities, Entity(type, type, "player", Vector2(worldPosX, worldPosY), 100, 0.425, 0, aiType, {}))
+    table.insert(entities, Entity(type, type, "player", Vector2(worldPosX, worldPosY), 100, 0.45, 0, aiType, {}))
 
     return true
 end
@@ -921,6 +1042,11 @@ function World:DrawUi()
     end
 end
 
+function World:spawnTextParticle(text,position, time, size, height,color,outlineColor,animationColor, flags)
+
+    table.insert(self.textParticles,TextParticle(text,position:copy(), time, size, height,color,outlineColor,animationColor, flags))
+end
+
 function World:spawnParticles(count,name,position,radius,color, colorNoise, timer, timerNoise,motion, motionStrength, motionArcAngle, motionArcSpread, flags)
     if count>0 then
         for ip =1, math.ceil(count) do
@@ -945,12 +1071,28 @@ function World:updateParticles(dt)
             end
         end
     end
+    if #self.textParticles > 0 then
+        for i=#self.textParticles,1,-1 do
+            local die = self.textParticles[i]:update(dt)
+            if die then
+                table.remove(self.textParticles,i)
+            end
+        end
+    end
 end
 
 function World:drawParticles()
     if #self.particles > 0 then
         for i=1, #self.particles do
             self.particles[i]:draw()
+        end
+    end
+end
+
+function World:drawTextParticles()
+    if #self.textParticles > 0 then
+        for i=1, #self.textParticles do
+            self.textParticles[i]:draw()
         end
     end
 end

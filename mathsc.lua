@@ -37,6 +37,48 @@ function roundify(x2,y2,x3,y3,distance1) --distance is probably between 0 and 1
   y4=round(y2+(y1*y3))
   return x4,y4
 end
+function angleDifference(a, b)
+    local diff = (b - a + 180) % 360 - 180
+    return math.abs(diff)
+end
+
+function CombineColors(colors)
+  local finalColor = {0, 0, 0, 0}
+  for i = 1, #colors do
+    local color = colors[i]
+    finalColor[1] = finalColor[1] + color[1]
+    finalColor[2] = finalColor[2] + color[2]
+    finalColor[3] = finalColor[3] + color[3]
+    finalColor[4] = finalColor[4] + color[4]
+  end
+  finalColor[1] = finalColor[1] / #colors
+  finalColor[2] = finalColor[2] / #colors
+  finalColor[3] = finalColor[3] / #colors
+  finalColor[4] = finalColor[4] / #colors
+  return finalColor
+end
+function OverrideColor(color1,color2)
+  if color1 == nil then color1 = {0, 0, 0, 0} end
+  if color2 == nil then color2 = {0, 0, 0, 0} end
+  local finalColor = CopyAll(color1) or {0, 0, 0, 0}
+  if #color2 == 5 then
+    finalColor[1] = k(finalColor[1],color2[1],color2[5])
+    finalColor[2] = k(finalColor[2],color2[2],color2[5])
+    finalColor[3] = k(finalColor[3],color2[3],color2[5])
+    finalColor[4] = k(finalColor[4],color2[4],color2[5])
+  else
+    finalColor[1] = k(finalColor[1],color2[1],color2[4])
+    finalColor[2] = k(finalColor[2],color2[2],color2[4])
+    finalColor[3] = k(finalColor[3],color2[3],color2[4])
+  end
+  --finalColor[4] = k(finalColor[4],color2[4],color2[4])
+  return finalColor
+end
+
+function pointInAngleRange(x1, y1, angle1, x2, y2, angleRange)
+     targetAngle = pointat180(x1, y1, x2, y2)
+    return angleDifference(angle1, targetAngle) <= angleRange / 2
+end
   function movetowards(x1,y1,x2,y2,move1)
    d1= pointatpi(x1,y1,x2,y2)
    x3,y3= movepositionpi(x1,y1,d1,move1)
@@ -316,6 +358,19 @@ function checkifinlist(value1, list1)
     end
     return inside
 end
+function checkifanyinlist(list1, list2)
+    if list1 == nil then return false end
+    if list2 == nil then return false end
+    local inside = false
+    if #list1 > 0 then
+        for j6 = 1, #list1 do
+            for j7 = 1, #list2 do
+                if list1[j6] == list2[j7] then inside = true end
+            end
+        end
+    end
+    return inside
+end
 function getListIndex(list1, value1)
     if list1 == nil then return -1 end  -- ← ajout
     local index = 0
@@ -465,32 +520,87 @@ function checkIfVectorInList(value1, vectorList,rounded)
     end
     return inside
 end
+function TableJoin(t1, t2)
+    for i = 1, #t2 do
+        t1[#t1 + 1] = t2[i]
+    end
+    return t1
+end
+function PrintTable(table,depth)
+  if depth == nil then depth = 0 end
+  local indent = string.rep("  ", depth)
+  for k, v in pairs(table) do
+    if type(v) == "table" then
+      print(indent .. tostring(k) .. ":")
+      PrintTable(v, depth + 1)
+    else
+      print(indent .. tostring(k) .. ": " .. tostring(v))
+    end
+  end
+end
 function JoinTables(tables)
     local result = {}
-    for i = 1, #tables do
-        local t = tables[i]
-        for j = 1, #t do
-            table.insert(result, t[j])
-        end
+    local index = 0
+
+    if type(tables) ~= "table" then
+      return result
     end
+
+    for i = 1, #tables do
+      local t = tables[i]
+      if type(t) == "table" then
+        for j = 1, #t do
+          index = index + 1
+          result[index] = t[j]
+        end
+      end
+    end
+
     return result
 end
 function getRandom(values,seed)
-  table1={}
-  for iv=1,#values do
-    if values[iv][2]>1 then
-  if values[iv][2]>1000 then values[iv][2]=1000 end 
-  for iv2=1,math.ceil(values[iv][2]) do
-  table.insert(table1,values[iv][1])
-  end end
+  if type(values) ~= "table" or #values == 0 then
+    return nil
   end
-  if seed == nil then
-  t=round(math.random(#table1))
-  else
-  t=round(noise(seed,0,0,0)*#table1)
+
+  local function getSeededIndex(listSize, seedValue)
+    if seedValue == nil then
+      return math.random(listSize)
+    end
+
+    -- Deterministic, approximately uniform index from seed.
+    local n = math.sin((seedValue + 1) * 12.9898) * 43758.5453
+    local fraction = n - math.floor(n)
+    return math.floor(fraction * listSize) + 1
   end
-  if t<1 then t=1 end
-  if t>#table1 then t=#table1 end
+
+  -- Support plain lists (e.g. {"stone", "dirt"})
+  if type(values[1]) ~= "table" then
+    local t = getSeededIndex(#values, seed)
+    return values[t]
+  end
+
+  -- Support weighted lists (e.g. {{value, weight}, ...})
+  local table1 = {}
+  for iv = 1, #values do
+    local entry = values[iv]
+    if type(entry) == "table" then
+      local value = entry[1]
+      local weight = entry[2] or 0
+      if weight >= 1 then
+        if weight > 1000 then weight = 1000 end
+        for iv2 = 1, math.ceil(weight) do
+          table.insert(table1, value)
+        end
+      end
+    end
+  end
+
+  if #table1 == 0 then
+    return nil
+  end
+
+  local t = getSeededIndex(#table1, seed)
   return table1[t]
 end
 function pickrandomvalued(values)

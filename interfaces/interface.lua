@@ -46,6 +46,7 @@ function Interface:init(name,x,y,sizeX,sizeY,style,color,textColor,flags)
 
 
     self.elements = {}
+    self.activeTextInputName = nil
 
 end
 
@@ -96,6 +97,15 @@ function Interface:addElement(name,elementType,sizeX,sizeY,textContent,contents,
         newElement.max = newElement.contents.max or 10
         newElement.displayMultiplication = newElement.contents.displayMultiplication or 1
         newElement.displayAddition = newElement.contents.displayAddition or 0
+    end
+
+    if newElement.type == "textinput" then
+        newElement.data = tostring(newElement.default or "")
+        newElement.maxLength = newElement.parameters.maxLength or 64
+        newElement.acceptOnly = newElement.parameters.acceptOnly or "all"
+        newElement.placeHolder = newElement.parameters.placeHolder or "..."
+        newElement.backspaceHoldTimer = 0
+        newElement.backspaceRepeatTimer = 0
     end
 
     if self.UISize ~= 1 then
@@ -221,6 +231,7 @@ function Interface:passDataToElement(elementName,data)
 end
 
 function Interface:elementDraw(element,results,scroll,x,y,sizeX,sizeY)
+    local extraScroll = 0
     local elementXVisual = x + sizeX * (1-(element["sizeX"]*(1+0.25*element.holdTime)))/2
     local elementSizeXVisual = sizeX * (element["sizeX"]*(1+0.25*element.holdTime))
     local elementX = x + sizeX * (1-element["sizeX"])/2
@@ -457,9 +468,115 @@ function Interface:elementDraw(element,results,scroll,x,y,sizeX,sizeY)
         results[element.name] = element.data
         
     end
+
+    if element.type == "textinput" then
+        local textSize = element.textSize * szy
+        local promptGap = elementSizeY * 0.22
+        local labelHeight = Font:getHeight() * textSize
+        local textInputTopSpace = labelHeight + promptGap
+        local boxY = elementY + textInputTopSpace
+        extraScroll = textInputTopSpace / szy
+
+        local mouseInBound = mx > elementX and mx < elementX + elementSizeX 
+            and my > boxY and my < boxY + elementSizeY
+            and ((mx > x and mx < x + sizeX) or (not self.elementsStayInBound))
+            and ((my > y and my < y + sizeY) or (not self.elementsStayInBound))
+
+        local click = mouseInBound and buttonFramePress["click"]
+        if click then
+            self.activeTextInputName = element.name
+            buttonFramePress["click"] = false
+        end
+
+        local focused = (self.activeTextInputName == element.name)
+
+        if focused and buttonFramePress["click"] and (not mouseInBound) then
+            self.activeTextInputName = nil
+            focused = false
+        end
+
+        local boxColor = color
+        if focused then
+            boxColor = {color[1] * 1.2, color[2] * 1.2, color[3] * 1.2, color[4]}
+        elseif mouseInBound then
+            boxColor = {color[1] * 1.05, color[2] * 1.05, color[3] * 1.05, color[4]}
+        end
+
+        love.graphics.setColor(boxColor)
+        love.graphics.rectangle("fill",elementX,boxY,elementSizeX,elementSizeY,self.corners,self.corners)
+        love.graphics.setColor({color[1]*0.6,color[2]*0.6,color[3]*0.6,color[4]*1})
+        love.graphics.rectangle("line",elementX,boxY,elementSizeX,elementSizeY,self.corners,self.corners)
+
+        local value = tostring(element.data or "")
+        local inputState = rawget(_G, "textInputFrame") or {textBuffer = "", backspacePressed = false, enterPressed = false, escapePressed = false}
+
+        if focused then
+            local typed = inputState.textBuffer
+            if element.acceptOnly == "digits" then
+                typed = string.gsub(typed, "%D", "")
+            end
+            if typed ~= "" then
+                value = value .. typed
+            end
+
+            if inputState.backspacePressed and #value > 0 then
+                value = string.sub(value, 1, #value - 1)
+            end
+
+            if love.keyboard.isDown("backspace") then
+                element.backspaceHoldTimer = element.backspaceHoldTimer + delta
+                element.backspaceRepeatTimer = element.backspaceRepeatTimer + delta
+
+                if element.backspaceHoldTimer > 0.35 then
+                    while element.backspaceRepeatTimer >= 0.055 and #value > 0 do
+                        value = string.sub(value, 1, #value - 1)
+                        element.backspaceRepeatTimer = element.backspaceRepeatTimer - 0.055
+                    end
+                end
+            else
+                element.backspaceHoldTimer = 0
+                element.backspaceRepeatTimer = 0
+            end
+
+            if inputState.enterPressed or inputState.escapePressed then
+                self.activeTextInputName = nil
+                focused = false
+            end
+        else
+            element.backspaceHoldTimer = 0
+            element.backspaceRepeatTimer = 0
+        end
+
+        if #value > element.maxLength then
+            value = string.sub(value, 1, element.maxLength)
+        end
+        element.data = value
+
+        love.graphics.setColor(element.textColor)
+        local caret = ""
+        if focused and (math.floor(realtime * 2) % 2 == 0) then
+            caret = "|"
+        end
+
+        local shownValue = value
+        if shownValue == "" and (not focused) then
+            shownValue = element.placeHolder or "..."
+        end
+
+        local labelText = element.textContent or ""
+        if labelText ~= "" then
+            local labelY = elementY
+            love.graphics.printf(labelText,elementX,labelY,elementSizeX/textSize,element.textAlign,0,textSize,textSize)
+        end
+
+        local fieldText = shownValue .. caret
+        love.graphics.printf(fieldText,elementX + szx * 0.01,boxY + ((elementSizeY-(Font:getHeight()*textSize))/2),(elementSizeX - szx * 0.02)/textSize,"left",0,textSize,textSize)
+
+        results[element.name] = element.data
+    end
     --love.graphics.printf(scroll,elementX,elementYText,(elementSizeX)/1.2,element.textAlign,0,1.2,1.2)
 
-
+    scroll = scroll + extraScroll
     scroll = scroll + element["sizeY"]/2
     return scroll, results
 end

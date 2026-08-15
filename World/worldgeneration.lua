@@ -9,14 +9,15 @@ function resetworld()
   world:spawnEntity("player", 0, 0)
 end
 function generateworldupdate(dt)
+  
   local totalChunkLoadDistanceX=(chunkloaddistance+(math.ceil(szx/camv/2/chunksize)))
   local totalChunkLoadDistanceY=(chunkloaddistance+(math.ceil(szy/camv/2/chunksize)))
   local centerX=(camx/chunksize)
   local centerY=(camy/chunksize)
-  if love.keyboard.isDown("k") then 
+  --[[if love.keyboard.isDown("k") then 
     totalChunkLoadDistanceX=totalChunkLoadDistanceX*4 
     totalChunkLoadDistanceY=totalChunkLoadDistanceY*4
-  end
+  end]]
   world:generate(centerX, centerY, totalChunkLoadDistanceX, totalChunkLoadDistanceY, false, nil)
   --[[totalchunkloaddistance=(chunkloaddistance+(math.ceil(szx/camv/2/chunksize)))
   --totalchunkloaddistance=(math.ceil(szx/camv/2/chunksize))-1

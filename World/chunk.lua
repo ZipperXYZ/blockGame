@@ -19,18 +19,24 @@ function Chunk:init(chunkX, chunkY, chunkSize)
     self.chunkTiles["backTiles"] = {}
     self.chunkTiles["lights"] = {}
     self.chunkTiles["properties"] = {}
+    self.biomeCache = {}
+    self.biomeCenterCache = {}
     for ix = 1, self.chunkSize do
         self.chunkTiles["tiles"][ix] = {}
         self.chunkTiles["topTiles"][ix] = {}
         self.chunkTiles["backTiles"][ix] = {}
         self.chunkTiles["lights"][ix] = {}
         self.chunkTiles["properties"][ix] = {}
+        self.biomeCache[ix] = {}
+        self.biomeCenterCache[ix] = {}
         for iy = 1, self.chunkSize do
             self.chunkTiles["tiles"][ix][iy] = "dirt"
             self.chunkTiles["topTiles"][ix][iy] = "none"
             self.chunkTiles["backTiles"][ix][iy] = "none"
             self.chunkTiles["lights"][ix][iy] = { 1, 1, 1, 1 }
             self.chunkTiles["properties"][ix][iy] = {}
+            self.biomeCache[ix][iy] = nil
+            self.biomeCenterCache[ix][iy] = nil
         end
     end
 end
@@ -211,7 +217,10 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
         for ix = 1, self.chunkSize do
             for iy = 1, self.chunkSize do
                 local wx, wy                         = self:convertChunkPosToWorldPos(ix, iy)
-                self.chunkTiles["tiles"][ix][iy]     = world:generateTerrainTile(wx, wy)
+                local biome, nearCenter = self:getBiome(wx, wy, worldSeed, depthProgression, biomeSize, biomeList)
+                self.biomeCache[ix][iy] = biome
+                self.biomeCenterCache[ix][iy] = nearCenter
+                self.chunkTiles["tiles"][ix][iy]     = world:generateTerrainTile(wx, wy, biome, nearCenter)
                 self.chunkTiles["topTiles"][ix][iy]  = "none"
                 self.chunkTiles["backTiles"][ix][iy] = "none"
                 self.chunkTiles["lights"][ix][iy]    = { 1, 1, 1, 1 }
@@ -269,7 +278,11 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                 local wx, wy  = self:convertChunkPosToWorldPos(ix, iy)
                 local tileRaw = self:getRawTile(ix, iy, "tiles")
                 local backRaw = self:getRawTile(ix, iy, "backTiles")
-                local biome   = self:getBiome(wx, wy, worldSeed, depthProgression, biomeSize, biomeList)
+                local biome   = self.biomeCache[ix][iy]
+                if biome == nil then
+                    biome = self:getBiome(wx, wy, worldSeed, depthProgression, biomeSize, biomeList)
+                    self.biomeCache[ix][iy] = biome
+                end
                 if checkifinlist(tileRaw, tilelists["stones"]) then
                     if biome == "hotland" then self.chunkTiles["tiles"][ix][iy] = "hotstone" end
                     if biome == "coldland" then
@@ -359,8 +372,9 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
             for iy = 1, self.chunkSize do
                 local wx, wy  = self:convertChunkPosToWorldPos(ix, iy)
                 local tileRaw = self:getRawTile(ix, iy, "tiles")
+                local isDirtOrStone = checkifinlist(tileRaw, tilelists["dirts"]) or checkifinlist(tileRaw, tilelists["stones"])
 
-                if checkifinlist(tileRaw, JoinTables({tilelists["dirts"], tilelists["stones"]})) then
+                if isDirtOrStone then
                     if not (love.math.noise(wx / 20, wy / 20, worldSeed + 800) > (wy / (depthProgression * 3)) + 0.85) then
                         self.chunkTiles["topTiles"][ix][iy] = "grass"
                     end
@@ -370,7 +384,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                         self.chunkTiles["topTiles"][ix][iy] = "wheatgrass"
                     end
                 end
-                if checkifinlist(tileRaw, JoinTables({tilelists["dirts"], tilelists["stones"]})) then
+                if isDirtOrStone then
                     if not (love.math.noise(wx / 20, wy / 20, worldSeed + 520) < (wy / (depthProgression * 5)) + 0.85) and
                         love.math.noise(wx / 40, wy / 40, worldSeed + 585) < 0.35 then
                         self.chunkTiles["topTiles"][ix][iy] = "purplegrass"
@@ -382,7 +396,11 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                         self.chunkTiles["topTiles"][ix][iy] = "shadowgrass"
                     end
                 end
-                local biome = self:getBiome(wx, wy, worldSeed, depthProgression, biomeSize, biomeList)
+                local biome = self.biomeCache[ix][iy]
+                if biome == nil then
+                    biome = self:getBiome(wx, wy, worldSeed, depthProgression, biomeSize, biomeList)
+                    self.biomeCache[ix][iy] = biome
+                end
                 if self.chunkTiles["topTiles"][ix][iy] == "grass" then
                     if biome == "essenceLand" then
                         self.chunkTiles["topTiles"][ix][iy] = "essenceGrass"
@@ -451,21 +469,28 @@ end
 
 --advanceGenerationStatus() --comme un setGenerationStatus, mais change vers le prochain, mis à la fin d'une étape de generate
 function Chunk:advanceGenerationStatus(stepList)
-    if nextinlistroll(self.generationStatus,stepList) == "done" then world:updateLight(self.chunkX, self.chunkY) end
-    self.generationStatus = nextinlistroll(self.generationStatus,stepList)
+    local nextStatus = nextinlistroll(self.generationStatus, stepList)
+    if nextStatus == "done" then world:updateLight(self.chunkX, self.chunkY) end
+    self.generationStatus = nextStatus
 end
 
 function Chunk:updateStructureGeneration()
     --print("updating structure generation for chunk: ", self.chunkX, self.chunkY)
+    local maxPerFrame = 1
+    local generatedAtLeastOne = false
     if #self.structures > 0 then
         for i = #self.structures, 1, -1 do
             --print("generating structure: ", self.structures[i].structure.name, " at ", self.structures[i].x, self.structures[i].y)
+            if maxPerFrame <= 0 then break end
+            maxPerFrame = maxPerFrame - 1
+            generatedAtLeastOne = true
             local generated = self.structures[i].structure:generate(self, self.structures[i].x, self.structures[i].y, self.structures[i].seed, self.structures[i])
             if generated then
                 table.remove(self.structures, i)
             end
         end
     end
+    return generatedAtLeastOne
 end
 
 --getTerrain(worldPosX,wordPosY,worldSeed,depthProgression,biomeSize,biomeList) -- retourne soit 'air', ou 'dirt' (peut être false or true?)

@@ -3,12 +3,15 @@ Bar = SuperClass:extend()
 Bar.className = "Bar"
 
 ---@param type '"unisection"'|'"multisection"'
-function Bar:init(name,lossColor,gainColor,type)
+function Bar:init(name,lossColor,gainColor,type,flags)
 
+    self.flags = flags or {}
     self.name = name
     --self.sectionTypes = sectionTypes or "glued"
     self.lossColor = lossColor or {1,1,1,1}
     self.gainColor = gainColor or {1,1,1,1}
+    self.flashColor = self.flags.flashColor or {1,1,1,1}
+    self.flashTime = 1
     self.type = type or "unisection"
     self.sections = {}
     self.damagePreviews = {}
@@ -39,6 +42,7 @@ function Bar:addSection(sectionName,color,max,baseRegen,timeRegenDisabledWhenLow
 end
 
 function Bar:update(dt)
+    self.flashTime = self.flashTime + dt
     if #self.sections > 0 then
         for i = 1, #self.sections do
             self:updateSection(self.sections[i],dt)
@@ -414,6 +418,30 @@ function Bar:setDamagePreview(name,value,color,time,section)
     end
 end
 
+function Bar:getMaxWithoutDamagePreview(previewName,section)
+    local max = self:getMax(section)
+    if #self.damagePreviews > 0 then
+        for i = 1, #self.damagePreviews do
+            if self.damagePreviews[i].name == previewName and self.damagePreviews[i].section == section then
+                max = max - self.damagePreviews[i].value
+            end
+        end
+    end
+    return max
+end
+
+function Bar:getValueWithoutDamagePreview(previewName,section)
+    local max = self:getValue(section)
+    if #self.damagePreviews > 0 then
+        for i = 1, #self.damagePreviews do
+            if self.damagePreviews[i].name == previewName and self.damagePreviews[i].section == section then
+                max = max - self.damagePreviews[i].value
+            end
+        end
+    end
+    return max
+end
+
 function Bar:removeDamagePreview(name)
     if #self.damagePreviews > 0 then
         for i = #self.damagePreviews, 1, -1 do
@@ -424,11 +452,32 @@ function Bar:removeDamagePreview(name)
     end
 end
 
+function Bar:getMainBarColor(sectionName)
+    local color = {1,1,1,1}
+    if sectionName == nil or sectionName == "any" or sectionName == "all" then
+        if #self.sections > 0 then
+            color = CopyAll(self.sections[1].color)
+        end
+    else
+        local index = self:getSectionIndex(sectionName)
+        if index > 0 then
+            color = CopyAll(self.sections[index].color)
+        end
+    end
+
+    if self.flashTime < 1 then
+        color = OverrideColor(color,self.flashColor,1-self.flashTime)
+    end
+
+    return color
+end
+
 ---@param sectionTypes '"glued"'|'"seperated"'
 ---@param textType '"total"'|'"sectionned"'
-function Bar:draw(x,y,width,height,sectionTypes,textType,textSize,corners,draw)
+function Bar:draw(x,y,width,height,sectionTypes,textType,textSize,corners,draw,textAdd)
     sectionTypes = sectionTypes or "glued"
     textType = textType or "total"
+    if textAdd == nil then textAdd = "" end
     corners = corners or 0
     textSize = textSize or height/30
     local yText = y + (height-(Font:getHeight()*textSize))/2
@@ -443,9 +492,9 @@ function Bar:draw(x,y,width,height,sectionTypes,textType,textSize,corners,draw)
     local xo = x
 
     if draw == nil then
-        self:draw(x,y,width,height,sectionTypes,textType,textSize,corners,"bars")
-        self:draw(x,y,width,height,sectionTypes,textType,textSize,corners,"previews")
-        self:draw(x,y,width,height,sectionTypes,textType,textSize,corners,"text")
+        self:draw(x,y,width,height,sectionTypes,textType,textSize,corners,"bars",textAdd)
+        self:draw(x,y,width,height,sectionTypes,textType,textSize,corners,"previews",textAdd)
+        self:draw(x,y,width,height,sectionTypes,textType,textSize,corners,"text",textAdd)
     end
 
     if #self.sections > 0 then
@@ -465,7 +514,7 @@ function Bar:draw(x,y,width,height,sectionTypes,textType,textSize,corners,draw)
                     local cornerRound = maximum(corners,width*(proportionValueFloat))
                     love.graphics.rectangle("fill",xo,y,width*proportionValueFloat,height,cornerRound,cornerRound)
 
-                    love.graphics.setColor(CopyAll(b.color))
+                    love.graphics.setColor(self:getMainBarColor(b.name))
                     local cornerRound = maximum(corners,width*(proportionValue))
                     love.graphics.rectangle("fill",xo,y,width*proportionValue,height,cornerRound,cornerRound)
 
@@ -514,7 +563,7 @@ function Bar:draw(x,y,width,height,sectionTypes,textType,textSize,corners,draw)
                 
 
                 if draw == "bars" then
-                    love.graphics.setColor(CopyAll(b.color))
+                    love.graphics.setColor(self:getMainBarColor(b.name))
                     local cornerRound = maximum(corners,width*(proportionValue))
                     love.graphics.rectangle("fill",xo,y,width*proportionValue,height,cornerRound,cornerRound)
 
@@ -553,12 +602,12 @@ function Bar:draw(x,y,width,height,sectionTypes,textType,textSize,corners,draw)
     if draw == "text" then
         if textType == "total" then
             love.graphics.setColor(0,0,0,1)
-            love.graphics.printf(value.." / "..max,x-100+1,yText,(width*proportionMax+200)/textSize,"center",0,textSize,textSize)
-            love.graphics.printf(value.." / "..max,x-100-1,yText,(width*proportionMax+200)/textSize,"center",0,textSize,textSize)
-            love.graphics.printf(value.." / "..max,x-100,yText+1,(width*proportionMax+200)/textSize,"center",0,textSize,textSize)
-            love.graphics.printf(value.." / "..max,x-100,yText-1,(width*proportionMax+200)/textSize,"center",0,textSize,textSize)
+            love.graphics.printf(textAdd..value.." / "..max,x-100+1,yText,(width*proportionMax+200)/textSize,"center",0,textSize,textSize)
+            love.graphics.printf(textAdd..value.." / "..max,x-100-1,yText,(width*proportionMax+200)/textSize,"center",0,textSize,textSize)
+            love.graphics.printf(textAdd..value.." / "..max,x-100,yText+1,(width*proportionMax+200)/textSize,"center",0,textSize,textSize)
+            love.graphics.printf(textAdd..value.." / "..max,x-100,yText-1,(width*proportionMax+200)/textSize,"center",0,textSize,textSize)
             love.graphics.setColor(1,1,1,1)
-            love.graphics.printf(value.." / "..max,x-100,yText,(width*proportionMax+200)/textSize,"center",0,textSize,textSize)
+            love.graphics.printf(textAdd..value.." / "..max,x-100,yText,(width*proportionMax+200)/textSize,"center",0,textSize,textSize)
         end
     end
     if draw == "previews" and #self.damagePreviews > 0 then

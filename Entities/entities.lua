@@ -24,14 +24,30 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
         end
     end
 
+    self.fogValue = 0
+
+    self.xpBar = Bar("xp",{1,1,1,1},{1,1,1,1},"multisection")
+    self.xpAccumulated = 0
+    self.xpGiveOnDeath = self.flags.xpGiveOnDeath or 0
+    self.xpToLevelUp = self.flags.xpToLevelUp or 50
+    self.xpToLevelUpPerLevel = self.flags.xpToLevelUpPerLevel or self.xpToLevelUp/5
+    self.xpBar:addSection("xp",{0,1,1,1},self.xpToLevelUp,0,3,true,false,false)
+    self.xpBar:setValue(0,"xp")
+    
+
+    self.baseHealth = health or self.flags.health or 1
+    self.baseRegen = self.flags.regen or (health/100)
+    self.healthPerLevel = self.flags.healthPerLevel or (self.baseHealth * 0.05)
+
     self.health = Bar("health",{1,0.5,0.5,1},{1,1,1,1},"multisection")
-    if health == nil then health = self.flags.health or 1 end
-    self.health:addSection("hp",{0,1,0.5,1},health,(health/100),3,false,false,false)
+    if health == nil then health = self.baseHealth end
+    self.health:addSection("hp",{0,1,0.5,1},health,self.baseRegen,3,false,false,false)
     --self.health:addSection("shield",{0,0.5,1,1},health*0.2,(health/30),8,false,false,false)
     --self.health:addSection("yshield",{1,1,0,1},health*0.3,(health/30),8,false,false,false)
 
+     if size == nil then size = self.flags.size or 0.45 end
     self.size = size or 0.45
-    if size == nil then size = self.flags.size or 0.45 end
+    self.baseSize = self.size
     self.level = level or 1
     self.ai = ia or "none"
     self.id = math.random()
@@ -52,6 +68,7 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.animation = "idle"
     self.animationTime = 0
     self.animationSpeed = 1
+    self.movementAnimationSpeed = self.flags.movementAnimationSpeed or 1
     self.animationDirection = "right"
     self.spriteName = sprite or "none"
 
@@ -72,9 +89,12 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.position = position or Vector2:new(0, 0)
     --movement
     self.velocity = self.flags["velocity"] or Vector2:new(0, 0)
-    self.gravity = self.flags["gravity"] or 0.5
-    self.movevementSpeed = self.flags["movevementSpeed"] or 1
-    self.jumpStrength = self.flags["jumpStrength"] or 1.2
+    self.gravity = self.flags.gravity or 0.5
+    self.baseGravity = self.gravity
+    self.movevementSpeed = self.flags.movevementSpeed or 1
+    self.baseMovementSpeed = self.movevementSpeed
+    self.jumpStrength = self.flags.jumpStrength or 1.2
+    self.baseJumpStrength = self.jumpStrength
 
     self.highestPositionBeforeFall = nil
     self.groundedLastFrame = true
@@ -84,8 +104,12 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.disappearFarFromPlayer = self.flags.disappearFarFromPlayer or (self.type == "enemy")
 
     self.attackDamage = self.flags.attackDamage or 1
+    self.baseAttackDamage = self.attackDamage
+    self.attackDamagePerLevel = self.attackDamagePerLevel or 0
     self.miningRadius = self.flags.miningRadius or 1
     self.knockbackMultiplier = self.flags.knockbackMultiplier or 1
+    self.baseKnockbackMultiplier = self.knockbackMultiplier
+    self.cooldownReduction = 1
 
 
     self.colorisation = self.flags.colorisation or {0,0,0,0}
@@ -101,8 +125,18 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
 
     self.controls = {}
     self:resetControls()
+
+    self.platformDropHoldFrames = self.flags.platformDropHoldFrames or 2
+    self.platformDropSpeedThreshold = self.flags.platformDropSpeedThreshold or 1.2
+    self.platformDropThroughDuration = self.flags.platformDropThroughDuration or 0.12
+    self.platformDropThroughTimer = 0
+    self.platformDropTargetKey = nil
+    self.platformDropHeldFrames = 0
+    self.platformDropLastTick = -1
+
     self.mineList = {}
     self.lastDamageTakenTime = 0
+    self.timeAlive = 0
     self.redTime = 1
     self.greenTime = 1
     self.lastDamageTakenEntityId = 0
@@ -114,8 +148,8 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.inventoryCursor = { ["amount"] = 0, ["name"] = "none", ["attributes"] = {} }
     if (self.type == "player") then
         self.inventory = { --(inventoryName,color,screenPos,sizeX,sizeY,sizeZ,maxStack,tileSize,itemSize,flags)
-            Inventory("inventory", { 0.5, 0.6, 0.7, 1 }, Vector2(0.5, 0.05), 7, 5, 1, 100, (0.065), (0.065 / 8),
-                { ["isMainInventory"] = true },self)
+            Inventory("inventory", { 0.5, 0.6, 0.7, 1 }, Vector2(0.5, 0.05), 7, 5, 1, 100, (0.065), (0.065 / 8), { ["isMainInventory"] = true },self)
+            --Inventory("inventory", { 0.15, 0.15, 0.15, 1 }, Vector2(0.5, 0.05), 7, 6, 1, 100, (0.065), (0.065 / 8), { ["isMainInventory"] = true },self)
             , Inventory("armor", { 0.5, 0.6, 0.7, 1 }, Vector2(0.95, 0.05), 3, 4, 1, 1, (0.065), (0.065 / 8),
             { ["isEquipmentInventory"] = true, ["anchorX"] = "right", ["anchorY"] = "top" },self)
         , --Inventory("chest test", { 0.7, 0.5, 0.5, 1 }, Vector2(0.5, 0.95), 8, 3, 1, 100, (0.065), (0.065 / 8),
@@ -269,7 +303,7 @@ function Entity:canAttack(otherEntity)
     if otherEntity.id == self.id then
         canAttack = false
     end
-    if otherEntity.state == "dead" then
+    if otherEntity.state == "death" then
         canAttack = false
     end
 
@@ -302,6 +336,7 @@ function Entity:damage(damage,source,entitySource,info)
     local outlineColor = nil
     if info.critical then outlineColor = {1,0,0,1} end
     if self.type == "player" then damageColor = {1,0,0,1} end
+    if source == "fog" then damageColor = {0.1,0,0.35,1} end
     world:spawnTextParticle(round(damage),self.position:copy(), 1.5, 0.4,nil,damageColor,outlineColor)
 
 
@@ -337,6 +372,7 @@ function Entity:death()
             self.inventory[ii]:throwEveryItem(self.position.x, self.position.y)
         end
     end
+    self:dropXp()
     self.state = "death"
 end
 
@@ -630,20 +666,60 @@ function Entity:entityDeathUpdate(dt)
     return dead
 end
 
+function Entity:getCooldownReductionMultiplier()
+    local cooldownReduction = 1
+    cooldownReduction = cooldownReduction * self:getInventoryData("cooldownReduction","multiply")
+    return cooldownReduction
+end
+
+function Entity:getMaxHealth()
+    local maxHealth = self.baseHealth
+    maxHealth = maxHealth + (self.level-1) * self.healthPerLevel
+    maxHealth = maxHealth + self:getInventoryData("maxHealthAdd","add")
+    maxHealth = maxHealth * self:getInventoryData("maxHealth","multiply")
+    return math.ceil(maxHealth)
+end
+
+function Entity:getRegen()
+    local regen = self.baseRegen
+    regen = regen + self:getInventoryData("regenAdd","add")
+    regen = regen * self:getInventoryData("regen","multiply")
+    return regen
+end
+
 function Entity:getDamage()
-    local damage = self.attackDamage
-    --damage = damage * self:getInventoryData("damage","multiply")
+    local damage = self.baseAttackDamage
+    damage = damage + (self.level-1) * self.attackDamagePerLevel
+    damage = damage + self:getInventoryData("damageAdd","add")
+    damage = damage * self:getInventoryData("damage","multiply")
     return damage
 end
 
+function Entity:getKnockback()
+    local knockback = self.baseKnockbackMultiplier
+    knockback = knockback + self:getInventoryData("knockbackAdd","add")
+    knockback = knockback * self:getInventoryData("knockback","multiply")
+    return knockback
+end
+
 function Entity:getMovementSpeed()
-    local speed = self.movevementSpeed
+    local speed = self.baseMovementSpeed
+    speed = speed + self:getInventoryData("movementSpeedAdd","add")
     speed = speed * self:getInventoryData("movementSpeed","multiply")
     return speed
 end
 
+function Entity:getJumpStrength()
+    local jumpStrength = self.baseJumpStrength
+    jumpStrength = jumpStrength + self:getInventoryData("jumpStrengthAdd","add")
+    jumpStrength = jumpStrength * self:getInventoryData("jumpStrength","multiply")
+    return jumpStrength
+end
+
 function Entity:getGravity()
-    local gravity = self.gravity
+    local gravity = self.baseGravity
+    gravity = gravity + self:getInventoryData("gravityAdd","add")
+    gravity = gravity * self:getInventoryData("gravity","multiply")
     if #self.dashes > 0 then
         for i = 1, #self.dashes do
             local dash = self.dashes[i]
@@ -690,10 +766,13 @@ function Entity:movementUpdate(dt)
             if self.velocity.y > (self.jumpStrength * 10) then self.velocity.y = (self.jumpStrength * 10) end
         end
 
-        self.velocity.y = self.velocity.y - dt * self:getGravity() * 50
+        --self.velocity.y = self.velocity.y - dt * self:getGravity() * 50
+        self.velocity:move(-90,dt * self:getGravity() * 50)
+
 
         self.velocity.x = k(self.velocity.x, 0, dt / self.movementSlide)
-        if self.velocity.y < -(1 / dt / 2) then self.velocity.y = -(1 / dt / 2) end
+        --if self.velocity.y < -(1 / dt / 2) then self.velocity.y = -(1 / dt / 2) end
+        if self.velocity.y < -(1 / (1/90) / 2) then self.velocity.y = -(1 / (1/90) / 2) end
         --self.velocity.y = k(self.velocity.y,0,dt/self.movementSlide)
 
     end
@@ -703,23 +782,154 @@ function Entity:canJump()
     return self:isGrounded() --self.velocity.y<0.05
 end
 
+function Entity:getStairSurfaceYAt(x, y)
+    local tileX = round(x)
+    local tileY = round(y)
+    local tile = world:getTile(tileX, tileY, "tiles")
+    if tile == nil then return nil end
+
+    local tileType = tile.type or "non-solid"
+    if tileType ~= "rightStair" and tileType ~= "leftStair" then
+        return nil
+    end
+
+    local xInBlock = x - (tileX - 0.5)
+    if xInBlock < 0 then xInBlock = 0 end
+    if xInBlock > 1 then xInBlock = 1 end
+
+    local surfaceYInBlock
+    if tileType == "leftStair" then
+        surfaceYInBlock = 1 - xInBlock
+    else
+        surfaceYInBlock = xInBlock
+    end
+
+    return (tileY - 0.5) + surfaceYInBlock
+end
+
+function Entity:isStairCollisionAt(x, y)
+    local surfaceY = self:getStairSurfaceYAt(x, y)
+    if surfaceY == nil then return false end
+    return y < (surfaceY - 0.0001)
+end
+
+function Entity:canDropThroughPlatform(tileX, tileY)
+    if self.platformDropThroughTimer > 0 then
+        return true
+    end
+
+    if self.controls == nil or (not self.controls.down) then
+        self.platformDropTargetKey = nil
+        self.platformDropHeldFrames = 0
+        self.platformDropLastTick = -1
+        return false
+    end
+
+    -- Only block drop-through when falling too fast; small settling velocity should still allow it.
+    if self.velocity.y < -self.platformDropSpeedThreshold then
+        self.platformDropHeldFrames = 0
+        self.platformDropLastTick = -1
+        return false
+    end
+
+    -- Use platform row key to avoid per-sample X jitter resetting the hold counter.
+    local key = tostring(tileY)
+    if self.platformDropTargetKey ~= key then
+        self.platformDropTargetKey = key
+        self.platformDropHeldFrames = 1
+        self.platformDropLastTick = tick
+        return false
+    end
+
+    if self.platformDropLastTick ~= tick then
+        self.platformDropHeldFrames = self.platformDropHeldFrames + 1
+        self.platformDropLastTick = tick
+    end
+
+    if self.platformDropHeldFrames >= self.platformDropHoldFrames then
+        self.platformDropThroughTimer = self.platformDropThroughDuration
+        return true
+    end
+
+    return false
+end
+
+function Entity:isPlatformCollisionAt(x, y, centerY)
+    local tileX = round(x)
+    local tileY = round(y)
+    local tile = world:getTile(tileX, tileY, "tiles")
+    if tile == nil or tile.type ~= "platform" then return false end
+    if self.platformDropThroughTimer > 0 then return false end
+    if centerY ~= nil and y >= centerY then return false end
+
+    if self:canDropThroughPlatform(tileX, tileY) then return false end
+
+    local tileTop = tileY + 0.5
+    local feetY = self.position.y - self.size
+    local previousFeetY = feetY
+    if self.velocity ~= nil then
+        previousFeetY = feetY - (self.velocity.y * delta)
+    end
+
+    if feetY <= tileTop + 0.02 and previousFeetY >= tileTop - 0.08 then
+        return true
+    end
+    return false
+end
+
 function Entity:isGrounded()
     local yCheck = self.position.y - self.size - 0.05
     local xCheck
     for ix = 0, math.ceil(self.size * 2) + 2 do
         xCheck = self.position.x - self.size + ((self.size * 2) / (math.ceil(self.size * 2) + 2) * ix)
-        if world:getColision(xCheck, yCheck) then
+        if world:getColision(xCheck, yCheck)
+            or self:isStairCollisionAt(xCheck, yCheck)
+            or self:isPlatformCollisionAt(xCheck, yCheck, self.position.y)
+        then
             return true
         end
     end
     return false
 end
 
-function Entity:dash(velocity,dashTime,direction,gravityMultiplier,dashStopVelocityX,dashStopVelocityY)
+function Entity:resolveStairFooting()
+    if not self.hasWorldCollisions then return end
+    if self.flyCheat then return end
+    if self.velocity.y > 0 then return end
+
+    local samples = math.ceil(self.size * 2) + 2
+    local footY = self.position.y - self.size
+    local bestSurfaceY = nil
+
+    for ix = 0, samples do
+        local xCheck = self.position.x - self.size + ((self.size * 2) / samples * ix)
+        for oy = -1, 1 do
+            local surfaceY = self:getStairSurfaceYAt(xCheck, footY + oy * 0.25)
+            if surfaceY ~= nil then
+                if footY <= surfaceY + 0.15 and footY >= surfaceY - 0.35 then
+                    if bestSurfaceY == nil or surfaceY > bestSurfaceY then
+                        bestSurfaceY = surfaceY
+                    end
+                end
+            end
+        end
+    end
+
+    if bestSurfaceY ~= nil then
+        local targetPosY = bestSurfaceY + self.size + 0.005
+        if self.position.y < targetPosY then
+            self.position.y = targetPosY
+            if self.velocity.y < 0 then self.velocity.y = 0 end
+        end
+    end
+end
+
+function Entity:dash(velocity,dashTime,direction,gravityMultiplier,dashStopVelocityX,dashStopVelocityY,continueVelocity)
     if dashStopVelocityX == nil then dashStopVelocityX = false end
     if dashStopVelocityY == nil then dashStopVelocityY = false end
+    if continueVelocity == nil then continueVelocity = true end
     if gravityMultiplier == nil then gravityMultiplier = 0.5 end
-    table.insert(self.dashes, {velocity = velocity, dashTime = dashTime, direction = direction, gravityMultiplier = gravityMultiplier, dashStopVelocityX = dashStopVelocityX, dashStopVelocityY = dashStopVelocityY})
+    table.insert(self.dashes, {velocity = velocity, dashTime = dashTime, direction = direction, gravityMultiplier = gravityMultiplier, dashStopVelocityX = dashStopVelocityX, dashStopVelocityY = dashStopVelocityY, continueVelocity = continueVelocity})
 end
 
 function Entity:dashUpdate(dt)
@@ -737,6 +947,9 @@ function Entity:dashUpdate(dt)
             if dash.dashTime > 0 then
                 dash.dashTime = dash.dashTime - dt
             else
+                if dash.continueVelocity then
+                    self.velocity:move(dash.direction, dash.velocity)
+                end
                 table.remove(self.dashes, i)
             end
         end
@@ -761,6 +974,10 @@ end
 
 function Entity:collisionUpdate(dt)
     self:dashUpdate(dt)
+    if self.platformDropThroughTimer > 0 then
+        self.platformDropThroughTimer = self.platformDropThroughTimer - dt
+        if self.platformDropThroughTimer < 0 then self.platformDropThroughTimer = 0 end
+    end
     --self:dash(10,1,100)
     if self.flyCheat then
         if self.controls.up then
@@ -807,24 +1024,43 @@ function Entity:collisionUpdate(dt)
             end
         end
 
+        self:resolveStairFooting()
+
 
         --s'assurer que le joueur n'est toujours pas coincé dans un block
         if self.hasWorldCollisions then
-            if world:getColision(self.position.x, self.position.y) then
-                for distan = 1, 10 do
-                    if not world:getColision(self.position.x, self.position.y-distan) then
+            if world:getColision(self.position.x, self.position.y)
+                or self:isStairCollisionAt(self.position.x, self.position.y)
+                or self:isPlatformCollisionAt(self.position.x, self.position.y, self.position.y)
+            then
+                local stuckCheckLimit = 1
+                if self.type == "player" then stuckCheckLimit = 3 end
+                for distan = 1, stuckCheckLimit do
+                    if (not world:getColision(self.position.x, self.position.y-distan))
+                        and (not self:isStairCollisionAt(self.position.x, self.position.y-distan))
+                        and (not self:isPlatformCollisionAt(self.position.x, self.position.y-distan, self.position.y))
+                    then
                         self.position.y = self.position.y - distan
                         return
                     end
-                    if not world:getColision(self.position.x, self.position.y+distan) then
+                    if (not world:getColision(self.position.x, self.position.y+distan))
+                        and (not self:isStairCollisionAt(self.position.x, self.position.y+distan))
+                        and (not self:isPlatformCollisionAt(self.position.x, self.position.y+distan, self.position.y))
+                    then
                         self.position.y = self.position.y + distan
                         return
                     end
-                    if not world:getColision(self.position.x+distan, self.position.y) then
+                    if (not world:getColision(self.position.x+distan, self.position.y))
+                        and (not self:isStairCollisionAt(self.position.x+distan, self.position.y))
+                        and (not self:isPlatformCollisionAt(self.position.x+distan, self.position.y, self.position.y))
+                    then
                         self.position.x = self.position.x + distan
                         return
                     end
-                    if not world:getColision(self.position.x-distan, self.position.y) then
+                    if (not world:getColision(self.position.x-distan, self.position.y))
+                        and (not self:isStairCollisionAt(self.position.x-distan, self.position.y))
+                        and (not self:isPlatformCollisionAt(self.position.x-distan, self.position.y, self.position.y))
+                    then
                         self.position.x = self.position.x - distan
                         return
                     end
@@ -1009,20 +1245,26 @@ function Entity:drawAttackPreview()
 end
 
 function Entity:drawMinePreview()
+    local aimX = self:getAim("x")
+    local aimY = self:getAim("y")
+    local inventory = self.inventory[1]
+
     for ix = 1, self.inventory[1].sizeX do
         for iy = 1, self.inventory[1].sizeY do
-            local item = items[self.inventory[1]:getItemName(ix, iy)]
+            local itemName = inventory:getItemName(ix, iy)
+            local item = items[itemName]
 
             if item ~= nil then
-                if item.mineDamage > 0 and checkifinlist(self.inventory[1]:getSlotAttribute("button", ix, iy), item.desiredInventorySpots) then
-                    local targets = item:getPickaxeTargets(self, self.inventory[1]:getItemAttributes(ix, iy),
-                        self:getAim("x"), self:getAim("y"))
+                local button = inventory:getSlotAttribute("button", ix, iy)
+                if item.mineDamage > 0 and checkifinlist(button, item.desiredInventorySpots) then
+                    local attributes = inventory:getItemAttributes(ix, iy)
+                    local targets = item:getPickaxeTargets(self, attributes, aimX, aimY)
 
                     if #targets > 0 then
                         for targ = 1, #targets do
                             local x, y, size = world:getTileScreenPosition(round(targets[targ].x), round(targets[targ].y))
 
-                            if self.inventory[1]:getSlotAttribute("cooldown", ix, iy) > 0.1 then
+                            if inventory:getSlotAttribute("cooldown", ix, iy) > 0.1 then
                                 local color = { 0.8, 0.4, 0, 0.5 }
                                 textures["sprites"]["destroyPreview"]:drawSI("right", x, y, size, size, color)
                             else
@@ -1038,10 +1280,10 @@ function Entity:drawMinePreview()
 end
 
 function Entity:DrawUI()
-    self:drawBlocPreview()
-    self:drawMinePreview()
-    self:drawInteractionPreview()
-    self:drawAttackPreview()
+    self:drawBlocPreview() debugtimelog("blocPreview","sub")
+    self:drawMinePreview() debugtimelog("minePreview","sub")
+    self:drawInteractionPreview() debugtimelog("interactionPreview","sub")
+    self:drawAttackPreview() debugtimelog("attackPreview","sub")
 
     if self.controls.openInventory then
         if self.inventoryOpened then
@@ -1057,7 +1299,7 @@ function Entity:DrawUI()
     if self.inventoryOpened then
         if #self.inventory > 0 then
             for i = 1, #self.inventory do
-                local hovered = self.inventory[i]:draw("complete", self, { ["hightlights"] = self.inventorySpaceHighlights })
+                local hovered = self.inventory[i]:draw("complete", self, { ["hightlights"] = self.inventorySpaceHighlights }) debugtimelog("inventoryDraw","sub")
                 if hovered ~= nil then
                     itemDraw = hovered
                 end
@@ -1065,9 +1307,19 @@ function Entity:DrawUI()
         end
     else
         if #self.inventory > 0 then
-            itemDraw = self.inventory[1]:draw("firstLine", self)
+            itemDraw = self.inventory[1]:draw("firstLine", self) debugtimelog("hotBarDraw","sub")
         end
     end
+
+    if self.xpBar ~= nil then
+        if HealthBarPosition == "top" then
+            self.xpBar:draw(szx*0.05,szy*0.05+szy*0.07,szx*0.25,szy*0.02,HealthBarStyle,"total",szy*0.02/10,5,nil,"Level: "..self.level..", xp: ")
+        else
+            self.xpBar:draw(szx*0.05,szy*0.89-szy*0.03,szx*0.25,szy*0.02,HealthBarStyle,"total",szy*0.02/10,5,nil,"Level: "..self.level..", xp: ")
+        end
+        --self.health:draw(szx*0.05,szy*0.89-szy*0.1,szx*0.25,szy*0.06,HealthBarStyle,"total",nil,5)
+    end
+    debugtimelog("xpBarDraw","sub")
 
     if self.health ~= nil then
         if HealthBarPosition == "top" then
@@ -1077,15 +1329,18 @@ function Entity:DrawUI()
         end
         --self.health:draw(szx*0.05,szy*0.89-szy*0.1,szx*0.25,szy*0.06,HealthBarStyle,"total",nil,5)
     end
+    debugtimelog("healthBarDraw","sub")
 
     if itemDraw ~= nil then
         if itemDraw.item ~= nil and itemDraw.item.itemName ~= "none" then
             itemToolTipOffset = itemDraw.item:drawToolTip(true,mx+100,my,math.ceil(szx*0.07),szx * 0.35,itemDraw.attributes,itemDraw.amount,self)
         end
     end
+    debugtimelog("itemToolTipDraw","sub")
 
     if self.inventoryCursor.name ~= "none" then
         self:drawCursorItem(itemToolTipOffset)
+        debugtimelog("drawCursorItem","sub")
     end
 end
 
@@ -1111,7 +1366,9 @@ function Entity:CollisionDirectionCheck(center, otherAxisPosition, check, axis)
     --if axis == "y" then differenceAxis = math.abs(self.position.x-otherAxisPosition) end
     local differenceAxis = self.size
     if axis == "x" then
+        -- Horizontal resolution should not treat stairs as full wall blocks.
         local collide = world:getColision(check, otherAxisPosition)
+
         if collide then
             if check > center then
                 self.position.x = round(center) + (0.5 - differenceAxis - 0.005)
@@ -1125,6 +1382,7 @@ function Entity:CollisionDirectionCheck(center, otherAxisPosition, check, axis)
     end
     if axis == "y" then
         local collide = world:getColision(otherAxisPosition, check)
+
         if collide then
             if check > center then
                 self.position.y = round(center) + (0.5 - differenceAxis - 0.005)
@@ -1134,6 +1392,32 @@ function Entity:CollisionDirectionCheck(center, otherAxisPosition, check, axis)
                 if self.velocity.y < 0 then self.velocity.y = 0 end
             end
             return true
+        end
+
+        if (not collide) and check < center then
+            local platformCollide = self:isPlatformCollisionAt(otherAxisPosition, check, center)
+            if platformCollide then
+                local tileTop = round(check) + 0.5
+                local targetPosY = tileTop + differenceAxis + 0.005
+                if self.position.y < targetPosY then
+                    self.position.y = targetPosY
+                end
+                if self.velocity.y < 0 then self.velocity.y = 0 end
+                return true
+            end
+        end
+
+        -- Stair collision is floor-only and resolves to the slope surface, not a full-block boundary.
+        if check < center then
+            local surfaceY = self:getStairSurfaceYAt(otherAxisPosition, check)
+            if surfaceY ~= nil and check < surfaceY then
+                local targetPosY = surfaceY + differenceAxis + 0.005
+                if self.position.y < targetPosY then
+                    self.position.y = targetPosY
+                end
+                if self.velocity.y < 0 then self.velocity.y = 0 end
+                return true
+            end
         end
     end
     return false
@@ -1256,10 +1540,72 @@ function Entity:entityUpdate(dt)
     if rightclicktick then
         self:damage(20,"dev")
     end]]
+    if self.state ~= "death" then
+        self.timeAlive = self.timeAlive + dt
+        if self.timeAlive < 0.2 then
+            self.health:setValue(self:getMaxHealth(),"hp")
+        end
+    end
     self.lastDamageTakenTime = self.lastDamageTakenTime + dt
     self.greenTime = self.greenTime + dt
     self.redTime = self.redTime + dt
     self.health:update(dt)
+    self.xpBar:update(dt)
+    self:levelUpdate(dt)
+    self:statsUpdate(dt)
+end
+
+function Entity:levelUpdate(dt)
+    --self.xpBar = Bar("xp",{0,0,0,1},{1,1,1,1},"multisection")
+    --self.xpAccumulated = 0
+
+    self.xpBar:setMax(self.xpToLevelUp + (self.level - 1) * self.xpToLevelUpPerLevel)
+    if self.xpBar:isFull() then
+        self:levelUp()
+    end
+end
+
+function Entity:dropXp(proportion)
+    if proportion == nil then proportion = 1 end
+    local xpToDrop = (self.xpGiveOnDeath + self.xpAccumulated) * proportion
+    world:spawnXPparticles(xpToDrop, self.position:copy())
+end
+
+function Entity:giveXp(amount,from)
+    --time, size, height,color,outlineColor,animationColor, flags)
+    world:spawnTextParticle((round(amount)).."",self.position:copy(),nil,nil,nil,{0,1,1,1},{1,1,1,1})
+
+    self.xpAccumulated = self.xpAccumulated + amount
+    self.xpBar:increase(amount)
+    self.xpBar.flashTime = 0
+end
+
+function Entity:levelDown()
+    self.level = self.level - 1
+    --self.xpBar:setValue(self.xpBar:getValue() - self.xpBar:getMax())
+    --self:giveHealth(self:getMaxHealth(),"hp")
+end
+
+function Entity:levelUp()
+
+    world:spawnTextParticle("Level Up!",self.position:copy(),nil,nil,nil,{0,1,1,1},{1,1,1,1})
+
+    self.level = self.level + 1
+    self.xpBar:setValue(self.xpBar:getValue() - self.xpBar:getMax())
+    self:gainHealth(self:getMaxHealth() - self.health:getValue("hp"),"hp")
+end
+
+function Entity:statsUpdate(dt)
+
+    self.health:setMax(self:getMaxHealth(),"hp")
+    self.health:setBaseRegen(self:getRegen(),"hp")
+    self.movevementSpeed = self:getMovementSpeed()
+    self.jumpStrength = self:getJumpStrength()
+    self.attackDamage = self:getDamage()
+    self.knockbackMultiplier = self:getKnockback()
+    self.gravity = self:getGravity()
+    self.cooldownReduction = self:getCooldownReductionMultiplier()
+
 end
 
 function Entity:playerUpdate(dt)
@@ -1280,6 +1626,10 @@ function Entity:inventoryUpdate(dt)
     --self.controls.invShiftRightClick
 
     --self.inventoryCursor = {["amount"]=0,["name"]="none",["attributes"]={}}
+    if love.keyboard.isDown("f8") and self.type == "player" then
+        self.inventory[2]:cheatAccessoryShortcut()
+    end
+
     self.inventorySpaceHighlights = {}
 
     local tileInteraction = {}
@@ -1395,6 +1745,7 @@ function Entity:inventorySwitchHand(inventoryIndex, page, x, y)
     local maxS = items[self.inventory[inventoryIndex]:getItemName(x, y, page)].maxStack
 
     if self.inventoryCursor.name == self.inventory[inventoryIndex]:getItemName(x, y, page)
+    and self.inventoryCursor.attributes == self.inventory[inventoryIndex]:getItemAttributes(x, y, page)
     --and self.inventoryCursor.attributes == self.inventory[inventoryIndex]["items"][page][x][y]["attributes"]
     then
         local add = maximum(self.inventoryCursor.amount, maxS - self.inventory[inventoryIndex]:getItemAmount(x, y, page))
@@ -1503,7 +1854,7 @@ function Entity:animationUpdate(dt)
     if newAnimation ~= self.animation then self:setAnimation(newAnimation) end
 
     if self.animation == "idle" then self.animationSpeed = 1 end
-    if self.animation == "walk" then self.animationSpeed = math.abs(self.velocity.x) end
+    if self.animation == "walk" then self.animationSpeed = math.abs(self.velocity.x * self.movevementSpeed) * self.movementAnimationSpeed end
     if self.animation == "jump" then self.animationSpeed = 1 end
     --if self.animation == "use" then self.animationSpeed = 1 end
 end

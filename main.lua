@@ -12,6 +12,7 @@ function love.load()
   require "Entities/entities"
   require "Entities/sprite"
   require "Entities/ai"
+  require "Entities/projectile/projectile"
   require "directors/entitySpawnDirector"
   require "directors/entitySpawnCards"
   require "directors/itemAttributesDirector"
@@ -87,13 +88,16 @@ function love.load()
   biomelist = {}
   GlobalWorldGenStepList = { "none", "stone", "stone2", "grass", "trees", "structures", "ores", "deco", "done" }
   world = World(math.random() * 1000000, 10, 100, 150, {}, GlobalWorldGenStepList)
+  --world.generationFocusRadius = (world.generationFocusRadius or 3) + 1
+  --world.farGenerationAttemptRatio = 0.01
+  --world.maxFarStepAttemptsPerFrame = 1
   generateBaseBiomes()
 
   debugseebiome = false
 
   lightreach = 6       
   chunkloaddistance = 20 
-  MaxChunkLoadedPerFrame = 9
+  MaxChunkLoadedPerFrame = 6
   InventorySize = 1
   UISize = 1
   InventoryTextSize = 1.4
@@ -148,6 +152,12 @@ function love.load()
   for ib = 1, #buttons do
     buttonFramePress[buttons[ib]] = false
   end
+  textInputFrame = {
+    textBuffer = "",
+    backspacePressed = false,
+    enterPressed = false,
+    escapePressed = false,
+  }
   clicktick = false
   rightclicktick = false
   middleclicktick = false
@@ -158,6 +168,17 @@ function love.load()
   backgroundcolor = { 0.15, 0.15, 0.2, 1 }
   love.window.setFullscreen(fullscreen)
   love.window.setMode(800, 600, { resizable = true, minwidth = 400, minheight = 300 })
+
+
+  debugtime= {}
+    debugtimes={}
+    debugtimesamplesize=300
+    debugtimetype="avg"--avg|max
+    for i=1,debugtimesamplesize do
+      debugtime[i]={["global"]=0,["draw"]=0,["update"]=0,["sub"]=0}
+      debugtimes[i]={["global"]={},["draw"]={},["update"]={},["sub"]={}}
+    end
+    debugtimegraph=false
 end
 
 --code totalement pas écrit par chatgpt
@@ -214,7 +235,11 @@ function noise(x, y, z, w)
 end
 
 function love.update(dt)
-  if dt > 0.15 then dt = 0.15 end
+  math.random()
+  tick = tick + 1
+  debugtimeclear("global")
+  debugtimeclear("update")
+  --if dt > 0.15 then dt = 0.15 end
   delta = dt
   realtime = realtime + dt
   mx, my = love.mouse.getPosition()
@@ -222,13 +247,11 @@ function love.update(dt)
   szx, szy = love.window.getMode()
   cx = szx / 2
   cy = szy / 2
-  math.random()
-  tick = tick + 1
-
+  --debugtimelog("mm","update")
   if gamestate == "game" then
     GlobalGameUpdate(dt)
   end
-  
+  debugtimelog("gameupdate","global")
 end
 
 function GlobalGameUpdate(dt)
@@ -250,6 +273,8 @@ function cameramove(dt)
 end
 
 function love.draw()
+ 
+  debugtimeclear("draw")
   love.graphics.setBackgroundColor(backgroundcolor)
 
   if gamestate == "game" then
@@ -269,11 +294,25 @@ function love.draw()
     SettingsUpdate()
   end
   if gamestate == "worldCreation" then
-    WorldCreationUpdate(dt)
+    WorldCreationUpdate(delta)
   end
 
 
   ResetButtonTicks()
+
+  debugtimelog("gamedraw","global")
+    if debugtimegraph then 
+      drawdebugtimer("global",120,120) 
+      drawdebugtimer("draw",360,120) 
+      drawdebugtimer("update",600,120) 
+      drawdebugtimer("sub",840,120) 
+      love.graphics.setColor(0,0,0,1)
+      love.graphics.rectangle("fill",0,15,400,15)
+      love.graphics.setColor(1,1,1,1)
+      love.graphics.print("mode : "..debugtimetype..", Press f6 to toggle mode",0,15)
+    end 
+    love.graphics.setColor(1,1,1,1)
+    love.graphics.print("FPS: "..love.timer.getFPS(),0,szy-12)
 end
 
 function ResetButtonTicks()
@@ -287,9 +326,43 @@ function ResetButtonTicks()
   for ib = 1, #buttons do
     buttonFramePress[buttons[ib]] = false
   end
+
+  textInputFrame.textBuffer = ""
+  textInputFrame.backspacePressed = false
+  textInputFrame.enterPressed = false
+  textInputFrame.escapePressed = false
+end
+
+function isAnyTextInputFocused()
+  if interfaces == nil then return false end
+
+  for _, ui in pairs(interfaces) do
+    if ui ~= nil and ui.activeTextInputName ~= nil then
+      return true
+    end
+  end
+
+  return false
+end
+
+function UnfocusTextInput()
+  for _, ui in pairs(interfaces) do
+    if ui ~= nil then
+      ui.activeTextInputName = nil
+    end
+  end
 end
 
 function love.keypressed(key)
+  if key == "backspace" then textInputFrame.backspacePressed = true end
+  if key == "return" or key == "kpenter" then textInputFrame.enterPressed = true end
+  if key == "escape" then textInputFrame.escapePressed = true end
+
+  if isAnyTextInputFocused() then
+    key = ""
+  end
+  
+
   if key == "p" then
     fullscreen = not fullscreen
     love.window.setFullscreen(fullscreen)
@@ -331,7 +404,7 @@ function love.keypressed(key)
     end
   end
   if key == "3" then
-    entities[1].inventory[1]:setItemAttribute("level",entities[1].inventory[1]:getItemAttribute("level",1,1,1,1) + 1,1,1,1)
+    --entities[1].inventory[1]:setItemAttribute("level",entities[1].inventory[1]:getItemAttribute("level",1,1,1,1) + 1,1,1,1)
   end
     if CheatMode then
     if key == "1" and gamestate == "game" then
@@ -345,6 +418,13 @@ function love.keypressed(key)
     end
   end
 
+  if key=="f5" then
+      debugtimegraph=not debugtimegraph
+    end
+  if key=="f6" then
+      debugtimetype=nextinlistroll(debugtimetype, {"avg","max"})
+    end
+
   if checkifinlist(key,buttons) then
     buttonFramePress[key] = true
   end
@@ -356,6 +436,10 @@ function love.keypressed(key)
     camv = camv - 8
     if camv < 8 then camv = 8 end
   end]]
+end
+
+function love.textinput(t)
+  textInputFrame.textBuffer = textInputFrame.textBuffer .. (t or "")
 end
 
 function love.mousepressed(x, y, b)
@@ -372,4 +456,79 @@ end
 function love.wheelmoved(x, y)
   scrollValueX = x
   scrollValueY = y
+end
+
+function drawdebugtimer(wheelname,xwheel,ywheel)
+  love.graphics.setLineWidth(1)
+  love.graphics.setColor(0,0,0,1)
+  love.graphics.circle("fill",xwheel,ywheel,103)
+  completewheel={}
+  if debugtimesamplesize>0 then
+    for i=1,debugtimesamplesize do
+      if #debugtimes[i][wheelname] >0 then for i2=1,#debugtimes[i][wheelname] do
+        added=false
+        if #completewheel>0 then for i3=1,#completewheel do
+          if debugtimes[i][wheelname][i2]["name"]==completewheel[i3]["name"] and (not added) then
+            added=true
+            if debugtimetype=="max" then
+              if debugtimes[i][wheelname][i2]["time"]>completewheel[i3]["time"] then
+            completewheel[i3]["time"]=debugtimes[i][wheelname][i2]["time"]
+              end
+          else
+            completewheel[i3]["time"]=completewheel[i3]["time"]+debugtimes[i][wheelname][i2]["time"]
+           end
+            
+            
+          end
+        end end
+        if not added then
+          c1={}
+          c1["name"]=debugtimes[i][wheelname][i2]["name"]
+          c1["time"]=debugtimes[i][wheelname][i2]["time"]
+          table.insert(completewheel,c1)
+        end
+      end end
+    end
+  end
+  --debugtimes[wheelname]
+  --[(tick%debugtimesamplesize)+1]
+  if #completewheel>0 then
+  totaltimeframe=0
+    for i=1,#completewheel do
+      totaltimeframe=totaltimeframe+completewheel[i]["time"]
+    end
+    d1w=0
+    for i=1,#completewheel do
+      love.graphics.setColor(1,1,1,1)
+      love.graphics.arc("line",xwheel,ywheel,100,d180topi(d1w),d180topi(d1w+(360/totaltimeframe*completewheel[i]["time"])))
+      x1,y1=moveposition180(xwheel,ywheel,d1w+(360/totaltimeframe*completewheel[i]["time"])/2,60)
+      if (100/totaltimeframe*completewheel[i]["time"])>7 then love.graphics.printf(completewheel[i]["name"],x1-100,y1-10,200,"center") end
+      --love.graphics.printf((round((1/totaltimeframe*completewheel[i]["time"])*1000)/10).."%",x1-100,y1+5,200,"center")
+      if (100/totaltimeframe*completewheel[i]["time"])>15 then
+      love.graphics.printf(string.format("%.1f%%", (100/totaltimeframe*completewheel[i]["time"])),x1-100,y1+5,200,"center") end
+      --totaltimeframe=totaltimeframe+debugtimes[i]["time"]
+      if dist(mx,my,xwheel,ywheel)<100 and ((pointat180(xwheel,ywheel,mx,my)%360>d1w%360 and pointat180(xwheel,ywheel,mx,my)%360<(d1w+(360/totaltimeframe*completewheel[i]["time"]))%360) or (pointat180(mx,my,xwheel,ywheel)%360<d1w%360-180 and pointat180(mx,my,xwheel,ywheel)%360>(d1w+(360/totaltimeframe*completewheel[i]["time"]))%360+180)) then
+        love.graphics.setColor(1,1,1,0.5)
+      love.graphics.arc("fill",xwheel,ywheel,100,d180topi(d1w),d180topi(d1w+(360/totaltimeframe*completewheel[i]["time"])))
+      x1,y1=moveposition180(xwheel,ywheel,d1w+(360/totaltimeframe*completewheel[i]["time"])/2,60)
+        love.graphics.setColor(0,0,0,1)
+        love.graphics.rectangle("fill",0,0,400,15)
+        love.graphics.setColor(1,1,1,1)
+        love.graphics.print(completewheel[i]["name"].." / "..string.format("%.1f%%", (100/totaltimeframe*completewheel[i]["time"])).. " : "..round(completewheel[i]["time"],100000).."sec",0,0)
+      end
+      d1w=d1w+(360/totaltimeframe*completewheel[i]["time"])
+    end
+  end
+end
+function debugtimelog(name,wheelname)
+  db={}
+  db["time"]= love.timer.getTime()-debugtime[(tick%debugtimesamplesize)+1][wheelname]
+  db["name"]=name
+  if debugtimes[(tick%debugtimesamplesize)+1][wheelname]~=nil then
+  table.insert(debugtimes[(tick%debugtimesamplesize)+1][wheelname],db) end
+  debugtime[(tick%debugtimesamplesize)+1][wheelname]= love.timer.getTime()
+end
+function debugtimeclear(wheelname)
+  debugtimes[(tick%debugtimesamplesize)+1][wheelname]={}
+  debugtime[(tick%debugtimesamplesize)+1][wheelname]= love.timer.getTime()
 end

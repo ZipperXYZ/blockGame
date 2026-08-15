@@ -2,7 +2,7 @@ require "class/superClass"
 EntitySpawnDirector = SuperClass:extend()
 EntitySpawnDirector.className = "EntitySpawnDirector"
 
-function EntitySpawnDirector:init(position,spawnRadiusMax,spawnRadiusMin,startCredit,creditGain,spawnFrequency,cards,creditGainWaveTime,spawnFrequencyWaveTime,minCreditPerSpawn,maxCreditPerSpawn,maxCredit,maxCreditBank,decay,mobLimit,mobType)
+function EntitySpawnDirector:init(position,spawnRadiusMax,spawnRadiusMin,startCredit,creditGain,spawnFrequency,cards,creditGainWaveTime,spawnFrequencyWaveTime,minCreditPerSpawn,maxCreditPerSpawn,maxCredit,maxCreditBank,decay,mobLimit,mobType,flags)
     self.position = position or Vector2(0,0)
     self.spawnRadiusMax = spawnRadiusMax or 50
     self.spawnRadiusMin = spawnRadiusMin or 15
@@ -37,6 +37,9 @@ function EntitySpawnDirector:init(position,spawnRadiusMax,spawnRadiusMin,startCr
     self.timeTillNextSpawn = 0
     self.inactive = false
 
+    self.flags = flags or {}
+    self.maxEnemyPerSpawn = self.flags.maxEnemyPerSpawn or 5
+
 end
 
 function EntitySpawnDirector:update(dt)
@@ -50,7 +53,7 @@ function EntitySpawnDirector:update(dt)
     if not self.inactive then
         if self.credit < self.maxCreditBank then
             if self.creditGainWaveTime > 0 then
-                self.credit = self.credit + dt * self.creditGain * math.sin(self.time/self.creditGainWaveTime/math.pi) * 2
+                self.credit = self.credit + dt * self.creditGain * math.abs(math.sin(self.time/self.creditGainWaveTime/math.pi) * 2)
             else
                 self.credit = self.credit + dt * self.creditGain
             end
@@ -61,7 +64,7 @@ function EntitySpawnDirector:update(dt)
 
     --self.spawnFrequencyWaveTime = 0
     if self.spawnFrequencyWaveTime > 0 then
-        self.timeTillNextSpawn = self.timeTillNextSpawn + dt * math.sin(self.time/self.spawnFrequencyWaveTime/math.pi) * 2
+        self.timeTillNextSpawn = self.timeTillNextSpawn + dt * math.abs(math.sin(self.time/self.spawnFrequencyWaveTime/math.pi) * 2)
     else
         self.timeTillNextSpawn = self.timeTillNextSpawn + dt
     end
@@ -70,7 +73,7 @@ function EntitySpawnDirector:update(dt)
     end
     --self.timeTillNextSpawn = self.timeTillNextSpawn + dt * math.sin(self.time/self.spawnFrequencyWaveTime/math.pi) * 2
 
-    if self.credit > self.minCreditPerSpawn and self.credit > 0 then
+    if self.credit > self:getMinimumCreditPerSpawn() and self.credit > 0 then
         if self.timeTillNextSpawn > self.spawnFrequency then
             if self:getEnemyFreeSpots() > 0  and (self.maxCredit - self:countAvailableCosts()) < self.maxCredit then
                 self:spawn()
@@ -79,6 +82,10 @@ function EntitySpawnDirector:update(dt)
         end
     end
     
+end
+
+function EntitySpawnDirector:getMinimumCreditPerSpawn()
+    return k(self.minCreditPerSpawn,self.maxCreditPerSpawn,((self.mobLimit-self:getEnemyFreeSpots())/self.mobLimit)^2.5)
 end
 
 function EntitySpawnDirector:countAvailableCosts()
@@ -129,7 +136,7 @@ function EntitySpawnDirector:print()
     --love.graphics.print("Actual spawn frequency : "..(self.spawnFrequency * math.sin(self.time/self.spawnFrequencyWaveTime/math.pi) * 2),0,120)
     --love.graphics.print("position : "..self.position.x..","..self.position.y,0,132)
     --love.graphics.print("Inactive : "..tostring(self.inactive),0,144)
-    love.graphics.print("minimum credit per spawn : "..self.minCreditPerSpawn,0,156)
+    love.graphics.print("minimum credit per spawn : "..self:getMinimumCreditPerSpawn(),0,156)
     love.graphics.print("maximum credit per spawn : "..self.maxCreditPerSpawn,0,168)
     love.graphics.print("maximum credit : "..self.maxCredit,0,180)
     love.graphics.print("maximum credit bank : "..self.maxCreditBank,0,192)
@@ -144,9 +151,10 @@ function EntitySpawnDirector:print()
     --for i = 1, #self.cards do
     --    love.graphics.print("Card "..i.." : "..self.cards[i].name,0,264 + i * 12)
     --end
-    love.graphics.print("Available cards : "..#self:getAllAvailableCards(self.cards,world:getBiome(self.position.x,self.position.y),self.mobType,self.minCreditPerSpawn,math.max(self.maxCreditPerSpawn,self:countAvailableCosts())),0,252)
+    local debugMaxCost = math.min(self.maxCreditPerSpawn, self:countAvailableCosts(), self.credit)
+    love.graphics.print("Available cards : "..#self:getAllAvailableCards(self.cards,world:getBiome(self.position.x,self.position.y),self.mobType,self:getMinimumCreditPerSpawn(),debugMaxCost),0,252)
     love.graphics.print("Available cards : ",0,264)
-    local cards = self:getAllAvailableCards(self.cards,world:getBiome(self.position.x,self.position.y),self.mobType,self.minCreditPerSpawn,math.max(self.maxCreditPerSpawn,self:countAvailableCosts()))
+    local cards = self:getAllAvailableCards(self.cards,world:getBiome(self.position.x,self.position.y),self.mobType,self:getMinimumCreditPerSpawn(),debugMaxCost)
     if # cards > 0 then
         for i = 1, #cards do
             love.graphics.print("Card "..i.." : "..cards[i].name,0,264 + i * 12)
@@ -159,15 +167,35 @@ end
 function EntitySpawnDirector:spawn(mobType)
     local mobType = mobType or self.mobType
     local biome = world:getBiome(self.position.x,self.position.y)
-    local availableCards = self:getAllAvailableCards(self.cards,biome,mobType,self.minCreditPerSpawn,math.max(self.maxCreditPerSpawn,self:countAvailableCosts()))
-    local card,amount,costPerCard = self:rollCard(availableCards,mobType,self.minCreditPerSpawn,math.max(self.maxCreditPerSpawn,self:countAvailableCosts()),1,5)
+    local maxCost = math.min(self.maxCreditPerSpawn, self:countAvailableCosts(), self.credit)
+    if maxCost < self:getMinimumCreditPerSpawn() or maxCost <= 0 then
+        return
+    end
+
+    local freeSpots = self:getEnemyFreeSpots()
+    if freeSpots <= 0 then
+        return
+    end
+
+    local availableCards = self:getAllAvailableCards(self.cards,biome,mobType,self:getMinimumCreditPerSpawn(),maxCost)
+    local card,amount,costPerCard = self:rollCard(availableCards,mobType,self:getMinimumCreditPerSpawn(),maxCost,1,freeSpots)
 
     if card ~= nil then
-        --self.credit = self.credit - card.cardCost
         for i = 1, amount do
+            if self:getEnemyFreeSpots() <= 0 then
+                break
+            end
+            if self:countAvailableCosts() < costPerCard then
+                break
+            end
+            if self.credit < costPerCard then
+                break
+            end
+
             local spawnPosition = self:findSpawnPosition(0,50)
             if spawnPosition ~= nil then
                 card:use(spawnPosition,world:getEnvironmentLevel(spawnPosition.y),self.id,costPerCard,mobType)
+                self.credit = self.credit - costPerCard
             end
         end
     end
@@ -197,7 +225,7 @@ function EntitySpawnDirector:rollCard(cards,cardType,minimumCost,maximumCost,min
     local amount = 1
     local cardCost = 1
 
-    if #cards > 0 then
+    if #cards > 0 and maximumSpawnAmount > 0 and maximumCost >= minimumCost then
         for i = 1, #cards do
             if cards[i].cardCost >= minimumCost and cards[i].cardCost * minimumSpawnAmount <= maximumCost then
                 for j = 1, cards[i].cardWeight do
@@ -205,15 +233,24 @@ function EntitySpawnDirector:rollCard(cards,cardType,minimumCost,maximumCost,min
                 end
             end
         end
-        chosenCard = cardPool[math.random(1,#cardPool)]
+        if #cardPool > 0 then
+            chosenCard = cardPool[math.random(1,#cardPool)]
+        end
     end
 
     if chosenCard ~= nil then
         cardCost = chosenCard.cardCost
         local maxAmount = math.min(math.floor(maximumCost / cardCost),maximumSpawnAmount)
         local minAmount = math.max(minimumSpawnAmount,1)
-        amount = round(math.random(minAmount,maxAmount))
-       self.credit = self.credit - cardCost * amount
+        if maxAmount > self.maxEnemyPerSpawn then
+            maxAmount = self.maxEnemyPerSpawn
+        end
+        if maxAmount >= minAmount then
+            amount = round(math.random(minAmount,maxAmount))
+        else
+            chosenCard = nil
+            amount = 0
+        end
     end
 
     return chosenCard, amount, cardCost

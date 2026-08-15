@@ -51,6 +51,10 @@ function Vector2:normalize()
     return Vector2:new(self.x / len, self.y / len)
 end
 
+function Vector2:normalized()
+    return self:normalize()
+end
+
 function Vector2:copy(rounded)
     if rounded == nil then rounded = false end
     if rounded then
@@ -97,6 +101,15 @@ end
 
 function Vector2:getDirection360Towards(other)
     return (math.atan2(other.y-self.y,other.x-self.x)*180)/math.pi
+end
+
+function Vector2:getDirection()
+    local v = Vector2(0,0)
+    return v:getDirection360Towards(self)
+end
+
+function Vector2:angle(other)
+    return self:getDirection360Towards(other)
 end
 
 function Vector2:pointInAngleRange(other, direction, range)

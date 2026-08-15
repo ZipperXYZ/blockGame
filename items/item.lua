@@ -41,7 +41,6 @@ function Item:init(itemName,sprite,flags)
 
     self.description = self.flags.description or {""}
 
-
     self.placeBlock = self.flags.placeBlock or "none"
     self.placeBlockCost = self.flags.placeBlockCost or 1
     self.blockPlaceLayer = self.flags.blockPlaceLayer or "tiles"
@@ -84,16 +83,26 @@ function Item:init(itemName,sprite,flags)
 
     self.useFreely = self.flags.useFreely or false
 
+    self.onUse = self.flags.onUse or 
+    function (self,entity,attributes,cursorX,cursorY,slot,stacks,flags) 
+        local onUseSuccess, onUseCooldown, onUseStacksRemove
+        onUseSuccess = false
+
+        return onUseSuccess, onUseCooldown, onUseStacksRemove
+    end
+
     self.unique = self.flags.unique or false
 
     if checkifinlist(self.category, {"tool","weapon","movement","accessory"}) then
         self.unique = true
     end
+    if self.flags.unique ~= nil then self.unique = self.flags.unique end
 
 
     self.stackable = self.flags.stackable or true
     self.maxStack = self.flags.maxStack or 99
     if self.unique then self.stackable = false self.maxStack = 1 end
+    
     
     self.mineDamage = self.flags.mineDamage or 0
     self.mineDamagePerLevel = self.flags.mineDamagePerLevel or 0
@@ -123,6 +132,19 @@ function Item:init(itemName,sprite,flags)
     self.rangeLimit = self.flags.rangeLimit or 8
     self.rangeLimitPerLevel = self.flags.rangeLimitPerLevel or 0
 
+    self.projectileVelocity = self.flags.projectileVelocity or 30
+    self.projectileGravity = self.flags.projectileGravity or 0.5
+    self.projectileBounceFactor = self.flags.projectileBounceFactor or 0.3
+    self.projectileMovementSlide = self.flags.projectileMovementSlide or 0.9
+    self.projectileName = self.flags.projectileName or "arrow"
+    self.projectileSprite = self.flags.projectileSprite or "arrow"
+    self.projectileExplosionDamage = self.flags.projectileExplosionDamage or 0
+    self.projectileExplosionDamagePerLevel = self.flags.projectileExplosionDamagePerLevel or 0
+    self.projectileExplosionRadius = self.flags.projectileExplosionRadius or 0
+    self.projectileExplosionTime = self.flags.projectileExplosionTime or 0
+    self.projectileExplosionTileDamage = self.flags.projectileExplosionTileDamage or 0
+    self.projectileExplosionTileDamagePerLevel = self.flags.projectileExplosionTileDamagePerLevel or 0
+
     self.cooldown = 0.2
     self.cooldownSpeedPerLevel = self.flags.cooldownSpeedPerLevel or 0
     self.charge = self.flags.charge or 0
@@ -133,14 +155,23 @@ function Item:init(itemName,sprite,flags)
     self.desiredInventorySpots = self.flags.desiredInventorySpots or {"none"}
     if self.placeBlock ~= "none" then self.desiredInventorySpots = {"space","x","c"} end 
     if self.category == "tool" then self.desiredInventorySpots = {"space"} end
-    if self.category == "weapon" then self.desiredInventorySpots = {"leftClick"} end
+    if self.subCategory == "melee" then self.desiredInventorySpots = {"leftClick"} end
+    if self.subCategory == "ranged" then self.desiredInventorySpots = {"rightClick"} end
     if self.category == "movement" then self.desiredInventorySpots = {"shift"} end
     if self.category == "accessory" then self.desiredInventorySpots = {"accessory"} end
+
+    self.maxEnchants = self.flags.maxEnchants or 6
+    if self.category == "accessory" then self.flags.maxEnchants = 4 end
+    if self.category == "weapon" then self.flags.maxEnchants = 3 end
+    if self.category == "tool" then self.flags.maxEnchants = 2 end
+    if self.flags.maxEnchants ~= nil then self.maxEnchants = self.flags.maxEnchants end
 
     self.canBeEnchanted = checkifinlist(self.category, {"tool","weapon","accessory"})
     self.applyEnchantFromAnyItem = checkifinlist(self.category, {"accessory"})
     if self.flags.canBeEnchanted ~= nil then self.canBeEnchanted = self.flags.canBeEnchanted end
     if self.flags.applyEnchantFromAnyItem ~= nil then self.applyEnchantFromAnyItem = self.flags.applyEnchantFromAnyItem end
+    if self.maxEnchants <= 0 then self.canBeEnchanted = false end
+
 
     if self.placeBlock ~= "none" then self.desiredInventorySpots = {"space","x","c","v","b","n","m","h","j","k","l"} end
 
@@ -148,6 +179,26 @@ function Item:init(itemName,sprite,flags)
 
     self.baseColor = self.flags.baseColor or {1,1,1,1}
     self.baseColorisation = self.flags.baseColorisation or {0,0,0,0}
+    self.swingColor = self.flags.swingColor or {0.8,0.8,0.8,1}
+
+    self.healthMaxMultiplier = self.flags.healthMaxMultiplier or 1
+    self.healthMaxAdd = self.flags.healthMaxAdd or 0
+    self.damageMultiplier = self.flags.damageMultiplier or 1
+    self.damageAdd = self.flags.damageAdd or 0
+    self.mineDamageMultiplier = self.flags.mineDamageMultiplier or 1
+    self.mineDamageAdd = self.flags.mineDamageAdd or 0
+    self.cooldownReductionMultiplier = self.flags.cooldownReductionMultiplier or 1
+    --self.cooldownReductionAdd = self.flags.cooldownReductionAdd or 0
+    self.regenMultiplier = self.flags.regenMultiplier or 1
+    self.regenAdd = self.flags.regenAdd or 0
+    self.speedMultiplier = self.flags.speedMultiplier or 1
+    self.speedAdd = self.flags.speedAdd or 0
+    self.jumpStrengthMultiplier = self.flags.jumpStrengthMultiplier or 1
+    self.jumpStrengthAdd = self.flags.jumpStrengthAdd or 0
+    self.knockbackMultiplier = self.flags.knockbackMultiplier or 1
+    self.knockbackAdd = self.flags.knockbackAdd or 0
+    self.gravityMultiplier = self.flags.gravityMultiplier or 1
+    self.gravityAdd = self.flags.gravityAdd or 0
     
     --self.textures = textures or {["groundDisplay"]="none",[""]}
 
@@ -340,60 +391,83 @@ end
 function Item:getPickaxeTargets(entity,attributes,cursorX,cursorY)
 
     local targetList = {}
+    local targetSet = {}
+    local cursorXRounded = round(cursorX)
+    local cursorYRounded = round(cursorY)
+    local entityPosition = entity.position
+    local entityX = entityPosition.x
+    local entityY = entityPosition.y
+    local range = self:getRange(attributes,entity)
+    local rangeSquared = range * range
+    local blockDamageAmount = self:getBlockDamageAmount(attributes,entity)
+    local mineWidth = self:getMineWidth(attributes,entity)
 
+    local function addTargetIfMineable(x, y)
+        local key = x .. ":" .. y
+        if targetSet[key] then return end
 
-
-    local place = nil
-    if not self.minePierce then
-        place = world:rayTrace(self.mineLayer,entity.position:copy(true),Vector2(round(cursorX),round(cursorY)),self:getRange(attributes,entity),false,true)
-    else
-        place = Vector2(round(cursorX),round(cursorY))
-        if place:dist(entity.position:copy()) > self:getRange(attributes,entity) then
-            place = entity.position:copy()
-            place:moveTowards(Vector2(round(cursorX),round(cursorY)),self:getRange(attributes,entity))
-        end
-
-        local bloc = place:copy()
-        if bloc:dist(entity.position:copy()) <= self:getRange(attributes,entity) then
-            if world:getTile(bloc.x,bloc.y,"tiles").canBeMined and world:getTile(bloc.x,bloc.y,"tiles").name ~= "none" then
-                if not checkIfVectorInList(Vector2(bloc.x,bloc.y),targetList,true) then
-                    table.insert(targetList,Vector2(bloc.x,bloc.y))
-                end
+        for l = 1, #self.mineLayer do
+            local tile = world:getTile(x, y, self.mineLayer[l])
+            if tile.canBeMined and tile.name ~= "none" then
+                targetSet[key] = true
+                table.insert(targetList, Vector2(x, y))
+                return
             end
         end
     end
 
-    local baseDirection = entity.position:getDirection360Towards(Vector2(round(cursorX),round(cursorY)))
+    local place = nil
+    if not self.minePierce then
+        place = world:rayTrace(self.mineLayer, entityPosition:copy(true), Vector2(cursorXRounded, cursorYRounded), range, false, true)
+    else
+        place = Vector2(cursorXRounded, cursorYRounded)
+        if place:dist(entityPosition:copy()) > range then
+            place = entityPosition:copy()
+            place:moveTowards(Vector2(cursorXRounded, cursorYRounded), range)
+        end
+
+        local bloc = place:copy()
+        local dx = bloc.x - entityX
+        local dy = bloc.y - entityY
+        if (dx * dx + dy * dy) <= rangeSquared then
+            addTargetIfMineable(bloc.x, bloc.y)
+        end
+    end
+
+    local baseDirection = entityPosition:getDirection360Towards(Vector2(cursorXRounded, cursorYRounded))
 
     if not BuilderCheat then
-        for advance = 0, math.ceil(self:getRange(attributes,entity)*2) do
-                for forwardDistance = 0, math.ceil(self:getMineWidth(attributes,entity)*4) do
+        local maxAdvance = math.ceil(range * 2)
+        local maxForwardDistance = math.ceil(mineWidth * 4)
+
+        for advance = 0, maxAdvance do
+            for forwardDistance = 0, maxForwardDistance do
+                if #targetList >= blockDamageAmount then break end
                 for side = -1,1,2 do
+                    if #targetList >= blockDamageAmount then break end
                     local forwardValue = (advance/2)
 
-                    if #targetList < self:getBlockDamageAmount(attributes,entity) then
+                    local bloc = entityPosition:copy()
+                    bloc:move(baseDirection, forwardValue)
+                    bloc:move(baseDirection + 90 * side, forwardDistance * 0.25 / 4)
+                    bloc.x = round(bloc.x)
+                    bloc.y = round(bloc.y)
 
-                        local bloc = entity.position:copy()
-                        bloc:move(baseDirection,forwardValue )
-                        bloc:move(baseDirection + 90 * side,forwardDistance * 0.25/4 )
-                        bloc.x = round(bloc.x)
-                        bloc.y = round(bloc.y)
-                        --local angle
-
-                        if pointInAngleRange(entity.position.x, entity.position.y, baseDirection, bloc.x, bloc.y, 100) then
-                                if bloc:dist(entity.position:copy()) <= self:getRange(attributes,entity) then
-                                for l = 1, #self.mineLayer do
-                                    if world:getTile(bloc.x,bloc.y,self.mineLayer[l]).canBeMined and world:getTile(bloc.x,bloc.y,self.mineLayer[l]).name ~= "none" then
-                                        if not checkIfVectorInList(Vector2(bloc.x,bloc.y),targetList,true) then
-                                            table.insert(targetList,Vector2(bloc.x,bloc.y))
-                                        end
-                                    end
-                                end
-                            end
+                    if pointInAngleRange(entityX, entityY, baseDirection, bloc.x, bloc.y, 100) then
+                        local bdx = bloc.x - entityX
+                        local bdy = bloc.y - entityY
+                        if (bdx * bdx + bdy * bdy) <= rangeSquared then
+                            addTargetIfMineable(bloc.x, bloc.y)
                         end
                     end
                 end
             end
+        end
+    else
+        local tile = world:getTile(cursorXRounded, cursorYRounded, "tiles")
+        local backtile = world:getTile(cursorXRounded, cursorYRounded, "backTiles")
+        if backtile.name ~= "none" or tile.name ~= "none" then
+            targetList = { Vector2(cursorXRounded, cursorYRounded) }
         end
     end
 
@@ -449,27 +523,29 @@ function Item:use(entity,attributes,cursorX,cursorY,slot,stacks)
             item = self,
             attributes = attributes,
             cooldownValue = self:getCooldown(attributes,entity),
+            mineDamageValue = self:getMineDamage(attributes,entity),
         }
         if #targets > 0 then
             for targ= 1,#targets do
                 for lay = 1, #self.mineLayer do
-                    local destroyed, damageSourceInfo = world:damageBlock(targets[targ].x, targets[targ].y, self:getMineDamage(attributes,entity),self.mineLayer[lay],true,{signalInfo = signalInfo, entity = entity, item = self, attributes = attributes})
+                    local destroyed, damageSourceInfo = world:damageBlock(targets[targ].x, targets[targ].y, signalInfo.mineDamageValue,self.mineLayer[lay],true,{signalInfo = signalInfo, entity = entity, item = self, attributes = attributes})
+                    
+                    if damageSourceInfo.signalInfo ~= nil then
+                        signalInfo = damageSourceInfo.signalInfo
+                    end
+
                     if destroyed then
-
-                        if damageSourceInfo.signalInfo ~= nil then
-                            signalInfo = damageSourceInfo.signalInfo
-                        end
-
                         destroyedAtLeastATile = true
                     end
                 end
             end
         end
 
+        if signalInfo.cooldownValue > 0 then
+            overrideCooldown = signalInfo.cooldownValue
+        end
+
         if destroyedAtLeastATile then
-            if signalInfo.cooldownValue > 0 then
-                overrideCooldown = signalInfo.cooldownValue
-            end
             world:updateLights(cursorX,cursorY)
         end
 
@@ -483,47 +559,14 @@ function Item:use(entity,attributes,cursorX,cursorY,slot,stacks)
 
         if self.subCategory == "melee" then
 
+            self:drawWeaponSliceArc(entity.position:copy(),entity.position:angle(Vector2(cursorX,cursorY)),self:getSliceColor(attributes,entity),attributes,entity)
+
             local targets = self:getMeleeWeaponTargets(entity, attributes, cursorX, cursorY)
 
             if #targets > 0 then
                 for i = 1, #targets do
                     local target = targets[i].entity
-                    local maxHealth = target.health:getMax()
-                    local damage = self:getDamage(attributes,entity)
-                    local criticalChance = 0
-                    local critical = false
-
-                    local signalInfo = {
-                        position = target.position:copy(),
-                        target = target,
-                        damageValue = damage,
-                        criticalChance = criticalChance,
-                        cooldownValue = self:getCooldown(attributes,entity),
-                    }
-                    signalInfo = entity:applyEnchantSignal("enemyHit",signalInfo,self,attributes)
-
-                    if signalInfo.cooldownValue > 0 then overrideCooldown = signalInfo.cooldownValue end
-                    if signalInfo.damageValue > 0 then damage = signalInfo.damageValue end
-                    if signalInfo.criticalChance > 0 then criticalChance = signalInfo.criticalChance end
-
-                    if math.random() < criticalChance then
-                        damage = damage * 2
-                        critical = true
-                    end
-
-                    target:spawnBlood(0.15+1 * math.ceil(damage / maxHealth * 150), 5 + damage * 5 / maxHealth, pointat180(entity.position.x,entity.position.y,target.position.x,target.position.y), 100)
-                    local death = target:damage(damage,"weapon",entity,{critical = critical})
-                    if self:getKnockback(attributes,entity) > 0 then
-                        target:dash(self:getKnockback(attributes,entity)*5*target.knockbackMultiplier,0.3,pointat180(entity.position.x,entity.position.y,target.position.x,target.position.y),1)
-                    end
-
-                    if death then
-                        local signalInfo = {
-                            position = target.position:copy(),
-                            damageReceiver = target,
-                        }
-                        signalInfo = entity:applyEnchantSignal("enemyKill",signalInfo,self,attributes)
-                    end
+                    overrideCooldown = self:attackTarget(target,attributes,entity,overrideCooldown)
                 end
             end
 
@@ -531,6 +574,16 @@ function Item:use(entity,attributes,cursorX,cursorY,slot,stacks)
 
         end 
 
+    end
+
+
+    if self.onUse ~= nil and checkifinlist(slot,self.desiredInventorySpots) then
+        local onUseSuccess, onUseCooldown, onUseStacksRemove = self:onUse(entity,attributes,cursorX,cursorY,slot,stacks)
+        if onUseSuccess then
+            useSuccess = true
+            if onUseCooldown ~= nil then overrideCooldown = onUseCooldown end
+            if onUseStacksRemove ~= nil then stacksRemove = stacksRemove + onUseStacksRemove end
+        end
     end
 
 
@@ -576,9 +629,146 @@ function Item:use(entity,attributes,cursorX,cursorY,slot,stacks)
     return useSuccess, setCooldown, stacksRemove
 end
 
+function Item:getSliceColor(attributes,entity)
+    local color = {0.8,0.8,0.8,1}
+    if self.swingColor ~= nil then
+        color = CopyAll(self.swingColor)
+    end
+    return color
+end
+
+function Item:drawWeaponSliceArc(position,direction,color,attributes,entity)
+    if color == nil then color = {0.8,0.8,0.8,1} end
+    local radius = self:getAttackRadius(attributes,entity)
+    local range = self:getAttackRange(attributes,entity)
+
+    local count = 30
+    for i = 1+1,count-1 do
+
+        local newPos = position:copy()
+        newPos:move(direction + 90, radius)
+        newPos:move(direction - 90, radius * 2 * (i/count))
+
+        if i < count/2 then
+            newPos:move(direction, (range+radius) * (i/(count/2))^0.2)
+        else
+            newPos:move(direction, (range+radius) * ((count-i)/(count/2))^0.2)
+        end
+        --newPos:move(direction , range * (i/50)^)
+
+        world:spawnParticles(1,"wind",newPos,0,CopyAll(color), {0.05,0.05,0.05,0.05}, 1, 0,"fire", nil, nil, nil, {
+            appearIn = (i/(count*11)),
+        })
+
+    end
+end
+
+function Item:attackTarget(target,attributes,entity,overrideCooldown,damageOverride,knockbackOverride,damagePosition)
+    
+    local maxHealth = target.health:getMax()
+    local damage = self:getDamage(attributes,entity)
+    local knockback = self:getKnockback(attributes,entity)
+    if damageOverride ~= nil then damage = damageOverride end
+    if knockbackOverride ~= nil then knockback = knockbackOverride end
+    if damagePosition == nil then damagePosition = entity.position:copy() end
+    local criticalChance = 0
+    local critical = false
+
+    local signalInfo = {
+        position = target.position:copy(),
+        target = target,
+        enemy = target,
+        damageValue = damage,
+        knockback = knockback,
+        criticalChance = criticalChance,
+        cooldownValue = self:getCooldown(attributes,entity),
+    }
+    signalInfo = entity:applyEnchantSignal("enemyHit",signalInfo,self,attributes)
+
+    if signalInfo.cooldownValue > 0 then overrideCooldown = signalInfo.cooldownValue end
+    if signalInfo.damageValue > 0 then damage = signalInfo.damageValue end
+    if signalInfo.criticalChance > 0 then criticalChance = signalInfo.criticalChance end
+    if signalInfo.knockback > 0 then knockback = signalInfo.knockback end
+
+    if math.random() < criticalChance then
+        damage = damage * 2
+        critical = true
+    end
+
+    target:spawnBlood(0.15+1 * math.ceil(maximum(damage,maxHealth) / maxHealth * 75), 5 + damage * 5 / maxHealth, pointat180(entity.position.x,entity.position.y,target.position.x,target.position.y), 100)
+    local death = target:damage(damage,"weapon",entity,{critical = critical})
+    if knockback > 0 then
+        target:dash(knockback*5*target.knockbackMultiplier,0.3,pointat180(damagePosition.x,damagePosition.y,target.position.x,target.position.y),1)
+    end
+
+    if death then
+        local signalInfo = {
+            position = target.position:copy(),
+            damageReceiver = target,
+            enemy = target,
+        }
+        signalInfo = entity:applyEnchantSignal("enemyKill",signalInfo,self,attributes)
+    end
+    return overrideCooldown
+end
+
+function Item:spawnProjectile(entity, attributes, cursorX, cursorY,slot,stacks,flags)
+    local onUseSuccess, onUseCooldown, onUseStacksRemove
+    if entity ~= nil then
+
+
+      
+        onUseSuccess = true
+        local velocityStrength = self.projectileVelocity
+        local velocity = (Vector2(cursorX - entity.position.x, cursorY - entity.position.y):normalized()) * velocityStrength
+        local flags = CopyAll(flags)
+        local projectileAmount = 1
+        flags.damage = self:getDamage(attributes,entity)
+        flags.knockback = self:getKnockback(attributes,entity)
+        flags.gravity = self.projectileGravity
+        flags.bounceFactor = self.projectileBounceFactor
+        flags.movementSlide = self.projectileMovementSlide
+
+        flags.explodeDamage = self.projectileExplosionDamage + ((self:getLevel(attributes)-1) * self.projectileExplosionDamagePerLevel)
+        flags.explodeRadius = self.projectileExplosionRadius
+        flags.explodeTimer = self.projectileExplosionTime
+        flags.explodeTileDamage = self.projectileExplosionTileDamage + (self:getLevel(attributes)-1) * self.projectileExplosionTileDamagePerLevel
+        
+        local signalInfo = {
+            position = Vector2(entity.position.x,entity.position.y),
+            entity = entity,
+            item = self,
+            attributes = attributes,
+            cooldownValue = self:getCooldown(attributes,entity),
+            projectileDamage = flags.damage,
+            projectileAmount = projectileAmount,
+        }
+        signalInfo = entity:applyEnchantSignal("shootingBow",signalInfo,self,attributes)
+
+        if signalInfo.cooldownValue > 0 then onUseCooldown = signalInfo.cooldownValue end
+        if signalInfo.projectileDamage > 0 then flags.damage = signalInfo.projectileDamage end
+        if signalInfo.projectileAmount > 0 then projectileAmount = signalInfo.projectileAmount end
+
+
+        if projectileAmount > 1 then
+            local angleSpread = maximum(projectileAmount^1.5 * 10, 45)
+            for i = 1, projectileAmount do
+                local angle = pointat180(entity.position.x,entity.position.y,cursorX,cursorY) + (i-1)/(projectileAmount-1) * angleSpread - angleSpread/2
+                local velocity = Vector2(0,0)
+                velocity:move(angle,velocityStrength)
+                Projectile(self.projectileName,entity.position:copy(),velocity,self.projectileSprite,entity,{name = self.name, item = self, attributes = attributes},flags,true)
+            end
+        else
+            Projectile(self.projectileName,entity.position:copy(),velocity,self.projectileSprite,entity,{name = self.name, item = self, attributes = attributes},flags,true)
+        end
+      
+    end
+    return onUseSuccess, onUseCooldown, onUseStacksRemove
+end
+
 local function convertTableIntoText(textTable)
     local text = ""
-    for i = 1, #textTable do
+    for i = 1, #textTable do 
         if type(textTable[i]) == "string" then
             text = text .. textTable[i]
         end
@@ -683,10 +873,15 @@ function Item:drawToolTip(draw,screenX,screenY,sizeMultiplyer,maxX,attributes,am
         y = y + self:printInfo(draw,text,screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
     end
 
-    if self.damage > 0 then
-        if self.subCategory == "melee" then
+    if self.subCategory == "melee" or self.subCategory == "ranged" then
+        if self.damage > 0 then
             y = y + self:getLineReturnHeight(sizeMultiplyer) * 0.5
-            y = y + self:printInfo(draw,{"#silent","Melee weapon"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            if self.subCategory == "melee" then
+                y = y + self:printInfo(draw,{"#silent","Melee weapon"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            end
+            if self.subCategory == "ranged" then
+                y = y + self:printInfo(draw,{"#silent","Ranged weapon"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            end
             y = y + self:printInfo(draw,{"#muted","Calculated DPS : ","#success",(self:getDPS(attributes,entity))},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
             y = y + self:getLineReturnHeight(sizeMultiplyer) * 0.5
             local text = {"#muted","attack damage: ","#info",self:getBaseDamage(attributes,entity)}
@@ -697,14 +892,66 @@ function Item:drawToolTip(draw,screenX,screenY,sizeMultiplyer,maxX,attributes,am
             y = y + self:printInfo(draw,text,screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
             if self:getCharge(attributes,entity) > 0 then    
                 y = y + self:printInfo(draw,{"#muted","charge time: ","#info",self:getCharge(attributes,entity)},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
-            end
-            if self.moveSpeedDuringCharge ~= 1 then
-                y = y + self:printInfo(draw,{"#silent","When charging, reduce speed to : ","#info",round(self.moveSpeedDuringCharge*100),"#muted","%"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+                if self.moveSpeedDuringCharge ~= 1 then
+                    y = y + self:printInfo(draw,{"#silent","When charging, reduce speed to : ","#info",round(self.moveSpeedDuringCharge*100),"#muted","%"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+                end
             end
             y = y + self:getLineReturnHeight(sizeMultiplyer) * 0.5
-            y = y + self:printInfo(draw,{"#muted","reach: ","#info",self:getAttackRange(attributes,entity)},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
-            y = y + self:printInfo(draw,{"#muted","radius: ","#info",self:getAttackRadius(attributes,entity)},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
-            y = y + self:printInfo(draw,{"#muted","knockback: ","#info",self:getKnockback(attributes,entity)},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            if self.subCategory == "ranged" then
+                y = y + self:printInfo(draw,{"#muted","projectile velocity: ","#info",self.projectileVelocity},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+                y = y + self:printInfo(draw,{"#muted","projectile gravity: ","#info",self.projectileGravity},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            end
+            if self.subCategory == "melee" then
+                y = y + self:printInfo(draw,{"#muted","reach: ","#info",self:getAttackRange(attributes,entity)},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+                y = y + self:printInfo(draw,{"#muted","radius: ","#info",self:getAttackRadius(attributes,entity)},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            end
+            if self:getKnockback(attributes,entity) > 0 then
+                y = y + self:printInfo(draw,{"#muted","knockback: ","#info",self:getKnockback(attributes,entity)},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            end
+        else
+            y = y + self:getLineReturnHeight(sizeMultiplyer) * 0.5
+            if self.subCategory == "melee" then
+                y = y + self:printInfo(draw,{"#silent","Melee weapon"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            end
+            if self.subCategory == "ranged" then
+                y = y + self:printInfo(draw,{"#silent","Ranged weapon"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            end
+            y = y + self:getLineReturnHeight(sizeMultiplyer) * 0.5
+            if self.projectileExplosionDamage > 0 then
+                local text = {"#muted","explosion damage: ","#info",(self.projectileExplosionDamage + (self:getLevel(attributes)-1) * self.projectileExplosionDamagePerLevel)}
+                if self.projectileExplosionDamagePerLevel > 0 then text = TableJoin(text, {"#silent"," (",self.projectileExplosionDamagePerLevel," per level)"}) end
+                y = y + self:printInfo(draw,text,screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            end
+            if self.projectileExplosionTileDamage > 0 then
+                local text = {"#muted","explosion tile damage: ","#info",(self.projectileExplosionTileDamage + (self:getLevel(attributes)-1) * self.projectileExplosionTileDamagePerLevel)}
+                if self.projectileExplosionTileDamagePerLevel > 0 then text = TableJoin(text, {"#silent"," (",self.projectileExplosionTileDamagePerLevel," per level)"}) end
+                y = y + self:printInfo(draw,text,screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            end
+            if self.projectileExplosionTime > 0 then
+                y = y + self:printInfo(draw,{"#muted","explosion time: ","#info",self.projectileExplosionTime},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+                y = y + self:printInfo(draw,{"#muted","explosion radius: ","#info",self.projectileExplosionRadius},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            end
+            local text = {"#muted","cooldown: ","#info",self:getCooldown(attributes,entity)}
+            if self.cooldownSpeedPerLevel > 0 then text = TableJoin(text, {"#silent"," (",self.cooldownSpeedPerLevel," per level)"}) end
+            y = y + self:printInfo(draw,text,screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            if self:getCharge(attributes,entity) > 0 then    
+                y = y + self:printInfo(draw,{"#muted","charge time: ","#info",self:getCharge(attributes,entity)},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+                if self.moveSpeedDuringCharge ~= 1 then
+                    y = y + self:printInfo(draw,{"#silent","When charging, reduce speed to : ","#info",round(self.moveSpeedDuringCharge*100),"#muted","%"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+                end
+            end
+            y = y + self:getLineReturnHeight(sizeMultiplyer) * 0.5
+            if self.subCategory == "ranged" then
+                y = y + self:printInfo(draw,{"#muted","projectile velocity: ","#info",self.projectileVelocity},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+                y = y + self:printInfo(draw,{"#muted","projectile gravity: ","#info",self.projectileGravity},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            end
+            if self.subCategory == "melee" then
+                y = y + self:printInfo(draw,{"#muted","reach: ","#info",self:getAttackRange(attributes,entity)},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+                y = y + self:printInfo(draw,{"#muted","radius: ","#info",self:getAttackRadius(attributes,entity)},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            end
+            if self:getKnockback(attributes,entity) > 0 then
+                y = y + self:printInfo(draw,{"#muted","knockback: ","#info",self:getKnockback(attributes,entity)},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            end
         end
     end
 
@@ -713,11 +960,61 @@ function Item:drawToolTip(draw,screenX,screenY,sizeMultiplyer,maxX,attributes,am
         y = y + self:printInfo(draw,{"#muted","cooldown: ","#info",self:getCooldown(attributes,entity)},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
         if self:getCharge(attributes,entity) > 0 then    
             y = y + self:printInfo(draw,{"#muted","charge time: ","#info",self:getCharge(attributes,entity)},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
-        end
-        if self.moveSpeedDuringCharge ~= 1 then
-            y = y + self:printInfo(draw,{"#silent","When charging, reduce speed to : ","#info",round(self.moveSpeedDuringCharge*100),"#muted","%"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            if self.moveSpeedDuringCharge ~= 1 then
+                y = y + self:printInfo(draw,{"#silent","When charging, reduce speed to : ","#info",round(self.moveSpeedDuringCharge*100),"#muted","%"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+            end
         end
     end
+
+    --[[if self.healthMaxMultiplier ~= 1 then
+        if self.healthMaxMultiplier > 0 then
+            y = y + self:printInfo(draw,{"#silent","When equipped, increase ","#health","max health ","#silent","by : ","#value","+"..round((self.healthMaxMultiplier-1)*100),"#muted","%"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+        else
+            y = y + self:printInfo(draw,{"#silent","When equipped, decrease ","#health","max health ","#silent","by : ","#damage",round((self.healthMaxMultiplier-1)*100),"#muted","%"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+        end
+    end
+    if self.healthMaxAdd ~= 0 then
+        if self.healthMaxAdd > 0 then
+            y = y + self:printInfo(draw,{"#silent","When equipped, add ","#health",round(self.healthMaxAdd),"#silent"," max health"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+        else
+            y = y + self:printInfo(draw,{"#silent","When equipped, remove ","#damage",round(math.abs(self.healthMaxAdd)),"#silent"," max health"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+        end
+    end]]
+
+    local function printPercentStat(label, value, colorTag)
+        if value == nil or value == 1 then return 0 end
+        local amount = round(math.abs((value - 1) * 100))
+        if value < 1 then
+            return self:printInfo(draw,{"#muted","When equipped, decrease ",colorTag,label,"#muted"," by : ","#reduce","-"..amount.."%"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+        end
+        return self:printInfo(draw,{"#muted","When equipped, increase ",colorTag,label,"#muted"," by : ","#increase","+"..amount.."%"},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+    end
+
+    local function printAddStat(label, value, colorTag)
+        if value == nil or value == 0 then return 0 end
+        if value > 0 then
+            return self:printInfo(draw,{"#muted","When equipped, add ","#increase","+",round(value),"#muted"," to ",colorTag,label},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+        end
+        return self:printInfo(draw,{"#muted","When equipped, remove ","#reduce","-"..round(math.abs(value)),"#muted"," from ",colorTag,label},screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,"base",sizeMultiplyer,windowSizeX - badgeSize - textXOffset - padding * 3)
+    end
+
+    y = y + printPercentStat("max health", self.healthMaxMultiplier, "#health")
+    y = y + printAddStat("max health", self.healthMaxAdd, "#health")
+    y = y + printPercentStat("damage", self.damageMultiplier, "#damage")
+    y = y + printAddStat("damage", self.damageAdd, "#damage")
+    y = y + printPercentStat("mine damage", self.mineDamageMultiplier, "#info")
+    y = y + printAddStat("mine damage", self.mineDamageAdd, "#info")
+    y = y + printPercentStat("cooldown reduction", self.cooldownReductionMultiplier, "#cooldown")
+    y = y + printPercentStat("regen", self.regenMultiplier, "#health")
+    y = y + printAddStat("regen", self.regenAdd, "#health")
+    y = y + printPercentStat("movement speed", self.speedMultiplier, "#value")
+    y = y + printAddStat("movement speed", self.speedAdd, "#value")
+    y = y + printPercentStat("jump strength", self.jumpStrengthMultiplier, "#value")
+    y = y + printAddStat("jump strength", self.jumpStrengthAdd, "#value")
+    y = y + printPercentStat("knockback", self.knockbackMultiplier, "#damage")
+    y = y + printAddStat("knockback", self.knockbackAdd, "#damage")
+    y = y + printPercentStat("gravity", self.gravityMultiplier, "#info")
+    y = y + printAddStat("gravity", self.gravityAdd, "#info")
 
     if self:getDashVelocity(attributes,entity) > 0 then
         y = y + self:getLineReturnHeight(sizeMultiplyer) * 0.5
@@ -756,6 +1053,8 @@ function Item:drawToolTip(draw,screenX,screenY,sizeMultiplyer,maxX,attributes,am
                             --love.graphics.setColor(0.8,0.6,1,0.25)
                             --love.graphics.rectangle("fill",screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,width+padding*2,height+padding*2,5,5)
                             --love.graphics.setColor(0.8,0.8,0.8,1)
+                            love.graphics.setColor(0.8,0.6,1,0.1)
+                            love.graphics.rectangle("fill",screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,width+padding*2,height+padding*2,5,5)
                             love.graphics.setColor(0.8,0.6,1,1)
                             love.graphics.rectangle("line",screenX + badgeSize + textXOffset + padding * 2,screenY + padding + y,width+padding*2,height+padding*2,5,5)
                         end
@@ -813,8 +1112,13 @@ function normalizeRichText(textTable)
 
         if value == "#cooldown" then value = {1,1,0.3,1} end
 
+        if value == "#xp" then value = {0,1,1,1} end
+
         if value == "#condition" then value = {0.2,0.6,1,1} end
         if value == "#value" then value = {0.8,0.6,1,1} end
+
+        if value == "#reduce" then value = {1,0.4,0.4,1} end
+        if value == "#increase" then value = {0.4,1,0.4,1} end
 
 
 

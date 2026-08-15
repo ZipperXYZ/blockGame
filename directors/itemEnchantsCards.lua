@@ -48,11 +48,12 @@ ItemEnchantCard.className = "ItemEnchantCard"
     --decrease damage taken
     --increase speed for duration
 
+
 function LoadItemEnchantmentCards()
     Enchants = {}
     EnchantsList = {}
 
-    Enchants.onEnemyHit = ItemEnchantCard(1, 15, "onEnemyHit", "cause", {"enemy","enemyDamage","damageValue","itemUse"}, {"weapon","accessory"}, 1, {"any"}, {
+    Enchants.onEnemyHit = ItemEnchantCard(1, 20, "onEnemyHit", "cause", {"enemy","enemyDamage","damageValue","itemUse"}, {"weapon","accessory"}, 1, {"any"}, {
         checkSignal =
             function (self,signal,signalInfo,power,itemAttributes,item,entity)
                 local accepted = false
@@ -109,7 +110,7 @@ function LoadItemEnchantmentCards()
                 return 0
             end,
     })
-    Enchants.breakingTile = ItemEnchantCard(1, 15, "breakingTile", "cause", {"tile","tileDamageValue","itemUse"}, {"tool","accessory"}, 0.2, {"any"}, {
+    Enchants.breakingTile = ItemEnchantCard(1, 10, "breakingTile", "cause", {"tile","tileDamageValue","itemUse"}, {"tool","accessory"}, 0.2, {"any"}, {
         checkSignal =
             function (self,signal,signalInfo,power,itemAttributes,item,entity)
                 local accepted = false
@@ -128,7 +129,7 @@ function LoadItemEnchantmentCards()
                 return 0
             end,
     })
-    Enchants.damagingTile = ItemEnchantCard(1, 10, "damagingTile", "cause", {"tile","tileDamageValue","itemUse","preventHealthGain"}, {"tool","accessory"}, 0.06, {"any"}, {
+    Enchants.damagingTile = ItemEnchantCard(1, 10, "damagingTile", "cause", {"tile","tileDamageValue","tileDamage","itemUse","preventHealthGain"}, {"tool","accessory"}, 0.06, {"any"}, {
         checkSignal =
             function (self,signal,signalInfo,power,itemAttributes,item,entity)
                 local accepted = false
@@ -147,7 +148,26 @@ function LoadItemEnchantmentCards()
                 return 0
             end,
     })
-    Enchants.jump = ItemEnchantCard(1, 10, "jump", "cause", {"player","playerJump","preventHealthGain"}, {"accessory"}, 0.5, {"any"}, {
+    Enchants.shootingBow = ItemEnchantCard(1, 10, "shootingBow", "cause", {"bowUse","projectileDamageValue","itemUse"}, {"ranged","accessory"}, 0.2, {"any"}, {
+        checkSignal =
+            function (self,signal,signalInfo,power,itemAttributes,item,entity)
+                local accepted = false
+                if signal == "shootingBow" then
+                    accepted = true
+                end
+
+                return accepted, signalInfo
+            end,
+        print = 
+            function (self,itemAttributes,item,power,entity)
+                return {"#muted"," When ","#info","shooting a bow"}
+            end,
+        getValue =  
+            function (self,power,itemAttributes,item,entity)
+                return 0
+            end,
+    })
+    Enchants.jump = ItemEnchantCard(2, 10, "jump", "cause", {"player","playerJump","preventHealthGain"}, {"accessory"}, 0.2, {"any"}, {
         checkSignal =
             function (self,signal,signalInfo,power,itemAttributes,item,entity)
                 local accepted = false
@@ -243,11 +263,59 @@ function LoadItemEnchantmentCards()
                 return 0
             end,
     })
+    Enchants.lowHealth = ItemEnchantCard(1, 8, "lowHealth", "condition", {}, {"any"}, 2.5, {"any"}, {
+        checkCondition =
+            function (self,power,itemAttributes,item,entity,signalInfo)
+                local success = false
+                if entity.health:getValue("hp") / entity.health:getMax("hp") <= self:getValue(power,itemAttributes,item,entity)/100 then
+                    success = true
+                end
+
+                return success, signalInfo
+            end,
+        print = 
+            function (self,itemAttributes,item,power,entity)
+                return {"#muted",", while ","#condition","health under ","#value",self:getValue(power,itemAttributes,item,entity).."%"}
+            end,
+        getValue = 
+            function (self,power,itemAttributes,item,entity)
+                local kv = 0.03
+                local min = 10
+                local max = 65
+                local multiplier = 2
+                local value = (max-min) * (math.log(1 + kv * (power*multiplier))/ (1 + math.log(1 + kv * (power*multiplier)))) + min
+                value = round(value)
+
+                return value
+            end,
+    })
+    Enchants.enemyFullHealth = ItemEnchantCard(1, 10, "enemyFullHealth", "condition", {}, {"any"}, 2.5, {"any"}, {
+        previousCardFilter = {"enemyDamage"},
+        checkCondition =
+            function (self,power,itemAttributes,item,entity,signalInfo)
+                local success = false
+                if signalInfo.enemy ~= nil then
+                    if signalInfo.enemy.health:isFull("hp") then
+                        success = true
+                    end
+                end
+
+                return success, signalInfo
+            end,
+        print = 
+            function (self,itemAttributes,item,power,entity)
+                return {"#muted",", while ","#enemy","enemy","#muted"," is on ","#condition","full health"}
+            end,
+        getValue = 
+            function (self,power,itemAttributes,item,entity)
+                return 0
+            end,
+    })
 
 
     --reactions : 
 
-    Enchants.increaseDamage = ItemEnchantCard(1, 20, "increaseDamage", "reaction", {}, {"any"}, nil, {"any"}, {
+    Enchants.increaseDamage = ItemEnchantCard(1, 25, "increaseDamage", "reaction", {}, {"any"}, nil, {"any"}, {
         previousCardFilter = {"enemyDamage"},
         use =
             function (self,power,itemAttributes,item,entity,signalInfo)
@@ -266,13 +334,13 @@ function LoadItemEnchantmentCards()
             end,
         getValue = 
             function (self,power,itemAttributes,item,entity)
-                local value = ((power*20) ^ 0.75)
+                local value = ((power*20) ^ 0.5)
                 value = round(value)
 
                 return value
             end,
     })
-    Enchants.increaseCriticalStrikeChance = ItemEnchantCard(1, 10, "increaseCriticalStrikeChance", "reaction", {}, {"any"}, nil, {"any"}, {
+    Enchants.increaseCriticalStrikeChance = ItemEnchantCard(1, 15, "increaseCriticalStrikeChance", "reaction", {}, {"any"}, nil, {"any"}, {
         previousCardFilter = {"enemyDamage"},
         use =
             function (self,power,itemAttributes,item,entity,signalInfo)
@@ -299,6 +367,66 @@ function LoadItemEnchantmentCards()
                 return value
             end,
     })
+    Enchants.increaseMineDamage = ItemEnchantCard(1, 20, "increaseMineDamage", "reaction", {}, {"tool","accessory"}, nil, {"any"}, {
+        previousCardFilter = {"tileDamage"},
+        use =
+            function (self,power,itemAttributes,item,entity,signalInfo)
+                local success = false
+
+                if signalInfo ~= nil and signalInfo.mineDamageValue ~= nil then
+                    signalInfo.mineDamageValue = signalInfo.mineDamageValue  * (1 + self:getValue(power,itemAttributes,item,entity)/100)
+                    success = true
+                end
+
+                return success, signalInfo
+            end,
+        print = 
+            function (self,itemAttributes,item,power,entity)
+                return {"#muted",", increase ","#damage","tool damage ","#muted","by ","#value",self:getValue(power,itemAttributes,item,entity).."%"}
+            end,
+        getValue = 
+            function (self,power,itemAttributes,item,entity)
+                local value = ((power*50) ^ 0.75)
+                value = round(value)
+
+                return value
+            end,
+    })
+    Enchants.multiShot = ItemEnchantCard(1, 10, "multiShot", "reaction", {}, {"ranged","accessory"}, nil, {"any"}, {
+        previousCardFilter = {"bowUse"},
+        use =
+            function (self,power,itemAttributes,item,entity,signalInfo)
+                local success = false
+
+                if signalInfo ~= nil then
+                    signalInfo.projectileDamage = signalInfo.projectileDamage * (self:getRadius(power,itemAttributes,item,entity))
+                    signalInfo.projectileAmount = signalInfo.projectileAmount * (self:getValue(power,itemAttributes,item,entity))
+
+                    success = true
+                end
+
+                return success, signalInfo
+            end,
+        print = 
+            function (self,itemAttributes,item,power,entity)
+                return {"#muted",", shoot ","#value",self:getValue(power,itemAttributes,item,entity),"#muted"," projectiles which deals ","#damage",(self:getRadius(power,itemAttributes,item,entity)*100).."%","#muted"," damage each"}
+            end,
+        getRadius = 
+            function (self,power,itemAttributes,item,entity)
+                local radius = 1
+                -- in this case, the function doesnt refer to radius but the damage amount
+                local projectileAmount = self:getValue(power,itemAttributes,item,entity)
+                radius = radius / (1 + ((1 + (power*4) ^ 0.7) - 1) * 0.3)
+
+                radius = round(radius,100)
+                return radius
+            end,
+        getValue = 
+            function (self,power,itemAttributes,item,entity)
+                local value = math.ceil(1 + (power*4) ^ 0.7)
+                return value
+            end,
+    })
     Enchants.giveHealth = ItemEnchantCard(2, 5, "giveHealth", "reaction", {}, {"any"}, nil, {"any"}, {
         previousCardAntiFilter = {"playerFullHealth","playerDamage","preventHealthGain"},
         use =
@@ -308,7 +436,7 @@ function LoadItemEnchantmentCards()
                 if entity.health ~= nil then
                     local value = self:getValue(power,itemAttributes,item,entity)
                     --entity.health:increase("hp", value)
-                    entity:gainHealth(math.ceil((value/100)*entity.health:getMax("hp")),"hp","giveHealth Enchant",entity)
+                    entity:gainHealth(math.ceil((value/100)*maximum(entity.health:getMax("hp"),100)),"hp","giveHealth Enchant",entity)
                     success = true
                 end
 
@@ -384,6 +512,76 @@ function LoadItemEnchantmentCards()
                 return value
             end,
     })
+    Enchants.dropXP = ItemEnchantCard(2, 4, "dropXP", "reaction", {}, {"any"}, nil, {"any"}, {
+        use =
+            function (self,power,itemAttributes,item,entity,signalInfo)
+                local success = false
+
+                if signalInfo ~= nil then
+                    world:spawnXPparticles(self:getValue(power,itemAttributes,item,entity),signalInfo.position:copy())
+                    success = true
+                end
+
+                return success, signalInfo
+            end,
+        print = 
+            function (self,itemAttributes,item,power,entity)
+                return {"#muted",", drop ","#xp",self:getValue(power,itemAttributes,item,entity),"#xp"," xp"}
+            end,
+        getValue = 
+            function (self,power,itemAttributes,item,entity)
+                local value = ((power*100) ^ 0.7)/10
+                value = round(value,100)
+
+                return value
+            end,
+    })
+    Enchants.dropBomb = ItemEnchantCard(4, 1, "dropBomb", "reaction", {}, {"any"}, nil, {"any"}, {
+        use =
+            function (self,power,itemAttributes,item,entity,signalInfo)
+                local success = false
+
+                if signalInfo ~= nil then
+                    
+                    Projectile("bomb",signalInfo.position:copy(), Vector2(0,12),"bomb",entity,{
+                        name = item.name,
+                        item = item,
+                        attributes = itemAttributes,
+                    }, {
+                        animationType = "time",
+                        knockback = 5,
+                        gravity = 0.5,
+                        bounceFactor = 0.95,
+                        explodeDamage = self:getValue(power,itemAttributes,item,entity),
+                        explodeRadius = self:getRadius(power,itemAttributes,item,entity),
+                        explodeTimer = 6,
+                        explodeTileDamage = self:getValue(power,itemAttributes,item,entity),
+                    },true)
+                    --world:spawnXPparticles(self:getValue(power,itemAttributes,item,entity),signalInfo.position:copy())
+                    success = true
+                end
+
+                return success, signalInfo
+            end,
+        print = 
+            function (self,itemAttributes,item,power,entity)
+                return {"#muted",", drop a ","#enemy"," bomb","#muted"," that deals ","#damage",self:getValue(power,itemAttributes,item,entity),"#damage"," damage","#muted"," in a radius of ","#value",self:getRadius(power,itemAttributes,item,entity)}
+            end,
+        getRadius =
+            function (self,power,itemAttributes,item,entity)
+                local radius = 2 + ((power*100) ^ 0.6)/10
+                radius = round(radius,10)
+
+                return radius
+            end,
+        getValue = 
+            function (self,power,itemAttributes,item,entity)
+                local value = ((power*100) ^ 0.7)/7
+                value = round(value,10)
+
+                return value
+            end,
+    })
 
 end
 
@@ -415,6 +613,9 @@ function ItemEnchantCard:init(cardCost,cardWeight,name,cardType,cardSubTypes,ite
     end
     if self.flags.print ~= nil then
         self.print = self.flags.print
+    end
+    if self.flags.getRadius ~= nil then
+        self.getRadius = self.flags.getRadius
     end
 
     self.getValue =

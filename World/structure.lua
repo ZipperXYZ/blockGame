@@ -2,6 +2,19 @@ require "class/superClass"
 Structure = SuperClass:extend()
 Structure.className = "Structure"
 
+local function pickDeterministic(values, seedValue)
+    if type(values) ~= "table" or #values == 0 then
+        return nil
+    end
+
+    local hash = math.sin((seedValue + 1) * 12.9898) * 43758.5453
+    local fraction = hash - math.floor(hash)
+    local index = math.floor(fraction * #values) + 1
+    if index < 1 then index = 1 end
+    if index > #values then index = #values end
+    return values[index]
+end
+
 
 function Structure:init(structureName,type,id,spawnStep,spawnTries,spawnChance,maxSpawnTries,spawnConditions,data,flags)
     self.name = structureName or "none"
@@ -71,6 +84,44 @@ function Structure:init(structureName,type,id,spawnStep,spawnTries,spawnChance,m
     self.afterSpawnOperations = self.flags.afterSpawnOperations or {}
 
 
+end
+
+function Structure:forceSpawn(worldX,worldY)
+    --print("required to force spawn structure "..self.name.." at "..worldX..","..worldY)
+    local worldSeed = world.worldSeed
+    local chunkX, chunkY, posInChunkX, posInChunkY = world:convertWorldPosToChunkPos(worldX, worldY)
+    local actualSpawnx = worldX
+    local actualSpawny = worldY
+    local chunk = world:getChunk(chunkX, chunkY)
+    local chunkWidth = world.chunkSize
+    for i = 1, self.spawnTries do
+            local spawned = false
+            for try = 1, self.maxSpawnTries do
+                if not spawned then
+                   local x = math.ceil(noise(chunkX*1.5+try,chunkY*1.4-12000 - try * 100,worldSeed-5160+i*0.8, 100 + self.id)*chunkWidth)
+                   local y = math.ceil(noise(chunkX*1.5+try,chunkY*1.4-6000 - try * 200,worldSeed-5360+i*0.8, 100 + self.id)*chunkWidth)
+                   if self:getSpawnAvailability(chunkX,chunkY,x,y) then
+                        spawned = true
+
+                        actualSpawnx = chunkX * chunkWidth + x - 1
+                        actualSpawny = chunkY * chunkWidth + y - 1
+                   end
+                end
+            end
+    end
+
+
+    local structureData = {}
+
+    structureData.x = actualSpawnx
+    structureData.y = actualSpawny
+    structureData.name = self.name
+    structureData.structure = self
+    structureData.chunkListGenerated = {}
+    --structureData.forced = true
+    structureData.seed = noise(chunkX,chunkY-800,worldSeed-9160,20 )
+
+    table.insert(chunk.structures, structureData)
 end
 
 function Structure:attemptSpawn(chunk, chunkX,chunkY,chunkWidth, generationStep, stepList, worldSeed, depthProgression, biomeSize, biomeList, world)
@@ -176,7 +227,7 @@ end
 
 function Structure:chunkGenerate(chunk, chunkX, chunkY, seed, centerWorldPosX,centerWorldPosY, structureData)
     --print("generating structure chunk at "..chunkX..","..chunkY.." for structure "..self.name)
-    if world:getNeighboringChunks(chunkX, chunkY, self.spawnStep) or self.spawnStep == "none" then
+    if structureData ~= nil and structureData.forced or world:getNeighboringChunks(chunkX, chunkY, self.spawnStep) or self.spawnStep == "none" then
         for posInChunkX = 1, chunk.chunkSize do
             for posInChunkY = 1, chunk.chunkSize do
                 local worldPosX = chunkX * chunk.chunkSize + posInChunkX - 1
@@ -200,7 +251,7 @@ function Structure:chunkGenerate(chunk, chunkX, chunkY, seed, centerWorldPosX,ce
                                             table.insert(randomList,tileInfo.blocs[j]["bloc"])
                                         end
                                     end
-                                    bloc = getRandom(randomList,seed + posInChunkX * 1000 + posInChunkY * 10000)
+                                    bloc = pickDeterministic(randomList, seed + posInChunkX * 1000 + posInChunkY * 10000)
                                 end
                                 local blocInplace = world:getRawTile(worldPosX, worldPosY, "tiles")
                                 local blocInPlaceType = tiles[world:generateTerrainTile(worldPosX, worldPosY)].type
@@ -224,7 +275,7 @@ function Structure:chunkGenerate(chunk, chunkX, chunkY, seed, centerWorldPosX,ce
                                             table.insert(randomList,tileInfo.blocs[j]["bloc"])
                                         end
                                     end
-                                    bloc = getRandom(randomList,seed + posInChunkX * 1000 + posInChunkY * 10000)
+                                    bloc = pickDeterministic(randomList, seed + posInChunkX * 1000 + posInChunkY * 10000)
                                 end
                                 local blocInplace = world:getRawTile(worldPosX, worldPosY, "topTiles")
                                 if (tileInfo.replace == "all") or (blocInplace == "none" and tileInfo.replace == "air") or (tileInfo.replace == "solid" and tiles[blocInplace].type == "solid") or (tileInfo.replace == blocInplace) then
@@ -247,7 +298,7 @@ function Structure:chunkGenerate(chunk, chunkX, chunkY, seed, centerWorldPosX,ce
                                             table.insert(randomList,tileInfo.blocs[j]["bloc"])
                                         end
                                     end
-                                    bloc = getRandom(randomList,seed + posInChunkX * 1000 + posInChunkY * 10000)
+                                    bloc = pickDeterministic(randomList, seed + posInChunkX * 1000 + posInChunkY * 10000)
                                 end
                                 local blocInplace = world:getRawTile(worldPosX, worldPosY, "backTiles")
                                 if (tileInfo.replace == "all") or (blocInplace == "none" and tileInfo.replace == "air") or (tileInfo.replace == "solid" and tiles[blocInplace].type == "solid") or (tileInfo.replace == blocInplace) then
@@ -263,6 +314,9 @@ function Structure:chunkGenerate(chunk, chunkX, chunkY, seed, centerWorldPosX,ce
         end
         
         table.insert(structureData.chunkListGenerated,"cx"..chunkX.."cy"..chunkY)
+                if chunk ~= nil then
+                    chunk:updateNeighboringLights()
+                end
         return true
     end
 

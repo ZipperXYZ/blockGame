@@ -42,6 +42,7 @@ function Inventory:init(inventoryName,color,screenPos,sizeX,sizeY,sizeZ,maxStack
     self.isMainInventory = self.flags["isMainInventory"] or false
     self.cheat = self.flags["cheat"] or false
     self.isChest = self.flags.isChest or false
+    self.baseDrawFormat = self.flags.baseDrawFormat or "medium"
     self.chestInfo = self.flags.chestInfo or {}
 
     if self.isEquipmentInventory then
@@ -54,6 +55,35 @@ function Inventory:init(inventoryName,color,screenPos,sizeX,sizeY,sizeZ,maxStack
         self:setupIcons()
         self:setupMainInventory(entity)
     end
+end
+
+function Inventory:cheatAccessoryShortcut()
+    local newSizeY = 15
+    local newSizeX = 6
+    self.tileSize = (0.065/2)
+    self.itemSize = (0.065/16)
+    self.baseDrawFormat = "small"
+    for page = 1, self.sizeZ do
+    --self.items[page]={}
+        for ix=1,newSizeX do
+            if self.items[page][ix] == nil then self.items[page][ix]={} end
+            for iy=1,newSizeY do
+                if ix > self.sizeX or iy > self.sizeY then
+                    if self.items[page][ix] == nil then self.items[page][ix]={} end
+                    self.items[page][ix][iy]={}
+                    self.items[page][ix][iy]["amount"]=0
+                    self.items[page][ix][iy]["name"]="none"
+                    self.items[page][ix][iy]["attributes"]={}
+                    self.items[page][ix][iy]["slotAttributes"]={
+                        ["lock"] = "accessory",
+                        ["icon"] = "accessory"
+                    }
+                end
+            end
+        end
+    end
+    self.sizeX = newSizeX
+    self.sizeY = newSizeY
 end
 
 function Inventory:setupIcons()
@@ -237,7 +267,22 @@ end
 
 function Inventory:resetDefaultPassData()
     self:resetPassData("movementSpeed",1)
-    --self:resetPassData("movementSpeed",1)
+    self:resetPassData("movementSpeedAdd",0)
+    self:resetPassData("jumpStrength",1)
+    self:resetPassData("jumpStrengthAdd",0)
+    self:resetPassData("maxHealth",1)
+    self:resetPassData("maxHealthAdd",0)
+    self:resetPassData("regen",1)
+    self:resetPassData("regenAdd",0)
+    self:resetPassData("gravity",1)
+    self:resetPassData("gravityAdd",0)
+    self:resetPassData("damage",1)
+    self:resetPassData("damageAdd",0)
+    self:resetPassData("knockback",1)
+    self:resetPassData("knockbackAdd",0)
+    self:resetPassData("mineDamage",1)
+    self:resetPassData("mineDamageAdd",0)
+    self:resetPassData("cooldownReduction",1)
 end
 
 function Inventory:slotUpdate(dt,entity,ix,iy,page)
@@ -279,9 +324,25 @@ function Inventory:slotUpdate(dt,entity,ix,iy,page)
         end
 
 
+
         if (not self:getSlotAttribute("disabled",ix,iy,page)) or (self:getSlotAttribute("disabled",ix,iy,page) == 0) then
 
             local button = self:getSlotAttribute("button",ix,iy,page)..""
+            local icon = self:getSlotAttribute("icon",ix,iy,page)..""
+
+            if icon ~= "0" then
+                local itemName, itemAmount, itemAttributes = self:getItem(ix,iy,page)
+
+                if items[itemName] ~= nil and itemName ~= "none" then
+                    local item = items[itemName]
+                    if item ~= nil then
+                        if icon == "accessory" then
+                            self:accessoryUpdate(dt,entity,ix,iy,page)
+                        end
+                    end
+                end
+            end
+
 
             if button ~= "0" then
                 local itemName, itemAmount, itemAttributes = self:getItem(ix,iy,page)
@@ -326,6 +387,40 @@ function Inventory:slotUpdate(dt,entity,ix,iy,page)
 
         end
 
+    end
+end
+
+function Inventory:accessoryUpdate(dt,entity,ix,iy,page)
+    local itemName, itemAmount, itemAttributes = self:getItem(ix,iy,page)
+    local item = items[itemName]
+    if item ~= nil then
+
+        self:setPassData("movementSpeed",item.speedMultiplier,"multiply")
+        self:setPassData("movementSpeedAdd",item.speedAdd,"add")
+
+        self:setPassData("jumpStrength",item.jumpStrengthMultiplier,"multiply")
+        self:setPassData("jumpStrengthAdd",item.jumpStrengthAdd,"add")
+
+        self:setPassData("maxHealth",item.healthMaxMultiplier,"multiply")
+        self:setPassData("maxHealthAdd",item.healthMaxAdd,"add")
+
+        self:setPassData("regen",item.regenMultiplier,"multiply")
+        self:setPassData("regenAdd",item.regenAdd,"add")
+
+        self:setPassData("damage",item.damageMultiplier,"multiply")
+        self:setPassData("damageAdd",item.damageAdd,"add")
+
+        self:setPassData("mineDamage",item.mineDamageMultiplier,"multiply")
+        self:setPassData("mineDamageAdd",item.mineDamageAdd,"add")
+
+        self:setPassData("gravity",item.gravityMultiplier,"multiply")
+        self:setPassData("gravityAdd",item.gravityAdd,"add")
+
+        self:setPassData("knockback",item.knockbackMultiplier,"multiply")
+        self:setPassData("knockbackAdd",item.knockbackAdd,"add")
+
+        self:setPassData("cooldownReduction",item.cooldownReductionMultiplier,"multiply")
+        --self:setPassData("cooldownReductionAdd",item.cooldownReductionAdd,"add")
     end
 end
 
@@ -942,9 +1037,9 @@ function Inventory:drawItem(page,tileX,tileY,positionX,positionY,size)
         
         if self.items[page][tileX][tileY]["name"] ~= "none" then
             
-            local drawFormat = medium
+            local drawFormat = self.baseDrawFormat
             if items[self.items[page][tileX][tileY]["name"]] ~= nil then
-                items[self.items[page][tileX][tileY]["name"]]:draw("medium",positionX,positionY,size,self:getItemAttributes(tileX,tileY,page),self:getItemAmount(tileX,tileY,page),nil,nil,false,true)
+                items[self.items[page][tileX][tileY]["name"]]:draw(drawFormat,positionX,positionY,size,self:getItemAttributes(tileX,tileY,page),self:getItemAmount(tileX,tileY,page),nil,nil,false,true)
                 if self.items[page][tileX][tileY]["amount"] > 1 then
                     love.graphics.setColor(1,1,1,1)
                     love.graphics.printf("x"..self.items[page][tileX][tileY]["amount"],positionX-size/2,positionY+size/2 - 15,size/(InventoryTextSize),"right",0,InventoryTextSize,InventoryTextSize)

@@ -57,19 +57,26 @@ function CombineColors(colors)
   finalColor[4] = finalColor[4] / #colors
   return finalColor
 end
-function OverrideColor(color1,color2)
+function OverrideColor(color1,color2,strength)
   if color1 == nil then color1 = {0, 0, 0, 0} end
   if color2 == nil then color2 = {0, 0, 0, 0} end
   local finalColor = CopyAll(color1) or {0, 0, 0, 0}
+  if strength == nil then
+    if #color2 == 5 then
+      strength = color2[5]
+    else
+      strength = color2[4]
+    end
+  end
   if #color2 == 5 then
-    finalColor[1] = k(finalColor[1],color2[1],color2[5])
-    finalColor[2] = k(finalColor[2],color2[2],color2[5])
-    finalColor[3] = k(finalColor[3],color2[3],color2[5])
-    finalColor[4] = k(finalColor[4],color2[4],color2[5])
+    finalColor[1] = k(finalColor[1],color2[1],strength)
+    finalColor[2] = k(finalColor[2],color2[2],strength)
+    finalColor[3] = k(finalColor[3],color2[3],strength)
+    finalColor[4] = k(finalColor[4],color2[4],strength)
   else
-    finalColor[1] = k(finalColor[1],color2[1],color2[4])
-    finalColor[2] = k(finalColor[2],color2[2],color2[4])
-    finalColor[3] = k(finalColor[3],color2[3],color2[4])
+    finalColor[1] = k(finalColor[1],color2[1],strength)
+    finalColor[2] = k(finalColor[2],color2[2],strength)
+    finalColor[3] = k(finalColor[3],color2[3],strength)
   end
   --finalColor[4] = k(finalColor[4],color2[4],color2[4])
   return finalColor

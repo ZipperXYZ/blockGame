@@ -50,6 +50,7 @@ function loadtextures()
   textures["textures"]["player.png"]=love.graphics.newImage("Textures/player.png")
   textures["textures"]["miscTiles.png"]=love.graphics.newImage("Textures/miscTiles.png")
   textures["textures"]["inventoryIcons.png"]=love.graphics.newImage("Textures/inventoryIcons.png")
+  textures["textures"]["projectiles.png"]=love.graphics.newImage("Textures/projectiles.png")
   textures["sprites"]["inventoryIcons"] = Sprite("inventoryIcons","inventoryIcons.png",{
     ["parts"] = {"space","leftClick","rightClick","shift","r","x","c","space2","leftClick2","rightClick2","shift2","r2","x2","c2","headplate","chestplate","leggings","necklace","armlet","charm","accessory"},
     ["space"] ={
@@ -116,7 +117,7 @@ function loadtextures()
       ["type"] = "still", ["timePerFrame"] = 1, ["gridMultiplication"] = 16, ["spriteSize"] = {1,1}, ["spriteCenter"] = {0.5,0.5}, ["quads"] = {{6,2}}
     }
   }, {})
-  textures["sprites"]["stick"] = Sprite("stick","items1.png",{["parts"] = {"small","medium","large"}},{["setupItem"] = true,["itemQuadrant"]={0,0}})
+  textures["sprites"]["essenceStick"] = Sprite("essenceStick","items1.png",{["parts"] = {"small","medium","large"}},{["setupItem"] = true,["itemQuadrant"]={0,0}})
   textures["sprites"]["rock"] = Sprite("rock","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,8}})
   textures["sprites"]["unknown"] = Sprite("unknown","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,0}})
 
@@ -132,6 +133,9 @@ function loadtextures()
 
   textures.sprites.thunderBirdFeather = Sprite("thunderBirdFeather","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,44}})
   textures.sprites.angelFeather = Sprite("angelFeather","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,48}})
+  textures.sprites.crudeBow = Sprite("crudeBow","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,56}})
+  textures.sprites.bombItem = Sprite("bombItem","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,60}})
+  textures.sprites.stick = Sprite("stick","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,64}})
   
   textures.sprites.clearRing = Sprite("clearRing","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,4}})
   textures.sprites.pickaxeTop = Sprite("pickaxeTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,8}})
@@ -146,10 +150,55 @@ function loadtextures()
   textures.sprites.swordTop = Sprite("swordTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,44}})
   textures.sprites.bigSwordTop = Sprite("bigSwordTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,48}})
   textures.sprites.lanceTop = Sprite("lanceTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,52}})
+  textures.sprites.ringTop = Sprite("ringTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,56}})
+  textures.sprites.bowTop = Sprite("bowTop","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={7,60}})
   
   textures.sprites.toolBase = Sprite("toolBase","items1.png",{parts = {"small","medium"}},{setupItem = true,itemQuadrant={14,0}})
   textures.sprites.toolBaseSmall = Sprite("toolBaseSmall","items1.png",{parts = {"small","medium"}},{setupItem = true,itemQuadrant={14,4}})
   textures.sprites.toolBaseSmall2 = Sprite("toolBaseSmall2","items1.png",{parts = {"small","medium"}},{setupItem = true,itemQuadrant={14,8}})
+  textures.sprites.spikeTopCrystal = Sprite("spikeTopCrystal","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={14,12}})
+  textures.sprites.swayPickaxeTopCrystal = Sprite("swayPickaxeTopCrystal","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={14,16}})
+  textures.sprites.hammerTopCrystal = Sprite("hammerTopCrystal","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={14,20}})
+  textures.sprites.chiselTopCrystal = Sprite("chiselTopCrystal","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={14,24}})
+  textures.sprites.shovelTopCrystal = Sprite("shovelTopCrystal","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={14,28}})
+  textures.sprites.stiffPickTopCrystal = Sprite("stiffPickTopCrystal","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={14,32}})
+  textures.sprites.targetPickaxeTopCrystal = Sprite("targetPickaxeTopCrystal","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={14,36}})
+  textures.sprites.smallSwordTopCrystal = Sprite("smallSwordTopCrystal","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={14,40}})
+  textures.sprites.swordTopCrystal = Sprite("swordTopCrystal","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={14,44}})
+  textures.sprites.bigSwordTopCrystal = Sprite("bigSwordTopCrystal","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={14,48}})
+  textures.sprites.lanceTopCrystal = Sprite("lanceTopCrystal","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={14,52}})
+  textures.sprites.pickaxeTopCrystal = Sprite("pickaxeTopCrystal","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={14,56}})
+  textures.sprites.ringTopCrystal = Sprite("ringTopCrystal","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={14,64}})
+  textures.sprites.bowTopCrystal = Sprite("bowTopCrystal","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={14,68}})
+
+  textures.sprites.fireRing = Sprite("fireRing","items1.png",{parts = {"small","medium"}},{setupItem = true,itemQuadrant={21,0}})
+  textures.sprites.coldRing = Sprite("coldRing","items1.png",{parts = {"small","medium"}},{setupItem = true,itemQuadrant={21,4}})
+  textures.sprites.natureRing = Sprite("natureRing","items1.png",{parts = {"small","medium"}},{setupItem = true,itemQuadrant={21,8}})
+  textures.sprites.goldRing = Sprite("goldRing","items1.png",{parts = {"small","medium"}},{setupItem = true,itemQuadrant={21,12}})
+  textures.sprites.voidRing = Sprite("voidRing","items1.png",{parts = {"small","medium"}},{setupItem = true,itemQuadrant={21,16}})
+  textures.sprites.healthNecklace = Sprite("healthNecklace","items1.png",{parts = {"small","medium"}},{setupItem = true,itemQuadrant={21,20}})
+  textures.sprites.greaterHealthNecklace = Sprite("greaterHealthNecklace","items1.png",{parts = {"small","medium"}},{setupItem = true,itemQuadrant={21,24}})
+  textures.sprites.movementArtifact = Sprite("movementArtifact","items1.png",{parts = {"small","medium"}},{setupItem = true,itemQuadrant={21,28}})
+  textures.sprites.glassArtifact = Sprite("glassArtifact","items1.png",{parts = {"small","medium"}},{setupItem = true,itemQuadrant={21,32}})
+
+  textures.sprites.bowBase = Sprite("toolBase","items1.png",{parts = {"small","medium"}},{setupItem = true,itemQuadrant={28,0}})
+  textures.sprites.ringCrystal = Sprite("toolTop","items1.png",{parts = {"small","medium"}},{setupItem = true,itemQuadrant={28,4}})
+  textures.sprites.pickaxeTopTough = Sprite("pickaxeTopTough","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={28,8}})
+  textures.sprites.spikeTopTough = Sprite("spikeTopTough","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={28,12}})
+  textures.sprites.swayPickaxeTopTough = Sprite("swayPickaxeTopTough","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={28,16}})
+  textures.sprites.hammerTopTough = Sprite("hammerTopTough","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={28,20}})
+  textures.sprites.chiselTopTough = Sprite("chiselTopTough","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={28,24}})
+  textures.sprites.shovelTopTough = Sprite("shovelTopTough","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={28,28}})
+  textures.sprites.stiffPickTopTough = Sprite("stiffPickTopTough","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={28,32}})
+  textures.sprites.targetPickaxeTopTough = Sprite("targetPickaxeTopTough","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={28,36}})
+  textures.sprites.smallSwordTopTough = Sprite("smallSwordTopTough","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={28,40}})
+  textures.sprites.swordTopTough = Sprite("swordTopTough","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={28,44}})
+  textures.sprites.bigSwordTopTough = Sprite("bigSwordTopTough","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={28,48}})
+  textures.sprites.lanceTopTough = Sprite("lanceTopTough","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={28,52}})
+  textures.sprites.ringTopTough = Sprite("ringTopTough","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={28,56}})
+  textures.sprites.bowTopTough = Sprite("bowTopTough","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={28,60}})
+
+
 
 
   textures["sprites"]["placementPreview"] = Sprite("placementPreview","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {0,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
@@ -157,9 +206,13 @@ function loadtextures()
   textures["sprites"]["destroyPreview"] = Sprite("destroyPreview","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {1,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
   textures["sprites"]["destroyAnimation"] = Sprite("destroyAnimation","miscTiles.png",{["type"] = "hold", ["timePerFrame"] = 1/9, ["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {{0,1},{1,1},{2,1},{3,1},{4,1},{5,1},{6,1},{7,1},{8,1}}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleAnimation"})
   
+
+
+
   textures["sprites"]["player"] = Sprite("player","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,0},["spriteSizes"]={1,2},["spriteCenters"]={0.5,1.5}})
   textures["sprites"]["slime"] = Sprite("slime","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={1,0},["spriteSizes"]={1,2},["spriteCenters"]={0.5,1.5}})
   textures["sprites"]["bigSlime"] = Sprite("bigSlime","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={3,0},["spriteSizes"]={2,2},["spriteCenters"]={1,2}})
+  textures["sprites"]["bear"] = Sprite("bear","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={5,0},["spriteSizes"]={3,2},["spriteCenters"]={1.5,2}})
   textures["sprites"]["skeleton"] = Sprite("skeleton","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={2,0},["spriteSizes"]={1,2},["spriteCenters"]={0.5,1.5}})
   textures["sprites"]["crudePickaxe_Hold"] = Sprite("crudePickaxe_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,1},["spriteSizes"]={1.5,2},["spriteCenters"]={0.75,1.5}})
   
@@ -170,6 +223,144 @@ function loadtextures()
   textures["sprites"]["crudeSword_Hold"] = Sprite("crudeSword_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,2},["spriteSizes"]={2,2},["spriteCenters"]={1,1.5}})
   textures["sprites"]["slimeSpike_Hold"] = Sprite("slimeSpike_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={2,2},["spriteSizes"]={2,2},["spriteCenters"]={1,1.5}})
   textures["sprites"]["bigSlimeSpike_Hold"] = Sprite("bigSlimeSpike_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={4,2},["spriteSizes"]={3,2},["spriteCenters"]={1.5,2}})
+
+  textures.sprites.meleeWeaponBase_Hold = Sprite("meleeWeaponBase_Hold","player.png",{parts = {"idle","walk","jump","use"}},{setupCharacterAnimation =  true, animationQuadrant={0,4},spriteSizes={2,2},spriteCenters={1,1.5}})
+  textures.sprites.meleeWeaponTop_Hold = Sprite("meleeWeaponTop_Hold","player.png",{parts = {"idle","walk","jump","use"}},{setupCharacterAnimation =  true, animationQuadrant={2,4},spriteSizes={2,2},spriteCenters={1,1.5}})
+  textures.sprites.crudeBow_Hold = Sprite("crudeBow_Hold","player.png",{parts = {"idle","walk","jump","use"}},{setupCharacterAnimation =  true, animationQuadrant={0,5},spriteSizes={2,2},spriteCenters={1,1.5}})
+  textures.sprites.bowBase_Hold = Sprite("bowBase_Hold","player.png",{parts = {"idle","walk","jump","use"}},{setupCharacterAnimation =  true, animationQuadrant={0,6},spriteSizes={2,2},spriteCenters={1,1.5}})
+  textures.sprites.bowTop_Hold = Sprite("bowTop_Hold","player.png",{parts = {"idle","walk","jump","use"}},{setupCharacterAnimation =  true, animationQuadrant={2,6},spriteSizes={2,2},spriteCenters={1,1.5}})
+  
+  
+  textures.sprites.arrow = Sprite("arrow","projectiles.png",{
+    timePerFrame = 180/5,
+    gridMultiplication = 9,
+    spriteSize = {1,1},
+    spriteCenter = {5/9,5/9},
+    quads = {{0,0},{1,0},{2,0},{3,0},{4,0}}
+  }, {
+    mirrorable = true,
+    type = "singleAnimation",
+  })
+  textures.sprites.arrowBase = Sprite("arrowBase","projectiles.png",{
+    timePerFrame = 180/5,
+    gridMultiplication = 9,
+    spriteSize = {1,1},
+    spriteCenter = {5/9,5/9},
+    quads = {{5,0},{6,0},{7,0},{8,0},{9,0}}
+  }, {
+    mirrorable = true,
+    type = "singleAnimation",
+  })
+  textures.sprites.arrowTop = Sprite("arrowTop","projectiles.png",{
+    timePerFrame = 180/5,
+    gridMultiplication = 9,
+    spriteSize = {1,1},
+    spriteCenter = {5/9,5/9},
+    quads = {{5,1},{6,1},{7,1},{8,1},{9,1}}
+  }, {
+    mirrorable = true,
+    type = "singleAnimation",
+  })
+  textures.sprites.arrowTopCrystal = Sprite("arrowTopCrystal","projectiles.png",{
+    timePerFrame = 180/5,
+    gridMultiplication = 9,
+    spriteSize = {1,1},
+    spriteCenter = {5/9,5/9},
+    quads = {{5,2},{6,2},{7,2},{8,2},{9,2}}
+  }, {
+    mirrorable = true,
+    type = "singleAnimation",
+  })
+  textures.sprites.arrowTopTough = Sprite("arrowTopTough","projectiles.png",{
+    timePerFrame = 180/5,
+    gridMultiplication = 9,
+    spriteSize = {1,1},
+    spriteCenter = {5/9,5/9},
+    quads = {{5,3},{6,3},{7,3},{8,3},{9,3}}
+  }, {
+    mirrorable = true,
+    type = "singleAnimation",
+  })
+  textures.sprites.bomb = Sprite("bomb","projectiles.png",{
+    timePerFrame = 1/4,
+    gridMultiplication = 9,
+    spriteSize = {1,1},
+    spriteCenter = {5/9,5/9},
+    quads = {{0,1},{1,1},{2,1},{3,1}}
+  }, {
+    mirrorable = false,
+    type = "singleAnimation",
+  })
+  textures.sprites.fog = Sprite("fog","tiles.png",{
+    ["parts"] = {"fog1","fog2","fog3","fog4","fog5","fog6","fog7","fog8","fog9","fog10","fog11","fog12"},
+    ["fog1"] ={
+      ["type"] = "repeat",
+      ["timePerFrame"] = 0.5/4,
+      ["gridMultiplication"] = 8,
+      ["spriteSize"] = {1,1},
+      ["spriteCenter"] = {0.5,0.5},
+      ["quads"] = {{0,6},{0,7},{0,8},{0,9}}
+    },
+    ["fog2"] ={
+      ["type"] = "repeat",
+      ["timePerFrame"] = 0.5/4,
+      ["gridMultiplication"] = 8,
+      ["spriteSize"] = {1,1},
+      ["spriteCenter"] = {0.5,0.5},
+      ["quads"] = {{1,6},{1,7},{1,8},{1,9}}
+    },
+    ["fog3"] ={
+      ["type"] = "repeat",
+      ["timePerFrame"] = 0.5/4,
+      ["gridMultiplication"] = 8,
+      ["spriteSize"] = {1,1},
+      ["spriteCenter"] = {0.5,0.5},
+      ["quads"] = {{2,6},{2,7},{2,8},{2,9}}
+    },
+    ["fog4"] ={
+      ["type"] = "repeat",
+      ["timePerFrame"] = 0.5/4,
+      ["gridMultiplication"] = 8,
+      ["spriteSize"] = {1,1},
+      ["spriteCenter"] = {0.5,0.5},
+      ["quads"] = {{3,6},{3,7},{3,8},{3,9}}
+    },
+    ["fog5"] ={
+      ["type"] = "repeat",
+      ["timePerFrame"] = 0.5/4,
+      ["gridMultiplication"] = 8,
+      ["spriteSize"] = {1,1},
+      ["spriteCenter"] = {0.5,0.5},
+      ["quads"] = {{4,6},{4,7},{4,8},{4,9}}
+    },
+    ["fog6"] ={
+      ["type"] = "repeat",
+      ["timePerFrame"] = 0.5/4,
+      ["gridMultiplication"] = 8,
+      ["spriteSize"] = {1,1},
+      ["spriteCenter"] = {0.5,0.5},
+      ["quads"] = {{5,6},{5,7},{5,8},{5,9}}
+    },
+    ["fog7"] ={
+      ["type"] = "repeat",
+      ["timePerFrame"] = 0.5/4,
+      ["gridMultiplication"] = 8,
+      ["spriteSize"] = {1,1},
+      ["spriteCenter"] = {0.5,0.5},
+      ["quads"] = {{6,6},{6,7},{6,8},{6,9}}
+    },
+    ["fog8"] ={
+      ["type"] = "repeat",
+      ["timePerFrame"] = 0.5/4,
+      ["gridMultiplication"] = 8,
+      ["spriteSize"] = {1,1},
+      ["spriteCenter"] = {0.5,0.5},
+      ["quads"] = {{7,6},{7,7},{7,8},{7,9}}
+    },
+  }, {
+    mirrorable = false,
+  })
+  
   --[[textures["sprites"]["player"] = Sprite("player","player.png",{
     ["parts"] = {"idle","walk","jump","use"},
     ["idle"] ={
@@ -216,6 +407,7 @@ function LoadSpawnCards()
       size =  0.4,
       health = 15,
       damage = 1.1,
+      xpGiveOnDeath = 15,
       knockbackMultiplier = 1.4,
       movevementSpeed = 0.3,
       movementType = "hoplike",
@@ -231,11 +423,12 @@ function LoadSpawnCards()
     })
   )
   table.insert(GlobalEnemyCards,
-    EntitySpawnCard(12,20,"enemy",{"any"},"big slime","bigSlime","regular",{
+    EntitySpawnCard(12,100,"enemy",{"any"},"big slime","bigSlime","regular",{
       team = "enemy",
       size =  0.85,
       health = 40,
       damage = 1.1,
+      xpGiveOnDeath = 40,
       knockbackMultiplier = 0.4,
       movevementSpeed = 0.2,
       movementType = "hoplike",
@@ -251,10 +444,30 @@ function LoadSpawnCards()
     })
   )
   table.insert(GlobalEnemyCards,
-    EntitySpawnCard(8,60,"enemy",{"any"},"skeleton","skeleton","regular",{
+    EntitySpawnCard(15,100,"enemy",{"any"},"Bear","bear","regular",{
+      team = "enemy",
+      size =  0.85,
+      health = 55,
+      damage = 1.1,
+      movementAnimationSpeed = 3,
+      xpGiveOnDeath = 70,
+      knockbackMultiplier = 1.2,
+      movevementSpeed = 0.2,
+      movementType = "humanlike",
+      aiInfo = {
+        jumpFrequency = 0.25,
+      },
+      startItems = {
+        {name = "bigSlimeSpike", attributes = {dropOnDeath = false}}
+      },
+    })
+  )
+  table.insert(GlobalEnemyCards,
+    EntitySpawnCard(8,300,"enemy",{"any"},"skeleton","skeleton","regular",{
       team = "enemy",
       size =  0.4,
       health = 25,
+      xpGiveOnDeath = 25,
       damage = 1.2,
       movevementSpeed = 0.5,
       movementType = "humanlike",
@@ -515,7 +728,7 @@ function loadtiles()
       ["actualDropeRate"] = 0.4,
       ["lightCanGoThrough"] = true,
       ["actualName"] = "essence leaves",
-      ["secondaryDrop"] = "stick",
+      ["secondaryDrop"] = "essenceStick",
       ["secondaryDropAmount"] = 2,
     })
   tiles["leaves"]          = Tile("leaves", "solid", "tiles.png", "leaves",
@@ -540,7 +753,7 @@ function loadtiles()
     },
     ["health"] = 3,
     ["actualName"] = "Essence wood",
-    ["secondaryDrop"] = "stick",
+    ["secondaryDrop"] = "essenceStick",
     ["secondaryDropAmount"] = 5,
   })
   tiles["wood"]         = Tile("wood", "solid", "tiles.png", "wood", {
@@ -573,6 +786,28 @@ function loadtiles()
     },
     ["health"] = 3,
     ["actualName"] = "Essence wood bricks",
+    ["secondaryDrop"] = "essenceStick",
+    ["secondaryDropAmount"] = 5,
+  })
+  tiles["woodBricks"]         = Tile("woodBricks", "solid", "tiles.png", "woodBricks", {
+    ["newQuad"] = { 6, 4, 1, 1, 8 },
+    ["border"] = {
+      ["quad"] = "woodBricks_top",
+      ["newQuad"] = { 6, 5, 1, 1, 8 }
+    },
+    ["health"] = 3,
+    ["actualName"] = "Wood bricks",
+    ["secondaryDrop"] = "stick",
+    ["secondaryDropAmount"] = 5,
+  })
+  tiles["woodPlatform"]         = Tile("woodPlatform", "platform", "tiles.png", "woodPlatform", {
+    ["newQuad"] = { 5, 4, 1, 1, 8 },
+    ["border"] = {
+      ["quad"] = "woodPlatform_top",
+      ["newQuad"] = { 5, 5, 1, 1, 8 }
+    },
+    ["health"] = 3,
+    ["actualName"] = "Wood platform",
     ["secondaryDrop"] = "stick",
     ["secondaryDropAmount"] = 5,
   })
@@ -583,7 +818,92 @@ function loadtiles()
     ["secondaryDrop"] = "stick",
     ["secondaryDropAmount"] = 8,
     ["particleEmit"] = "fire",
-    ["particleEmitData"] = {["amount"]=5,["radius"]=0.3,["color"]={0.9,0.9,0,0.7},["flags"]={["color2"]={0.8,0.2,0.2,0.8},["color3"]={0.4,0.4,0.4,0.9}},["timer"]=3},
+    ["particleEmitData"] = {chance = 0.32,["amount"]=5,["radius"]=0.3,["color"]={0.9,0.9,0,0.7},["flags"]={["color2"]={0.8,0.2,0.2,0.8},["color3"]={0.4,0.4,0.4,0.9}},["timer"]=3},
+  })
+  tiles.crate         = Tile("crate", "non-solid", "tiles.png", "crate", {
+    newQuad = {0, 4, 1, 1, 8 },
+    border = {
+      quad = "crate_top",
+      newQuad = {0, 5, 1, 1, 8 }
+    },
+    health = 999,
+    isContainer = true,
+    containerRows = 1,
+    containerColumns = 1,
+    actualName = "crate",
+    onInteract = 
+      function (self, x, y, entity)
+        world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+        world:generateContainerLoot(Vector2(x,y),2,1,nil,nil,0.5,0.5)
+      end
+  })
+  tiles.goldCrate         = Tile("goldCrate", "non-solid", "tiles.png", "goldCrate", {
+    newQuad = {1, 4, 1, 1, 8 },
+    border = {
+      quad = "goldCrate_top",
+      newQuad = {1, 5, 1, 1, 8 }
+    },
+    health = 999,
+    isContainer = true,
+    containerRows = 1,
+    containerColumns = 1,
+    actualName = "Gold crate",
+    onInteract = 
+      function (self, x, y, entity)
+        world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+        world:generateContainerLoot(Vector2(x,y),3.5,1,nil,nil,1,1)
+      end
+  })
+  tiles.emeraldCrate         = Tile("emeraldCrate", "non-solid", "tiles.png", "emeraldCrate", {
+    newQuad = {2, 4, 1, 1, 8 },
+    border = {
+      quad = "emeraldCrate_top",
+      newQuad = {2, 5, 1, 1, 8 }
+    },
+    health = 999,
+    isContainer = true,
+    containerRows = 1,
+    containerColumns = 1,
+    actualName = "Emerald crate",
+    onInteract = 
+      function (self, x, y, entity)
+        world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+        world:generateContainerLoot(Vector2(x,y),4.5,1,nil,nil,1.5,1.5)
+      end
+  })
+  tiles.diamondCrate         = Tile("diamondCrate", "non-solid", "tiles.png", "diamondCrate", {
+    newQuad = {3, 4, 1, 1, 8 },
+    border = {
+      quad = "diamondCrate_top",
+      newQuad = {3, 5, 1, 1, 8 }
+    },
+    health = 999,
+    isContainer = true,
+    containerRows = 1,
+    containerColumns = 1,
+    actualName = "Diamond crate",
+    onInteract = 
+      function (self, x, y, entity)
+        world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+        world:generateContainerLoot(Vector2(x,y),6,1,nil,nil,2,2)
+      end
+  })
+  tiles.voidCrate         = Tile("voidCrate", "non-solid", "tiles.png", "voidCrate", {
+    newQuad = {4, 4, 1, 1, 8 },
+    border = {
+      quad = "voidCrate_top",
+      newQuad = {4, 5, 1, 1, 8 }
+    },
+    health = 999,
+    isContainer = true,
+    containerRows = 1,
+    containerColumns = 1,
+    actualName = "Void crate",
+    onInteract = 
+      function (self, x, y, entity)
+        world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+        world:generateContainerLoot(Vector2(x,y),8,1,nil,nil,3,2.5)
+      end
   })
   tiles.chest         = Tile("chest", "non-solid", "tiles.png", "chest", {
     newQuad = {11, 2, 1, 1, 8 },
@@ -599,7 +919,7 @@ function loadtiles()
     onInteract = 
       function (self, x, y, entity)
         world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
-        world:generateContainerLoot(Vector2(x,y),12,3,nil,nil,1,1)
+        world:generateContainerLoot(Vector2(x,y),14,4,nil,nil,1.1,1)
       end
   })
   tiles.blueChest         = Tile("blueChest", "non-solid", "tiles.png", "blueChest", {
@@ -616,7 +936,23 @@ function loadtiles()
     onInteract = 
       function (self, x, y, entity)
         world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
-        world:generateContainerLoot(Vector2(x,y),18,3,nil,nil,1,1)
+        world:generateContainerLoot(Vector2(x,y),18,3,nil,nil,2,1.2)
+      end
+  })
+  tiles.templeChest         = Tile("templeChest", "non-solid", "tiles.png", "templeChest", {
+    newQuad = {17, 4, 3, 2, 8,  },
+    textureCenterX = 12,
+    textureCenterY = 12,
+    borderType = "none",
+    health = 999,
+    isContainer = true,
+    containerRows = 6,
+    containerColumns = 3,
+    actualName = "Temple Chest",
+    onInteract = 
+      function (self, x, y, entity)
+        world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+        world:generateContainerLoot(Vector2(x,y),26,4,nil,nil,2.2,1.3)
       end
   })
   tiles.templeBlock = Tile("templeBlock","solid","tiles.png","templeBlock", {
@@ -628,13 +964,13 @@ function loadtiles()
     health = 30,
     actualName = "temple block"
   })
-  tiles.rightTempleStair = Tile("rightTempleStair","solid","tiles.png","rightTempleStair", {
+  tiles.rightTempleStair = Tile("rightTempleStair","rightStair","tiles.png","rightTempleStair", {
     newQuad = {14,2,1,1,8},
     borderType = "none",
     health = 30,
     actualName = "temple stairs"
   })
-  tiles.leftTempleStair = Tile("leftTempleStair","solid","tiles.png","leftTempleStair", {
+  tiles.leftTempleStair = Tile("leftTempleStair","leftStair","tiles.png","leftTempleStair", {
     newQuad = {15,2,1,1,8},
     borderType = "none",
     health = 30,
@@ -685,6 +1021,14 @@ function loadtiles()
     secondaryDrop = "stick",
     secondaryDropAmount = 5,
   })
+  tiles.evilShrine = Tile("evilShrine","non-solid","tiles.png","evilShrine", {
+    newQuad = {8,4,5,3,8},
+    borderType = "none",
+    health = 99999,
+    actualName = "evil shrine",
+    particleEmit = "evilShrineCircle",
+    particleEmitData = {  chance = 1, delay = 240, amount = 1, motion = "floating", motionStrength = 0, motionArcAngle = 0, motionArcSpread = 360, radius = 0, timer = 4, timerNoise = 0, color = {1,0,0,0.4}, colorNoise = {0.05,0.05,0.05,0.05}, flags = { appearanceType = "circle", size = 0.5, sizeMotion = 0.75}, hasCollisions = false }
+  })
 end
 
 function loadEntities()
@@ -700,7 +1044,8 @@ function loadItems()
   items = {}
   items["none"] = Item("none","none",{})
   --items["stick"] = Item("stick","stick",{["category"]="material"})
-  items["stick"] = Item("stick","stick",{["category"]="material",["placeBlock"] = "essenceWoodBricks", ["placeBlockCost"] = 5, ["maxStack"] = 300})
+  items["stick"] = Item("stick","stick",{["category"]="material",["placeBlock"] = "woodBricks", ["placeBlockCost"] = 5, ["maxStack"] = 300})
+  items["essenceStick"] = Item("essenceStick","essenceStick",{["category"]="material",["placeBlock"] = "woodBricks", ["placeBlockCost"] = 5, ["maxStack"] = 300})
   items["rock"] = Item("rock","rock",{["category"]="material",["placeBlock"] = "scrapBlock", ["placeBlockCost"] = 4,["fullName"] = "Scrap pebbles", ["maxStack"] = 300})
   items.crudePickaxe = Item("crudePickaxe","crudePickaxe",{category="tool",subCategory = "pickaxe",fullName = "Crude pickaxe",
     cooldown = 0.8,
@@ -842,6 +1187,70 @@ function loadItems()
     dashTime = 0.2,
     knockback = 1,
   })
+  items.crudeBow = Item("crudeBow","crudeBow",{["category"]="weapon",["subCategory"] = "ranged",["fullName"] = "Crude bow",
+    cooldown = 5,
+    damage = 18,
+    damagePerLevel = 4.5,
+    holdAnimation = "crudeBow_Hold",
+    charge = 0.1,
+    moveSpeedDuringCharge = 0.4,
+    knockback = 1,
+    projectileBounceFactor = 0.9,
+    projectileVelocity = 30,
+    projectileGravity = 0.5,
+    onUse = function (self,entity,attributes,cursorX,cursorY,slot,stacks,flags) 
+      local onUseSuccess, onUseCooldown, onUseStacksRemove
+      onUseSuccess = false
+
+      local projectileFlags = {}
+      projectileFlags.animationType = "orientation"
+      
+      onUseSuccess, onUseCooldown, onUseStacksRemove = self:spawnProjectile(entity, attributes, cursorX, cursorY,slot,stacks,projectileFlags)
+
+      return onUseSuccess, onUseCooldown, onUseStacksRemove
+    end
+  })
+  items.bomb = Item("bomb","bombItem",{["category"]="weapon",["subCategory"] = "ranged",["fullName"] = "Bomb",
+    cooldown = 0.5,
+    projectileExplosionDamage = 60,
+    projectileExplosionDamagePerLevel = 1,
+    projectileExplosionRadius = 5,
+    projectileExplosionTime = 6,
+    projectileExplosionTileDamage = 10,
+    projectileExplosionTileDamagePerLevel = 0.2,
+    knockback = 5,
+    projectileVelocity = 20,
+    projectileGravity = 0.5,
+    projectileBounceFactor = 0.95,
+    projectileName = "bomb",
+    projectileSprite = "bomb",
+    maxStack = 200,
+    unique = false,
+    maxEnchants = 0,
+    onUse = function (self,entity,attributes,cursorX,cursorY,slot,stacks,flags) 
+      local onUseSuccess, onUseCooldown, onUseStacksRemove
+      onUseSuccess = false
+
+      if stacks > 0 then
+        local passFlags = {}
+        onUseStacksRemove = 1
+        passFlags.animationType = "time"
+        passFlags.particleTimer = 0.08
+        passFlags.size = 0.45
+        passFlags.spawnParticles =
+        function (self)
+            local pos = self.position:copy()
+            pos.y = pos.y + 0.35
+            world:spawnParticles(3,"fire",pos,0.1,{0.9,0.9,0,0.7}, {0.05,0.05,0.05,0.05}, 1, 0,"fire", 1, -90, 30, {["color2"]={0.8,0.2,0.2,0.8},["color3"]={0.4,0.4,0.4,0.9}})
+        end
+
+        onUseSuccess, onUseCooldown = self:spawnProjectile(entity, attributes, cursorX, cursorY,slot,stacks,passFlags)
+      
+      end
+
+      return onUseSuccess, onUseCooldown, onUseStacksRemove
+    end
+  })
   items.slimeSpike = Item("slimeSpike","unknown",{["category"]="weapon",["subCategory"] = "melee",["fullName"] = "Slime spike",
     cooldown = 3,
     damage = 3,
@@ -864,24 +1273,89 @@ function loadItems()
     knockback = 1.5,
     holdAnimation = "bigSlimeSpike_Hold",
   })
+  items.bearAttack = Item("bearAttack","unknown",{["category"]="weapon",["subCategory"] = "melee",["fullName"] = "Bear attack",
+    cooldown = 6,
+    damage = 15,
+    attackRange = 0.5,
+    attackRadius = 3, 
+    attackDirectionRange = 360,
+    charge = 1,
+    moveSpeedDuringCharge = 0,
+    knockback = 1.5,
+    dashVelocity = 30,
+    dashTime = 0.2,
+  })
   items.thunderBirdFeather = Item("thunderBirdFeather","thunderBirdFeather",{["category"]="movement",["subCategory"] = "dash",["fullName"] = "Thunder bird feather",
     cooldown = 6,
+    cooldownSpeedPerLevel = 0.03,
     useFreely = true,
-    dashVelocity = 15,
+    dashVelocity = 18,
     dashTime = 0.4,
     dashGravityMultiplier = 0.2,
   })
   items.angelFeather = Item("angelFeather","angelFeather",{["category"]="movement",["subCategory"] = "dash",["fullName"] = "Angel feather",
-    cooldown = 3,
+    cooldown = 2.5,
+    cooldownSpeedPerLevel = 0.03,
     useFreely = true,
     dashDirection = "up",
     dashStopVelocityY = true,
-    dashVelocity = 25,
-    dashTime = 0.2,
+    dashVelocity = 16,
+    dashTime = 0.04,
     dashGravityMultiplier = 0,
   })
   items.clearRing = Item("clearRing","clearRing",{["category"]="accessory",["subCategory"] = "ring",["fullName"] = "Clear ring",
     description = {"#silent","A ring with no innate properties. Can be used to hold enchants"},
+  })
+  items.fireRing = Item("fireRing","fireRing",{["category"]="accessory",["subCategory"] = "ring",["fullName"] = "Fire ring",
+    description = {"#silent","A ring with no damage and speed increasing properties, also more prone to enchants"},
+    damageMultiplier = 1.25,
+    speedMultiplier = 1.1,
+  })
+  items.coldRing = Item("coldRing","coldRing",{["category"]="accessory",["subCategory"] = "ring",["fullName"] = "Cold ring",
+    description = {"#silent","A ring with cold but stronger properties, also more prone to enchants"},
+    damageMultiplier = 1.2,
+    cooldownReductionMultiplier = 0.9,
+    speedMultiplier = 0.9,
+  })
+  items.natureRing = Item("natureRing","natureRing",{["category"]="accessory",["subCategory"] = "ring",["fullName"] = "Nature ring",
+    description = {"#silent","A ring that increases passive regen, also more prone to enchants"},
+    regenMultiplier = 1.3,
+    healthMaxMultiplier = 1.1,
+  })
+  items.goldRing = Item("goldRing","goldRing",{["category"]="accessory",["subCategory"] = "ring",["fullName"] = "Gold ring",
+    description = {"#silent","A ring with no innate properties, also more prone to enchants"},
+    healthMaxMultiplier = 1.2,
+  })
+  items.voidRing = Item("voidRing","voidRing",{["category"]="accessory",["subCategory"] = "ring",["fullName"] = "Void ring",
+    description = {"#silent","A ring with cooldown and gravity reduction properties, also more prone to enchants"},
+    healthMaxMultiplier = 0.85,
+    cooldownReductionMultiplier = 1.35,
+    gravityMultiplier = 0.8,
+  })
+  items.healthNecklace = Item("healthNecklace","healthNecklace",{["category"]="accessory",["subCategory"] = "necklace",["fullName"] = "Health necklace",
+    description = {"#silent","A necklace that gives a small health boost"},
+    healthMaxMultiplier = 1.1,
+  })
+  items.greaterHealthNecklace = Item("greaterHealthNecklace","greaterHealthNecklace",{["category"]="accessory",["subCategory"] = "necklace",["fullName"] = "Greater Health necklace",
+    description = {"#silent","A necklace that gives a larger health boost, for a portion or your movement speed"},
+    healthMaxMultiplier = 1.25,
+    regenMultiplier = 1.1,
+    speedMultiplier = 0.85,
+    --baseColorisation =  {0.8,0.4,1,2},
+  })
+  items.movementArtifact = Item("movementArtifact","movementArtifact",{["category"]="accessory",["subCategory"] = "artifact",["fullName"] = "Movement artifact",
+    description = {"#silent","An artifact that increases your movement capabilities"},
+    speedMultiplier = 1.3,
+    jumpStrengthMultiplier = 1.1,
+    --baseColorisation =  {0.8,0.4,1,2},
+  })
+  items.glassArtifact = Item("glassArtifact","glassArtifact",{["category"]="accessory",["subCategory"] = "artifact",["fullName"] = "Glass artifact",
+    description = {"#silent","An artifact that increases your combat capabilities for your health"},
+    damageMultiplier = 1.4,
+    cooldownReductionMultiplier = 1.4,
+    regenMultiplier = 1.2,
+    healthMaxMultiplier = 0.6,
+    --baseColorisation =  {0.8,0.4,1,2},
   })
 end
 
@@ -1015,16 +1489,20 @@ function LoadInterfaces()
 
   interfaces["worldCreation"] = Interface("worldCreation",0.5,0.15,0.6,0.8,"bland",{0.6,0.9,0.6,1},{1,1,1,1},{["title"]= "World Creation",["gap"]=0.00,["scrollMargin"]=0.1,["showTitle"] = true})
   interfaces["worldCreation"]:addElement("createButton","button",0.4,0.1,"Create world",{},{},nil,nil)
-  interfaces["worldCreation"]:addElement("worldHeigth","options",0.9,0.2,"World deepness :",{"500","1000","2000","3000","4000"},{["textAlign"] = "left",["gap"]=0,["default"] = "2000"},nil,nil)
+  --multiple choices
+  interfaces["worldCreation"]:addElement("worldHeigth","options",0.9,0.2,"World deepness :",{"1000","2000","3000","5000","7000"},{["textAlign"] = "left",["gap"]=0,["default"] = "3000"},nil,nil)
   interfaces["worldCreation"]:addElement("worldWidth","options",0.9,0.2,"World width :",{"150","300","450","600","750"},{["textAlign"] = "left",["gap"]=0,["default"] = "450"},nil,nil)
   interfaces["worldCreation"]:addElement("biomeSize","options",0.9,0.2,"Biome size :",{"50","100","150","250","400"},{["textAlign"] = "left",["gap"]=0,["default"] = "150"},nil,nil)
   interfaces["worldCreation"]:addElement("terrainSize","options",0.9,0.2,"Terrain & caves size :",{"0.5","1","2","3","5","10"},{["textAlign"] = "left",["gap"]=0,["default"] = "1"},nil,nil)
+  interfaces["worldCreation"]:addElement("worldseed","textinput",0.9,0.08,"World seed",{},{["textAlign"] = "left",["gap"]=0,["default"] = "", acceptOnly = "digits", placeHolder = "random"},nil,nil)
+  --checkboxes
   interfaces["worldCreation"]:addElement("cheat", "checkbox",0.9,0,"Cheat Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["worldCreation"]:addElement("freeCam","checkbox",0.9,0,"Free cam Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["worldCreation"]:addElement("flyCheat","checkbox",0.9,0,"Fly & noClip Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["worldCreation"]:addElement("BuilderCheat","checkbox",0.9,0,"Builder Cheat Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
+  --sliders
   interfaces["worldCreation"]:addElement("lightReach","slider",0.9,0.2,"Light reach",{["round"] = 1,["min"] = 1, ["max"]= 12,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 6},nil,nil)
-  interfaces["worldCreation"]:addElement("directorCreditMultiplier","slider",0.9,0.2,"Director credit multiplier",{["round"] = 0.1,["min"] = 0.1, ["max"]= 10,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)
+  interfaces["worldCreation"]:addElement("directorCreditMultiplier","slider",0.9,0.2,"Director credit multiplier",{["round"] = 0.1,["min"] = 0, ["max"]= 10,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)
   interfaces["worldCreation"]:addElement("directorSpawnSpeedMultiplier","slider",0.9,0.2,"Director spawn speed multiplier",{["round"] = 0.1,["min"] = 0.1, ["max"]= 10,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)
   --interfaces["worldCreation"]:addElement("seed","slider",0.9,0.2,"World seed",{["round"] = 1,["min"] = 1, ["max"]= 9999999,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 6},nil,nil)
   interfaces["worldCreation"]:addElement("resetWorldCreation","button",0.3,0.08,"Default",{},{},nil,nil)
@@ -1054,34 +1532,34 @@ function LoadInterfaces()
 end
 function LoadItemSets()
   LoadItemSet("copper",nil,{0.7,0.35,0,0.65},nil,{0.8,0.4,0.05,0.5},{damageM=1.2,cooldownM=1.4,rangeM=0.9,blockAmountM=1.2,weightM=0.8,enchantM=1.2,minLevel=0,maxLevel = 10})
-  LoadItemSet("iron",nil,{0.8,0.85,0.9,0.65},nil,{0.8,0.4,0.05,0.5},{damageM=1.5,cooldownM=1.3,rangeM=0.9,blockAmountM=1.2,weightM=0.6,enchantM=1.2,minLevel=4,maxLevel = 17})
-  LoadItemSet("silver",nil,{0.5,0.63,0.8,0.65},nil,{0.8,0.4,0.05,0.5},{damageM=1.3,cooldownM=1.15,rangeM=0.8,blockAmountM=0.7,weightM=0.55,enchantM=0.75,minLevel=8,maxLevel=20})
-  LoadItemSet("lead",nil,{0.2,0.22,0.6,0.65},nil,{0.8,0.4,0.05,0.5},{damageM=2,cooldownM=1.6,rangeM=0.7,blockAmountM=1.2,weightM=0.5,enchantM=1.8,minLevel=10,maxLevel=24})
-  LoadItemSet("gold",nil,{1,0.85,0.5,0.75},nil,{0.8,0.4,0.05,0.5},{damageM=1.9,cooldownM=0.8,rangeM=1.2,blockAmountM=1,weightM=0.2,enchantM=1.6,minLevel=14,maxLevel=30})
-  LoadItemSet("mithril",nil,{0.3,0.9,0.7,0.65},nil,{0.5,0.4,0.05,0.5},{damageM=2.5,cooldownM=1.4,rangeM=1,blockAmountM=1,weightM=0.08,enchantM=2.5,minLevel=22,maxLevel=45})
+  LoadItemSet("iron",nil,{0.8,0.85,0.9,0.65},nil,{0.8,0.4,0.05,0.5},{damageM=1.5,cooldownM=1.3,rangeM=0.9,blockAmountM=1.2,weightM=0.75,enchantM=1.2,minLevel=4,maxLevel = 17})
+  LoadItemSet("silver",nil,{0.55,0.7,0.9,0.75},nil,{0.8,0.4,0.05,0.5},{damageM=1.3,cooldownM=1.15,rangeM=0.8,blockAmountM=0.7,weightM=0.65,enchantM=0.75,minLevel=8,maxLevel=20, toolSpriteNameAdd = "Tough"})
+  LoadItemSet("lead",nil,{0.2,0.22,0.6,0.65},nil,{0.8,0.4,0.05,0.5},{damageM=2,cooldownM=1.6,rangeM=0.7,blockAmountM=1.2,weightM=0.60,enchantM=1.8,minLevel=10,maxLevel=24})
+  LoadItemSet("gold",nil,{1,0.85,0.5,0.75},nil,{0.5,0.4,0.2,0.5},{damageM=1.9,cooldownM=0.8,rangeM=1.2,blockAmountM=1,weightM=0.4,enchantM=1.6,minLevel=14,maxLevel=30, toolSpriteNameAdd = "Tough"})
+  LoadItemSet("mithril",nil,{0.3,0.9,0.7,0.65},nil,{0.3,0.25,0.05,0.5},{damageM=2.5,cooldownM=1.4,rangeM=1,blockAmountM=1,weightM=0.3,enchantM=2.5,minLevel=22,maxLevel=45, toolSpriteNameAdd = "Tough"})
 
   LoadItemSet("tin",nil,{0.85,0.83,0.78,0.65},nil,{0.8,0.4,0.05,0.5},{damageM=1.22,cooldownM=1.35,rangeM=0.92,blockAmountM=1.15,weightM=0.75,enchantM=1.25,minLevel=1,maxLevel=12})
-  LoadItemSet("bronze",nil,{0.8,0.48,0.2,0.7},{0.34,0.2,0.1,1},{0.75,0.45,0.18,0.6},{damageM=1.35,cooldownM=1.25,rangeM=0.95,blockAmountM=1.1,weightM=0.68,enchantM=1.3,minLevel=3,maxLevel=15})
-  LoadItemSet("nickel",nil,{0.7,0.74,0.72,0.7},nil,{0.8,0.4,0.05,0.5},{damageM=1.45,cooldownM=1.18,rangeM=0.94,blockAmountM=1.05,weightM=0.58,enchantM=1.45,minLevel=6,maxLevel=18})
-  LoadItemSet("cobalt",nil,{0.25,0.45,0.9,0.72},{0.08,0.18,0.36,1},{0.3,0.5,0.9,0.62},{damageM=1.55,cooldownM=1.05,rangeM=1.03,blockAmountM=0.95,weightM=0.46,enchantM=1.7,minLevel=10,maxLevel=26})
-  LoadItemSet("steel",nil,{0.55,0.6,0.66,0.72},nil,{0.8,0.4,0.05,0.5},{damageM=1.7,cooldownM=1.22,rangeM=0.96,blockAmountM=1.15,weightM=0.42,enchantM=1.6,minLevel=12,maxLevel=28})
-  LoadItemSet("electrum",nil,{0.95,0.88,0.62,0.75},{0.22,0.2,0.14,1},{0.9,0.82,0.5,0.58},{damageM=1.6,cooldownM=0.88,rangeM=1.12,blockAmountM=0.85,weightM=0.33,enchantM=1.95,minLevel=15,maxLevel=32})
-  LoadItemSet("obsidian",nil,{0.22,0.1,0.35,0.78},{0.06,0.03,0.1,1},{0.25,0.12,0.4,0.62},{damageM=2.2,cooldownM=1.3,rangeM=0.93,blockAmountM=1.2,weightM=0.26,enchantM=2.4,minLevel=20,maxLevel=42})
-  LoadItemSet("quartz",nil,{0.9,0.95,1,0.6},nil,{0.8,0.4,0.05,0.5},{damageM=1.5,cooldownM=0.92,rangeM=1.16,blockAmountM=0.78,weightM=0.24,enchantM=2.1,minLevel=18,maxLevel=36})
-  LoadItemSet("moonstone",nil,{0.66,0.76,1,0.72},{0.1,0.12,0.2,1},{0.6,0.72,1,0.52},{damageM=1.75,cooldownM=0.82,rangeM=1.08,blockAmountM=0.8,weightM=0.19,enchantM=2.6,minLevel=24,maxLevel=46})
-  LoadItemSet("sunsteel",nil,{1,0.76,0.32,0.74},{0.28,0.16,0.06,1},{1,0.7,0.25,0.58},{damageM=2.1,cooldownM=0.95,rangeM=1.1,blockAmountM=0.9,weightM=0.16,enchantM=2.8,minLevel=28,maxLevel=50})
-  LoadItemSet("jade",nil,{0.2,0.8,0.5,0.7},nil,{0.8,0.4,0.05,0.5},{damageM=1.65,cooldownM=1.1,rangeM=1,blockAmountM=1,weightM=0.28,enchantM=2.2,minLevel=16,maxLevel=34})
-  LoadItemSet("amethyst",nil,{0.7,0.45,0.92,0.75},{0.18,0.08,0.28,1},{0.74,0.5,0.96,0.56},{damageM=1.85,cooldownM=0.9,rangeM=1.05,blockAmountM=0.82,weightM=0.15,enchantM=3,minLevel=30,maxLevel=54})
-  LoadItemSet("topaz",nil,{1,0.82,0.35,0.72},nil,{0.8,0.4,0.05,0.5},{damageM=1.95,cooldownM=0.78,rangeM=1.18,blockAmountM=0.75,weightM=0.12,enchantM=2.7,minLevel=26,maxLevel=48})
-  LoadItemSet("garnet",nil,{0.78,0.2,0.26,0.75},nil,{0.8,0.4,0.05,0.5},{damageM=2.05,cooldownM=1.02,rangeM=0.98,blockAmountM=1.05,weightM=0.14,enchantM=2.9,minLevel=27,maxLevel=49})
-  LoadItemSet("tungsten",nil,{0.3,0.34,0.38,0.8},nil,{0.8,0.4,0.05,0.5},{damageM=2.4,cooldownM=1.28,rangeM=0.95,blockAmountM=1.18,weightM=0.1,enchantM=2.6,minLevel=32,maxLevel=58})
-  LoadItemSet("titanium",nil,{0.52,0.72,0.86,0.7},{0.16,0.2,0.24,1},{0.56,0.78,0.9,0.5},{damageM=2.3,cooldownM=0.74,rangeM=1.1,blockAmountM=0.88,weightM=0.09,enchantM=3.1,minLevel=34,maxLevel=62})
-  LoadItemSet("platinum",nil,{0.86,0.9,0.95,0.75},nil,{0.8,0.4,0.05,0.5},{damageM=2,cooldownM=0.7,rangeM=1.15,blockAmountM=0.8,weightM=0.07,enchantM=3.2,minLevel=38,maxLevel=70})
-  LoadItemSet("orichalcum",nil,{0.28,0.9,0.82,0.75},{0.08,0.22,0.2,1},{0.3,0.95,0.85,0.58},{damageM=2.6,cooldownM=0.98,rangeM=1.04,blockAmountM=0.92,weightM=0.06,enchantM=3.3,minLevel=40,maxLevel=78})
-  LoadItemSet("voidstone",nil,{0.18,0.08,0.24,0.85},{0.03,0.01,0.06,1},{0.2,0.1,0.3,0.65},{damageM=2.75,cooldownM=1.12,rangeM=0.9,blockAmountM=1.1,weightM=0.05,enchantM=3.4,minLevel=44,maxLevel=90})
-  LoadItemSet("adamantite",nil,{1,0.15,0.15,0.78},{0.2,0.1,0.1,1},{0.78,0.98,1,0.55},{damageM=2.85,cooldownM=0.62,rangeM=1.2,blockAmountM=0.72,weightM=0.04,enchantM=3.45,minLevel=50,maxLevel=999})
+  LoadItemSet("bronze",nil,{0.6,0.35,0.05,0.7},nil,{0.5,0.4,0.18,0.6},{damageM=1.35,cooldownM=1.25,rangeM=0.95,blockAmountM=1.1,weightM=0.74,enchantM=1.3,minLevel=3,maxLevel=15, toolSpriteNameAdd = "Tough"})
+  LoadItemSet("nickel",nil,{0.7,0.74,0.72,0.7},nil,{0.8,0.4,0.05,0.5},{damageM=1.45,cooldownM=1.18,rangeM=0.94,blockAmountM=1.05,weightM=0.72,enchantM=1.45,minLevel=6,maxLevel=18})
+  LoadItemSet("cobalt",nil,{0.25,0.45,0.9,0.72},nil,{0.3,0.5,0.9,0.62},{damageM=1.55,cooldownM=1.05,rangeM=1.03,blockAmountM=0.95,weightM=0.70,enchantM=1.7,minLevel=10,maxLevel=26, toolSpriteNameAdd = "Tough"})
+  LoadItemSet("steel",nil,{0.55,0.6,0.66,0.95},nil,{0.5,0.25,0.05,0.5},{damageM=1.7,cooldownM=1.22,rangeM=0.96,blockAmountM=1.15,weightM=0.68,enchantM=1.6,minLevel=12,maxLevel=28, toolSpriteNameAdd = "Tough"})
+  LoadItemSet("fossil",nil,{0.99,0.92,0.7,0.8},nil,{0.9,0.82,0.5,0.58},{damageM=1.6,cooldownM=0.88,rangeM=1.12,blockAmountM=0.85,weightM=0.66,enchantM=1.95,minLevel=15,maxLevel=32, toolSpriteNameAdd = "Tough"})
+  LoadItemSet("obsidian",nil,{0.22,0.1,0.35,0.78},nil,{0.25,0.12,0.4,0.62},{damageM=2.2,cooldownM=1.3,rangeM=0.93,blockAmountM=1.2,weightM=0.64,enchantM=2.4,minLevel=20,maxLevel=42})
+  LoadItemSet("quartz",nil,{0.9,0.95,1,0.85},nil,{0.3,0.25,0.32,0.5},{damageM=1.5,cooldownM=0.92,rangeM=1.16,blockAmountM=0.78,weightM=0.62,enchantM=2.1,minLevel=18,maxLevel=36,toolSpriteNameAdd = "Crystal"})
+  LoadItemSet("moonstone",nil,{0.66,0.76,1,0.72},nil,{0.35,0.2,0.5,0.52},{damageM=1.75,cooldownM=0.82,rangeM=1.08,blockAmountM=0.8,weightM=0.58,enchantM=2.6,minLevel=24,maxLevel=46, toolSpriteNameAdd = "Tough"})
+  LoadItemSet("sunsteel",nil,{0.9,0.9,0.25,0.58},nil,{1,0.5,0.3,0.9},{damageM=2.1,cooldownM=0.95,rangeM=1.1,blockAmountM=0.9,weightM=0.56,enchantM=2.8,minLevel=28,maxLevel=50, toolSpriteNameAdd = "Tough"})
+  LoadItemSet("jade",nil,{0.2,0.8,0.5,0.7},nil,{0.8,0.4,0.05,0.5},{damageM=1.65,cooldownM=1.1,rangeM=1,blockAmountM=1,weightM=0.53,enchantM=2.2,minLevel=16,maxLevel=34,toolSpriteNameAdd = "Crystal"})
+  LoadItemSet("amethyst",nil,{0.85,0.6,0.95,0.85},{0.18,0.08,0.28,0.5},{0.74,0.5,0.96,0.56},{damageM=1.85,cooldownM=0.9,rangeM=1.05,blockAmountM=0.82,weightM=0.5,enchantM=3,minLevel=30,maxLevel=54,toolSpriteNameAdd = "Crystal"})
+  LoadItemSet("topaz",nil,{1,0.6,0.35,0.72},nil,{0.4,0.2,0.05,0.5},{damageM=1.95,cooldownM=0.78,rangeM=1.18,blockAmountM=0.75,weightM=0.45,enchantM=2.7,minLevel=26,maxLevel=48,toolSpriteNameAdd = "Crystal"})
+  LoadItemSet("garnet",nil,{0.78,0.2,0.26,0.75},nil,{0.8,0.4,0.05,0.5},{damageM=2.05,cooldownM=1.02,rangeM=0.98,blockAmountM=1.05,weightM=0.4,enchantM=2.9,minLevel=27,maxLevel=49})
+  LoadItemSet("tungsten",nil,{0.3,0.34,0.38,0.8},nil,{0.2,0.2,0.3,0.5},{damageM=2.4,cooldownM=1.28,rangeM=0.95,blockAmountM=1.18,weightM=0.35,enchantM=2.6,minLevel=32,maxLevel=58, toolSpriteNameAdd = "Tough"})
+  LoadItemSet("titanium",nil,{0.52,0.72,0.86,0.7},{0.16,0.2,0.24,0.5},{0.56,0.78,0.9,0.5},{damageM=2.3,cooldownM=0.74,rangeM=1.1,blockAmountM=0.88,weightM=0.3,enchantM=3.1,minLevel=34,maxLevel=62, toolSpriteNameAdd = "Tough"})
+  LoadItemSet("platinum",nil,{0.86,0.9,0.95,0.75},nil,{0.4,0.4,0.2,0.5},{damageM=2,cooldownM=0.7,rangeM=1.15,blockAmountM=0.8,weightM=0.25,enchantM=3.2,minLevel=38,maxLevel=70})
+  LoadItemSet("orichalcum",nil,{0.28,0.9,0.82,0.75},nil,{0.25,0.7,0.68,0.58},{damageM=2.6,cooldownM=0.98,rangeM=1.04,blockAmountM=0.92,weightM=0.2,enchantM=3.3,minLevel=40,maxLevel=78,toolSpriteNameAdd = "Crystal"})
+  LoadItemSet("voidstone",nil,{0.18,0.08,0.24,0.85},nil,{0.2,0.1,0.3,0.65},{damageM=2.75,cooldownM=1.12,rangeM=0.9,blockAmountM=1.1,weightM=0.15,enchantM=3.4,minLevel=44,maxLevel=90,toolSpriteNameAdd = "Crystal"})
+  LoadItemSet("adamantite",nil,{1,0.15,0.15,0.78},nil,{0.78,0.98,1,0.55},{damageM=2.85,cooldownM=0.62,rangeM=1.2,blockAmountM=0.72,weightM=0.13,enchantM=3.45,minLevel=50,maxLevel=999, toolSpriteNameAdd = "Tough"})
 
-  LoadItemSet("diamond",nil,{0.7,1,1,0.75},nil,{0.3,0.4,0.4,0.5},{damageM=3,cooldownM=0.5,rangeM=1.2,blockAmountM=0.7,weightM=0.03,enchantM=3.5,minLevel=50,maxLevel=999})
+  LoadItemSet("diamond",nil,{0.7,1,1,0.75},nil,{0.2,0.3,0.3,0.5},{damageM=3,cooldownM=0.5,rangeM=1.2,blockAmountM=0.7,weightM=0.1,enchantM=3.5,minLevel=50,maxLevel=999,toolSpriteNameAdd = "Crystal"})
 
   
 end
@@ -1100,6 +1578,7 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
   enchantM = flags.enchantM or 1
   minLevel = flags.minLevel or 0
   maxLevel = flags.maxLevel or 999
+  toolSpriteNameAdd = flags.toolSpriteNameAdd or ""
 
   local function addSetTool(toolName, topSprite,baseSprite, stats)
     items[toolName] = Item(toolName,
@@ -1132,23 +1611,34 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
     if stats.rangeLimitPerLevel ~= nil then
       items[toolName].rangeLimitPerLevel = stats.rangeLimitPerLevel * rangeM
     end
-    ItemCard[toolName] = ItemCard(10*costM,math.ceil(200*weightM),toolName,"common","tool",1*enchantM,{"any"},{
+    ItemCard[toolName] = ItemCard(10*costM,math.ceil(75*weightM),toolName,"common","tool",1*enchantM,{"any"},{
       minLevel = minLevel,
       maxLevel = maxLevel,
     })
   end
 
-  local function addSetWeapon(toolName, topSprite,baseSprite, subCategory, stats)
-    local weaponFlags = {
-      category = "weapon",
-      subCategory = subCategory,
-      fullName = toolName,
-      holdAnimation = {
-        {sprite = "toolBase_Hold",colorisation = baseColorisation, color = baseColor},
-        {sprite = "toolTop_Hold",colorisation = topColorisation, color = topColor},
-      },
-    }
+  local function addSetWeapon(toolName, topSprite,baseSprite, subCategory, stats, weaponBase,weaponTop)
+    local weaponFlags = CopyAll(stats)
 
+      if weaponBase == nil then
+        weaponBase = "meleeWeaponBase_Hold"
+      end
+      if weaponTop == nil then
+        weaponTop = "meleeWeaponTop_Hold"
+      end
+    
+      weaponFlags.category = "weapon"
+      weaponFlags.subCategory = subCategory
+      weaponFlags.fullName = toolName
+      weaponFlags.holdAnimation = {
+        {sprite = weaponBase,colorisation = baseColorisation, color = baseColor},
+        {sprite = weaponTop,colorisation = topColorisation, color = topColor},
+      }
+
+    if topColorisation ~= nil then
+      weaponFlags.swingColor = OverrideColor(CopyAll(topColorisation),{0.8,0.8,0.8,0.8},0.5)
+    end
+    
     if stats.cooldown ~= nil then
       weaponFlags.cooldown = stats.cooldown * cooldownM
     end
@@ -1186,7 +1676,7 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
       weaponFlags.moveSpeedDuringCharge = stats.moveSpeedDuringCharge
     end
     if stats.dashVelocity ~= nil then
-      weaponFlags.dashVelocity = stats.dashVelocity
+      weaponFlags.dashVelocity = stats.dashVelocity * blockAmountM
     end
     if stats.dashTime ~= nil then
       weaponFlags.dashTime = stats.dashTime
@@ -1196,6 +1686,27 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
     end
     if stats.knockback ~= nil then
       weaponFlags.knockback = stats.knockback
+    end
+    if stats.projectileVelocity ~= nil then
+      weaponFlags.projectileVelocity = stats.projectileVelocity * ((blockAmountM+0.2)^0.5)
+    end
+    if stats.projectileGravity ~= nil then
+      weaponFlags.projectileGravity = stats.projectileGravity / enchantM
+    end
+    if stats.projectileBounceFactor ~= nil then
+      weaponFlags.projectileBounceFactor = stats.projectileBounceFactor
+    end
+    if stats.projectileMovementSlide ~= nil then
+      weaponFlags.projectileMovementSlide = stats.projectileMovementSlide
+    end
+    if stats.projectileSprite ~= nil then
+      weaponFlags.projectileSprite = stats.projectileSprite
+    end
+    if stats.projectileName ~= nil then
+      weaponFlags.projectileName = stats.projectileName
+    end
+    if stats.onUse ~= nil then
+      weaponFlags.onUse = stats.onUse
     end
 
     items[toolName] = Item(toolName,
@@ -1208,13 +1719,13 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
     if stats.cooldownSpeedPerLevel ~= nil then
       items[toolName].cooldownSpeedPerLevel = stats.cooldownSpeedPerLevel / cooldownM
     end
-    ItemCard[toolName] = ItemCard(10*costM,math.ceil(400*weightM),toolName,"common","weapon",1*enchantM,{"any"},{
+    ItemCard[toolName] = ItemCard(10*costM,math.ceil(150*weightM),toolName,"common","weapon",1*enchantM,{"any"},{
       minLevel = minLevel,
       maxLevel = maxLevel,
     })
   end
 
-  addSetTool(name.." pickaxe", "pickaxeTop", "toolBase", {
+  addSetTool(name.." pickaxe", "pickaxeTop"..toolSpriteNameAdd, "toolBase", {
     cooldown = 0.8,
     cooldownSpeedPerLevel = 0.03,
     mineDamage = 0.8,
@@ -1225,7 +1736,7 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
     mineWidth = 3,
   })
 
-  addSetTool(name.." spike", "spikeTop", "toolBase", {
+  addSetTool(name.." spike", "spikeTop"..toolSpriteNameAdd, "toolBase", {
     cooldown = 0.6,
     cooldownSpeedPerLevel = 0.02,
     mineDamage = 1.2,
@@ -1236,7 +1747,7 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
     mineWidth = 1,
   })
 
-  addSetTool(name.." sway pickaxe", "swayPickaxeTop", "toolBase", {
+  addSetTool(name.." sway pickaxe", "swayPickaxeTop"..toolSpriteNameAdd, "toolBase", {
     cooldown = 2.4,
     mineDamage = 0.8,
     mineDamagePerLevel = 0.02,
@@ -1247,7 +1758,7 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
     mineWidth = 6,
   })
 
-  addSetTool(name.." hammer", "hammerTop", "toolBase", {
+  addSetTool(name.." hammer", "hammerTop"..toolSpriteNameAdd, "toolBase", {
     cooldown = 2,
     cooldownSpeedPerLevel = 0.05,
     mineDamage = 4,
@@ -1258,17 +1769,17 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
     mineWidth = 2,
   })
 
-  addSetTool(name.." scalpel", "chiselTop", "toolBaseSmall", {
-    cooldown = 0.1,
-    mineDamage = 0.6,
-    mineDamagePerLevel = 0.06,
-    blockDamageAmount = 1,
+  addSetTool(name.." scalpel", "chiselTop"..toolSpriteNameAdd, "toolBaseSmall", {
+    cooldown = 0.12,
+    mineDamage = 0.5,
+    mineDamagePerLevel = 0.05,
+    blockDamageAmount = 0.4,
     rangeLimit = 3,
     rangeLimitPerLevel = 0.03,
     mineWidth = 1,
   })
 
-  addSetTool(name.." shovel", "shovelTop", "toolBase", {
+  addSetTool(name.." shovel", "shovelTop"..toolSpriteNameAdd, "toolBase", {
     cooldown = 1.8,
     cooldownSpeedPerLevel = 0.04,
     mineDamage = 1.2,
@@ -1279,7 +1790,7 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
     mineWidth = 3,
   })
 
-  addSetTool(name.." stiff pick", "stiffPickTop", "toolBase", {
+  addSetTool(name.." stiff pick", "stiffPickTop"..toolSpriteNameAdd, "toolBase", {
     cooldown = 1.15,
     mineDamage = 1.4,
     mineDamagePerLevel = 0.08,
@@ -1290,7 +1801,7 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
     mineWidth = 3,
   })
 
-  addSetTool(name.." target pickaxe", "targetPickaxeTop", "toolBase", {
+  addSetTool(name.." target pickaxe", "targetPickaxeTop"..toolSpriteNameAdd, "toolBase", {
     cooldown = 0.2,
     mineDamage = 0.25,
     mineDamagePerLevel = 0.0075,
@@ -1303,11 +1814,11 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
 
 
 
-  addSetWeapon(name.." small sword", "smallSwordTop", "toolBase", "melee", {
+  addSetWeapon(name.." knife", "smallSwordTop"..toolSpriteNameAdd, "toolBase", "melee", {
     cooldown = 1,
-    cooldownSpeedPerLevel = 0.05,
+    cooldownSpeedPerLevel = 0.02,
     damage = 6,
-    damagePerLevel = 1.5,
+    damagePerLevel = 0.35,
     attackRange = 2.5,
     attackRadius = 1, 
     charge = 0.2,
@@ -1316,11 +1827,11 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
     dashTime = 0.2,
     knockback = 0.6,
   })
-  addSetWeapon(name.." sword", "swordTop", "toolBase", "melee", {
+  addSetWeapon(name.." sword", "swordTop"..toolSpriteNameAdd, "toolBase", "melee", {
     cooldown = 2.4,
-    cooldownSpeedPerLevel = 0,
-    damage = 10,
-    damagePerLevel = 2.8,
+    cooldownSpeedPerLevel = 0.01,
+    damage = 14,
+    damagePerLevel = 1.4,
     attackRange = 4,
     attackRadius = 1, 
     charge = 0.5,
@@ -1329,11 +1840,11 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
     dashTime = 0.3,
     knockback = 1.2,
   })
-  addSetWeapon(name.." big sword", "bigSwordTop", "toolBase", "melee", {
+  addSetWeapon(name.." big sword", "bigSwordTop"..toolSpriteNameAdd, "toolBase", "melee", {
     cooldown = 4.3,
     cooldownSpeedPerLevel = 0,
-    damage = 18,
-    damagePerLevel = 6,
+    damage = 25,
+    damagePerLevel = 2.8,
     attackRange = 2.5,
     attackRadius = 2, 
     charge = 0.8,
@@ -1343,12 +1854,12 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
     dashGravityMultiplier = 0.75,
     knockback = 2,
   })
-  addSetWeapon(name.." lance", "lanceTop", "toolBase", "melee", {
-    cooldown = 2,
-    cooldownSpeedPerLevel = 0,
-    damage = 14,
-    damagePerLevel = 3.2,
-    attackRange = 8,
+  addSetWeapon(name.." spear", "lanceTop"..toolSpriteNameAdd, "toolBase", "melee", {
+    cooldown = 3,
+    cooldownSpeedPerLevel = 0.015,
+    damage = 13,
+    damagePerLevel = 0.8,
+    attackRange = 6,
     attackRadius = 1, 
     charge = 0.3,
     moveSpeedDuringCharge = 0.5,
@@ -1357,6 +1868,45 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
     dashGravityMultiplier = 0.01,
     knockback = 1,
   })
+  addSetWeapon(name.." bow", "bowTop"..toolSpriteNameAdd, "bowBase", "ranged", {
+    cooldown = 5,
+    damage = 18,
+    damagePerLevel = 1.1,
+    charge = 0.1,
+    moveSpeedDuringCharge = 0.4,
+    knockback = 1,
+    projectileVelocity = 35,
+    projectileGravity = 0.5,
+    projectileSprite = {
+      {sprite = "arrowBase",colorisation = baseColorisation, color = baseColor},
+      {sprite = "arrowTop"..toolSpriteNameAdd,colorisation = topColorisation, color = topColor}
+    },
+    onUse = function (self,entity,attributes,cursorX,cursorY,slot,stacks,flags) 
+      local onUseSuccess, onUseCooldown, onUseStacksRemove
+      onUseSuccess = false
+
+      local projectileFlags = CopyAll(flags)
+      projectileFlags.animationType = "orientation"
+      
+      onUseSuccess, onUseCooldown, onUseStacksRemove = self:spawnProjectile(entity, attributes, cursorX, cursorY,slot,stacks,projectileFlags)
+
+      return onUseSuccess, onUseCooldown, onUseStacksRemove
+    end
+  }, "bowBase_Hold", "bowTop_Hold")
+  --[[addSetWeapon(name.." ring", "ringTop"..toolSpriteNameAdd, "ringCrystal", "melee", {
+    cooldown = 3,
+    cooldownSpeedPerLevel = 0.015,
+    damage = 10,
+    damagePerLevel = 0.6,
+    attackRange = 6,
+    attackRadius = 1, 
+    charge = 0.3,
+    moveSpeedDuringCharge = 0.5,
+    dashVelocity = 10,
+    dashTime = 0.5,
+    dashGravityMultiplier = 0.01,
+    knockback = 1,
+  })]]
   --[[items.crudeSword = Item("crudeSword","crudeSword",{["category"]="weapon",["subCategory"] = "melee",["fullName"] = "Crude sword",
     cooldown = 2,
     damage = 8,

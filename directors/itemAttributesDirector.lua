@@ -141,13 +141,14 @@ function ItemDirector:rollItem(cards,credit,creditLimit,enchantCards,enchantCred
     local item = {}
     local success = false
     local maxEnchantPoints = 15
+    local rolledItemCard = nil
     item.name = "none"
     item.amount = 0
     item.attributes = {}
 
     
     local randomLevel = (math.random()^(1/levelBias) +0.5)/1
-    local actualLevel = minimum(randomLevel * math.abs(depth) * 32, 1)
+    local actualLevel = minimum(randomLevel * math.abs(depth) * 30, 1)
     local enchantFactor = 1 + (actualLevel * 0.1)
     local itemCreditCostMultiplier = randomLevel
     
@@ -169,7 +170,7 @@ function ItemDirector:rollItem(cards,credit,creditLimit,enchantCards,enchantCred
                 --if tries > 50 then randomLevel = randomLevel / ((1+(tries-50))^1.75) end
                 if tries > 200 then randomLevel = randomLevel / ((1+(tries-200))^1.75) end
                 --if tries > 150 then randomLevel = randomLevel / ((1+(tries-150))^2) end
-                actualLevel = minimum(randomLevel * math.abs(depth) * 32, 1)
+                actualLevel = minimum(randomLevel * math.abs(depth) * 30, 1)
                 enchantFactor = 1 + (actualLevel * 0.1)
                 itemCreditCostMultiplier = randomLevel
 
@@ -181,7 +182,7 @@ function ItemDirector:rollItem(cards,credit,creditLimit,enchantCards,enchantCred
                 --if tries > 50 then randomLevel = randomLevel * ((1+(tries-50))^1.75) end
                 if tries > 200 then randomLevel = randomLevel * ((1+(tries-200))^1.75) end
                 --if tries > 150 then randomLevel = randomLevel * ((1+(tries-150))^2) end
-                actualLevel = minimum(randomLevel * math.abs(depth) * 32, 1)
+                actualLevel = minimum(randomLevel * math.abs(depth) * 30, 1)
                 enchantFactor = 1 + (actualLevel * 0.1)
                 itemCreditCostMultiplier = randomLevel
 
@@ -198,6 +199,7 @@ function ItemDirector:rollItem(cards,credit,creditLimit,enchantCards,enchantCred
     --actually roll item
     if #cardPool > 0 then
         local chosenCard = cardPool[math.random(1,#cardPool)]
+        rolledItemCard = chosenCard
         item.name = chosenCard.itemName
         item.amount = math.ceil(math.random(chosenCard.quantityMin,chosenCard.quantityMax))
         item.attributes = CopyAll(chosenCard.itemAttributes)
@@ -214,9 +216,13 @@ function ItemDirector:rollItem(cards,credit,creditLimit,enchantCards,enchantCred
     --enchant item
     local actualItem = items[item.name]
     if actualItem ~= nil then
-        if actualItem.canBeEnchanted then
+        if actualItem.canBeEnchanted and actualItem.maxEnchants > 0 then
             --print("ItemDirector:rollItem() - Enchanting item: "..item.name.." with enchantCredit: "..(enchantCredit).." and enchantCreditMultiplier: "..enchantCreditMultiplier)
-            local enchant, enchantSuccess = self:enchant(item.name,items[item.name],item.attributes,enchantCards,enchantCredit,enchantCreditMultiplier*enchantFactor,biome)
+            local itemCardEnchantCreditMultiplier = 1
+            if rolledItemCard ~= nil and rolledItemCard.enchantCreditMultiplier ~= nil then
+                itemCardEnchantCreditMultiplier = rolledItemCard.enchantCreditMultiplier
+            end
+            local enchant, enchantSuccess = self:enchant(item.name,items[item.name],item.attributes,enchantCards,enchantCredit,enchantCreditMultiplier*enchantFactor,biome,itemCardEnchantCreditMultiplier)
             
             if enchantSuccess then
                 item.attributes.enchants = enchant
@@ -230,18 +236,20 @@ function ItemDirector:rollItem(cards,credit,creditLimit,enchantCards,enchantCred
     return item, success, credit
 end
 
-function ItemDirector:enchant(itemName,item,attributes,enchantCards,enchantCredit,multiplier,biome)
+function ItemDirector:enchant(itemName,item,attributes,enchantCards,enchantCredit,multiplier,biome,itemCardEnchantCreditMultiplier)
     --more or less credit depending on level
     local enchant = {}
     local success = false
     local numberOfEnchants = math.ceil((math.random()^4)*math.floor(enchantCredit*(multiplier^0.75)/4))
     local creditPerEnchant = enchantCredit / numberOfEnchants
-
+    local maxEnchant = 6
+    if item.maxEnchants ~= nil then maxEnchant = item.maxEnchants end
+    if numberOfEnchants > maxEnchant then numberOfEnchants = maxEnchant end
     --repeat until no more credit 
     if numberOfEnchants > 0 then
         for i = 1, numberOfEnchants do
 
-            local newEnchant, enchantSuccess = self:rollCompleteEnchant(itemName,item,attributes,enchantCards,enchantCredit,maximum(enchantCredit,creditPerEnchant),multiplier,biome)
+            local newEnchant, enchantSuccess = self:rollCompleteEnchant(itemName,item,attributes,enchantCards,enchantCredit,maximum(enchantCredit,creditPerEnchant),multiplier,biome,itemCardEnchantCreditMultiplier)
             
             if enchantSuccess then
                 enchantCredit = enchantCredit - creditPerEnchant
@@ -256,7 +264,7 @@ function ItemDirector:enchant(itemName,item,attributes,enchantCards,enchantCredi
     return enchant, success
 end
 
-function ItemDirector:rollCompleteEnchant(itemName,item,attributes,enchantCards,enchantCredit,powerCredit,multiplier,biome)
+function ItemDirector:rollCompleteEnchant(itemName,item,attributes,enchantCards,enchantCredit,powerCredit,multiplier,biome,itemCardEnchantCreditMultiplier)
     local causeEnchant = nil
     local conditionEnchant = nil
     local reactionEnchant = nil
@@ -311,9 +319,10 @@ function ItemDirector:rollCompleteEnchant(itemName,item,attributes,enchantCards,
         success = true
         --print("ItemDirector:rollCompleteEnchant() - Rolled complete enchant with cause: "..completeEnchant.cause.name.." condition: "..completeEnchant.condition.name.." reaction: "..completeEnchant.reaction.name.." and remaining enchantCredit: "..enchantCredit)
         if enchantCredit > 0 and powerCredit > 0 then
-            completeEnchant.cause.power = (math.random()^1.25)*powerCredit
-            completeEnchant.condition.power = (math.random()^1.25)*powerCredit * completeEnchant.cause.card.creditMultiplier
-            completeEnchant.reaction.power = (math.random()^1.25)*powerCredit * completeEnchant.cause.card.creditMultiplier * completeEnchant.condition.card.creditMultiplier
+            local itemPowerMultiplier = itemCardEnchantCreditMultiplier or 1
+            completeEnchant.cause.power = (((math.random()+0.5)/1.5)^1.25) * powerCredit * itemPowerMultiplier
+            completeEnchant.condition.power = (((math.random()+0.5)/1.5)^1.25) * powerCredit * itemPowerMultiplier * completeEnchant.cause.card.creditMultiplier
+            completeEnchant.reaction.power = (((math.random()+0.5)/1.5)^1.25) * powerCredit * itemPowerMultiplier * completeEnchant.cause.card.creditMultiplier * completeEnchant.condition.card.creditMultiplier
         end
     end
 

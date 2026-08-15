@@ -1,27 +1,50 @@
 function gameupdate(dt)
   gametime = gametime + dt
-  generateworldupdate(dt)
+  debugtimelog("misc","update")
+  --debugtimeclear("update")
+  generateworldupdate(dt) debugtimelog("generateworldupdate","update")
+  --debugtimeclear("update")
 
   local udpDistanceX = math.ceil(szx / camv / 2)
   local udpDistanceY = math.ceil(szy / camv / 2)
 
-  world:updateTiles(dt, camx, camy, udpDistanceX, udpDistanceY, {})
-  DirectorUpdate(dt)
-  world:updateDirectors(dt)
-  world:updateEntities(dt)
+  world:updateTiles(dt, camx, camy, udpDistanceX, udpDistanceY, {}) debugtimelog("updateTiles","update")
+  DirectorUpdate(dt) debugtimelog("directorUpdate","update")
+  world:updateDirectors(dt) debugtimelog("updateDirectors","update")
+  world:updateEntities(dt) --debugtimelog("updateEntities","update")
+  DungeonParticleUpdate(dt) debugtimelog("DungeonParticleUpdate","update")
   RemoveDistantEnemies(60)
-  world:updateParticles(dt)
-  world:groundItemsUpdate(dt)
+  world:projectileUpdate(dt) debugtimelog("projectileUpdate","update")
+  world:updateParticles(dt) debugtimelog("updateParticles","update")
+  world:groundItemsUpdate(dt) debugtimelog("groundItemsUpdate","update")
+  world:fogUpdate(dt) debugtimelog("fogUpdate","update")
+  world.time = world.time + dt
   --entityupdate(dt)
   --playerupdate(dt)
   --updatelight(dt)
-  GameEndUpdate(dt)
+  GameEndUpdate(dt) debugtimelog("GameEndUpdate","update")
 
   if IsAPlayerAlive() then
     love.graphics.setColor(1,0,0,1)
     love.graphics.print("alaal",0,0)
   end
   
+end
+
+function DungeonParticleUpdate(dt)
+  local count = math.ceil(dt * 60 * 5)
+  local found, closestStructure, closestDistance, StructurePosition = world:getClosestMainStructure("dungeon", camx, camy)
+  local localPos = Vector2(camx,camy)
+  --print(round(closestDistance))
+  if found and closestDistance < 400 then
+    for i = 1, count do
+      local particlePosition = StructurePosition:copy()
+      particlePosition:move(math.random()*360,(math.random()^2)*400)
+      if particlePosition:dist(localPos) < 35 and particlePosition:dist(StructurePosition) > 37 and StructurePosition.y < particlePosition.y+70  then
+        world:spawnParticles(1,"evil",particlePosition,0,{1,0,0,0.6}, {0.05,0.7,0.05,0.1}, 5, 3,"floating", 1.1, particlePosition:angle(StructurePosition), 0, {lightColor = {1,0.5,0,0.3}})
+      end
+    end
+  end
 end
 
 function GameEndUpdate(dt)
@@ -94,14 +117,14 @@ function DirectorUpdate(dt)
         directorCount = directorCount + 1
         if directorCount == 0 then
           local depth = world:getDepth(entities[i].position.y)
-          local multiplier = (1 + math.abs((depth*1.5) ^ 2)) * world.directorCreditMultiplier
+          local multiplier = (1 + math.abs((depth*1.5) ^ 2))
           world.globalDirector.position = entities[i].position:copy()
-          world.globalDirector.maxCredit = 100 + 30 * multiplier
+          world.globalDirector.maxCredit = (100 + 30 * multiplier) * world.directorCreditMultiplier
           world.globalDirector.maxCreditBank = 40 + 30 * multiplier
-          world.globalDirector.creditGain = 0.25 + 0.22 * multiplier
+          world.globalDirector.creditGain = (0.25 + 0.22 * multiplier) * world.directorCreditMultiplier
           world.globalDirector.spawnFrequency = 12 / (1 + 0.035 * multiplier) / world.directorSpawnSpeedMultiplier
           world.globalDirector.minCreditPerSpawn = -30 + (3 * multiplier)
-          world.globalDirector.maxCreditPerSpawn = 50 + (10 * multiplier)
+          world.globalDirector.maxCreditPerSpawn = 50 + (10 * multiplier) * world.directorCreditMultiplier
           world.globalDirector.mobLimit = 60
           world.globalDirector.decay = world.globalDirector.decay + 10
         else
@@ -111,14 +134,14 @@ function DirectorUpdate(dt)
           else
             world.directors[directorCount].position = entities[i].position:copy()
             local depth = world:getDepth(entities[i].position.y)
-            local multiplier = (1 + math.abs((depth*1.5) ^ 2)) * world.directorCreditMultiplier
+            local multiplier = (1 + math.abs((depth*1.5) ^ 2)) 
             world.directors[directorCount].position = entities[i].position:copy()
-            world.directors[directorCount].maxCredit = 100 + 30 * multiplier
+            world.directors[directorCount].maxCredit = (100 + 30 * multiplier)* world.directorCreditMultiplier
             world.directors[directorCount].maxCreditBank = 40 + 30 * multiplier
-            world.directors[directorCount].creditGain = 0.25 + 0.22 * multiplier
+            world.directors[directorCount].creditGain = (0.25 + 0.22 * multiplier) * world.directorCreditMultiplier
             world.directors[directorCount].spawnFrequency = 12 / (1 + 0.035 * multiplier) / world.directorSpawnSpeedMultiplier
             world.directors[directorCount].minCreditPerSpawn = -30 + (3 * multiplier)
-            world.directors[directorCount].maxCreditPerSpawn = 50 + (10 * multiplier)
+            world.directors[directorCount].maxCreditPerSpawn = 50 + (10 * multiplier) * world.directorCreditMultiplier
             world.directors[directorCount].mobLimit = 60
             world.directors[directorCount].decay = world.directors[directorCount].decay + 10
           end
@@ -135,6 +158,12 @@ function StartGame(changeGameState,parameters)
   if parameters.biomeSize == nil then parameters.biomeSize = 150 end
   if parameters.freeCam == nil then parameters.freeCam = false end
   if parameters.flyCheat == nil then parameters.flyCheat = false end
+  if parameters.worldseed == nil or parameters.worldseed == "" then parameters.worldseed = math.random() * 100000000 end
+  if type(parameters.worldseed) == "string" then parameters.worldseed = tonumber(parameters.worldseed) end
+  if parameters.directorCreditMultiplier == nil then parameters.directorCreditMultiplier = 1 end
+  if parameters.directorSpawnSpeedMultiplier == nil then parameters.directorSpawnSpeedMultiplier = 1 end
+  if parameters.terrainSize == nil then parameters.terrainSize = 1 end
+
 
   camEntityFollow = 0
   camx = 0
@@ -148,7 +177,8 @@ function StartGame(changeGameState,parameters)
   worldParameters.borderY = parameters.wh * 1.2
   worldParameters.directorCreditMultiplier = parameters.directorCreditMultiplier or 1
   worldParameters.directorSpawnSpeedMultiplier = parameters.directorSpawnSpeedMultiplier or 1
-  world = World(math.random() * 1000000, 10, parameters.wh/5, parameters.biomeSize, {}, GlobalWorldGenStepList, worldParameters)
+  UnfocusTextInput()
+  world = World(parameters.worldseed, 10, parameters.wh/5, parameters.biomeSize, {}, GlobalWorldGenStepList, worldParameters)
   --local spawnX, spawnY = world:getSpawn()
   generateBaseBiomes()
 

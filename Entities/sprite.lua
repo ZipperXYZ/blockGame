@@ -220,6 +220,8 @@ function Sprite:doesAnimationExist(animation)
     return self.spriteData[animation] ~= nil
 end
 
+
+
 function Sprite:draw(animation,animationTime,direction,x,y,sx,sy,color,colorisation)
     --return textures["sprites"][self.quadName]
 

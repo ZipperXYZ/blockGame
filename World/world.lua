@@ -19,10 +19,16 @@ function World:init(worldSeed, chunkSize, depthProgression, biomeSize, biomeList
     self.chunkSize = chunkSize or 10
     self.biomeList = biomeList or {}
     self.generationSteps = generationSteps or {}
+    self.generationStepIndex = {}
+    for i = 1, #self.generationSteps do
+        self.generationStepIndex[self.generationSteps[i]] = i
+    end
+    self.generationSpiralState = nil
     self.chunks = {}
     self.groundItems = {}
     self.particles = {}
     self.textParticles = {}
+    self.projectiles = {}
 
     self.globalDirector = EntitySpawnDirector(Vector2(0,0),50,15,25,3,12,nil,60,95,0,100,200,150,999999999,40)
     self.directors = {}
@@ -32,9 +38,30 @@ function World:init(worldSeed, chunkSize, depthProgression, biomeSize, biomeList
     self.loopX = self.parameters.loopX or (self.borderX*1.4)
     self.borderY = self.parameters.borderY or 0
     self.hasBorder = self.parameters.hasBorder or (self.borderX ~= 0)
-    self.caveSize = self.parameters.caveSize or 1
+    self.caveSize = 1.5
+    self.time = 0
+    if self.parameters.caveSize ~= nil then self.caveSize = self.parameters.caveSize * 1.5 end
     self.directorCreditMultiplier = self.parameters.directorCreditMultiplier or 1
     self.directorSpawnSpeedMultiplier = self.parameters.directorSpawnSpeedMultiplier or 1
+
+
+    self.fogActivated = self.parameters.fogActivated or true
+    self.currentFogLayer = self.parameters.currentFogLayer or 1
+    self.fogViewDistance = self.parameters.fogViewDistance or 6
+    self.generationFocusRadius = self.parameters.generationFocusRadius or 4
+    self.maxNearChunkStepPasses = self.parameters.maxNearChunkStepPasses or 6
+    self.generationTimeBudgetMs = self.parameters.generationTimeBudgetMs or 3.5
+    self.farGenerationAttemptRatio = self.parameters.farGenerationAttemptRatio or 0.04
+    self.maxFarStepAttemptsPerFrame = self.parameters.maxFarStepAttemptsPerFrame or 2
+    self.nonPlayerControlsUpdateInterval = self.parameters.nonPlayerControlsUpdateInterval or 0.05
+    self.nonPlayerInventoryUpdateInterval = self.parameters.nonPlayerInventoryUpdateInterval or 0.15
+    self.playerInventoryUpdateInterval = self.parameters.playerInventoryUpdateInterval or 0.02
+    self.nearGenerationComplete = false
+    self.nearGenerationCenterX = nil
+    self.nearGenerationCenterY = nil
+    self.nearGenerationRadius = nil
+
+    self:placeMainStructures()
 
     --self.barList = {}
 end
@@ -44,12 +71,92 @@ function World:clear()
     self.chunks = {}
     self.groundItems = {}
     self.particles = {}
+    self.generationSpiralState = nil
+    self.nearGenerationComplete = false
+    self.nearGenerationCenterX = nil
+    self.nearGenerationCenterY = nil
+    self.nearGenerationRadius = nil
     entities = {}
     spectator = true
 end
 
 function World:clearBiomes()
     self.biomeList = {}
+end
+
+function World:placeMainStructures()
+    self.mainStructureList = {}
+    local structureMultipler = minimum(math.ceil(self.borderX/150), 1) *1
+    local structureMultipler = 2
+    self:placeMainStrucure("dungeon1","dungeon",0,self.borderX*0.5,-((self.borderY/6)*(1-0.35)),self.borderY/12/3,structureMultipler,155,90)
+    self:placeMainStrucure("dungeon1","dungeon",0,self.borderX*0.44,-((self.borderY/6)*(2-0.35)),self.borderY/12/3,structureMultipler,155,90)
+    self:placeMainStrucure("dungeon1","dungeon",0,self.borderX*0.4,-((self.borderY/6)*(3-0.35)),self.borderY/12/3,structureMultipler,155,90)
+    self:placeMainStrucure("dungeon1","dungeon",0,self.borderX*0.35,-((self.borderY/6)*(4-0.35)),self.borderY/12/3,structureMultipler,155,90)
+    self:placeMainStrucure("dungeon1","dungeon",0,self.borderX*0.25,-((self.borderY/6)*(5-0.35)),self.borderY/12/3,structureMultipler,155,90)
+    --self:placeMainStrucure("dungeon1",0,self.borderX/2,-((self.borderY/6)*(6-0.25)),self.borderY/12/3,3,155)
+end
+
+function World:getClosestMainStructure(structureType, worldPosX, worldPosY)
+    local closestStructure = nil
+    local closestDistance = 9999999999
+    local position = Vector2(0, 0)
+    worldPosX = self:xLoop(worldPosX)
+    local found = false
+    for i = 1, #self.mainStructureList do
+        local structure = self.mainStructureList[i]
+        if structure.type == structureType then
+            local distance = dist(worldPosX, worldPosY, structure.x, structure.y)
+            if closestDistance == nil or distance < closestDistance then
+                closestDistance = distance
+                closestStructure = structure
+                position = Vector2(structure.x, structure.y)
+                found = true
+            end
+        end
+    end
+    return found, closestStructure, closestDistance, position
+end
+
+function World:xLoop(worldPosX)
+    return math.abs((((worldPosX+world.loopX/2)%world.loopX)-world.loopX/2)*2)
+end
+
+function World:placeMainStrucure(structureName,structureType,x,xrange,y,yrange,amount,noiseValue,minimumDistanceFromOtherMainStructures)
+    structureType = structureType or "none"
+    local placed = 0
+    local tryIndex = 0
+    local maxTries = math.max(amount * 20, amount)
+
+    while placed < amount and tryIndex < maxTries do
+        tryIndex = tryIndex + 1
+        local structureX = round(x - xrange + xrange*2*noise(noiseValue, self.worldSeed,-13.432563 * tryIndex))
+        local structureY = round(y - yrange + yrange*2*noise(-noiseValue, self.worldSeed, 13.53432 * tryIndex))
+        local canPlace = true
+
+        if minimumDistanceFromOtherMainStructures ~= nil then
+            for j = 1, #self.mainStructureList do
+                local otherStructure = self.mainStructureList[j]
+                local distance = math.sqrt((structureX - otherStructure.x)^2 + (structureY - otherStructure.y)^2)
+                if distance < minimumDistanceFromOtherMainStructures then
+                    canPlace = false
+                    break
+                end
+            end
+        end
+
+        if canPlace then
+            local structure = {}
+            structure.name = structureName
+            structure.structure = structureName
+            structure.type = structureType
+            structure.x = structureX
+            structure.y = structureY
+
+            table.insert(self.mainStructureList,structure)
+            placed = placed + 1
+        end
+
+    end
 end
 
 --convertWorldPosToChunkPos(worldPosX,worldPosY) --return ChunkX,ChunkY,posInChunkX,posInChunkY
@@ -76,14 +183,11 @@ end
 --à refaire puisque tu ne peux pas avoir la position globale avec juste une liste de chunks, serait inutile
 --peut être retourne la liste de coordonées de chaque chunks et les utilisés de cette façon?
 function World:getNeighboringChunks(chunkX, chunkY, step)
-    --local required = stepIndex[step]
-    --if not required then return false end
+    local stepIndex = self.generationStepIndex[step]
+    if stepIndex == nil then return false end
+    if stepIndex <= 1 then return true end
 
-    local stepIndex = getListIndex(self.generationSteps, step)
-    if stepIndex <= 0 then return false end
-
-    local requiredStep = self.generationSteps[stepIndex - 1]
-    if requiredStep == nil then return true end
+    local requiredStepIndex = stepIndex - 1
 
     local neighbors = {
         { chunkX + 1, chunkY + 1 }, { chunkX + 1, chunkY }, { chunkX + 1, chunkY - 1 },
@@ -95,8 +199,9 @@ function World:getNeighboringChunks(chunkX, chunkY, step)
         local nx, ny = n[1], n[2]
         if not self:checkIfChunkExists(nx, ny) then return false end
         local neighborStatus = self.chunks[nx][ny]:getGenerationStatus()
+        local neighborStepIndex = self.generationStepIndex[neighborStatus] or 0
         -- le voisin doit avoir complété au moins l'étape précédente
-        if getListIndex(self.generationSteps, neighborStatus) < getListIndex(self.generationSteps, requiredStep) then return false end
+        if neighborStepIndex < requiredStepIndex then return false end
     end
     return true
 end
@@ -119,6 +224,13 @@ end
 
 --placeTile(tile,worldPosX,worldPosY,layer,force) --return true/false si ça l'a marcher, force activé pour la genération du monde, force désactivé pour le joueur
 ----peut être placer une tile fait aussi un updateLight(?)
+---
+function World:getChunk(chunkX, chunkY)
+    if self:checkIfChunkExists(chunkX, chunkY) then
+        return self.chunks[chunkX][chunkY]
+    end
+    return nil
+end
 function World:placeTile(tile, worldPosX, worldPosY, layer, force,updateLight)
     local chunkX, chunkY, posX, posY = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
     local placeSuccess = false
@@ -261,20 +373,25 @@ function World:damageBlock(worldPosX, worldPosY, damage,layer,destroyTopAsWell,d
     if layer == "top" then layer = "topTiles" end
     if layer == "back" then layer = "backTiles" end
 
+    if damageSourceInfo ~= nil then
+        if damageSourceInfo.item ~= nil and damageSourceInfo.entity ~= nil then
+            damageSourceInfo.signalInfo.position = Vector2(worldPosX, worldPosY)
+            damageSourceInfo.signalInfo = damageSourceInfo.entity:applyEnchantSignal("damagingTile",damageSourceInfo.signalInfo,damageSourceInfo.item,damageSourceInfo.attributes)
+            if damageSourceInfo.signalInfo.mineDamageValue ~= nil then
+                damage = damageSourceInfo.signalInfo.mineDamageValue
+            end
+        end
+    end
+
     if self:doesTilePropretyExists(worldPosX, worldPosY, "health"..layer) then
         self:tilePropretyAdd(worldPosX, worldPosY, "health"..layer, -damage)
         self:setTileProprety(worldPosX, worldPosY, "healthMineTimer"..layer, 5)
     else
-        self:setTileProprety(worldPosX, worldPosY, "health"..layer, self:getTile(worldPosX, worldPosY,layer).health)
+        self:setTileProprety(worldPosX, worldPosY, "health"..layer, self:getDefaultTileHealth(worldPosX, worldPosY, layer))
         self:tilePropretyAdd(worldPosX, worldPosY, "health"..layer, -damage)
         self:setTileProprety(worldPosX, worldPosY, "healthMineTimer"..layer, 5)
     end
 
-    if damageSourceInfo ~= nil then
-        if damageSourceInfo.item ~= nil and damageSourceInfo.entity ~= nil then
-            damageSourceInfo.signalInfo = damageSourceInfo.entity:applyEnchantSignal("damagingTile",damageSourceInfo.signalInfo,damageSourceInfo.item,damageSourceInfo.attributes)
-        end
-    end
 
     world:spawnTextParticle((round(damage*10)/10).."",Vector2(worldPosX,worldPosY))
 
@@ -294,6 +411,7 @@ function World:damageBlock(worldPosX, worldPosY, damage,layer,destroyTopAsWell,d
         self:clearTileProprerties(worldPosX, worldPosY,"healthMineTimer"..layer)
         if damageSourceInfo ~= nil then
             if damageSourceInfo.item ~= nil and damageSourceInfo.entity ~= nil then
+                damageSourceInfo.signalInfo.position = Vector2(worldPosX, worldPosY)
                 damageSourceInfo.signalInfo = damageSourceInfo.entity:applyEnchantSignal("breakingTile",damageSourceInfo.signalInfo,damageSourceInfo.item,damageSourceInfo.attributes)
             end
         end
@@ -311,6 +429,19 @@ function World:damageBlock(worldPosX, worldPosY, damage,layer,destroyTopAsWell,d
     return destroyed, damageSourceInfo
 end
 
+function World:getDefaultTileHealth(worldPosX, worldPosY, layer)
+    local health = 1
+    local tile = self:getTile(worldPosX, worldPosY, layer)
+    if tile ~= nil and tile.health ~= nil then
+        health = tile.health
+    end
+
+    local level = self:getEnvironmentLevel(worldPosY)
+    health = health + (health * 0.05 * level)
+
+    return health -- default health if not specified
+end
+
 --generate(centerX,centerY,length,heigth,biomeList, boolean: force, step) --génére (ou essaille) de générer tout les chunks à l'écran, ou de progresser la génération
 --force va forcer jusqu'à ce que tout les chunks sont au minimum au step
 --devrait être éxécuter chaque seconde à la position de la caméra ainsi que avec force=false
@@ -319,43 +450,260 @@ function World:generate(centerX, centerY, length, heigth, force, steps)
     if steps == nil then steps = self.generationSteps end
     centerX = round(centerX)
     centerY = round(centerY)
+    --debugtimeclear("sub")
 
-    local chunksGenerated = 0
+    local maxChunksPerFrame = MaxChunkLoadedPerFrame or 1
+    local stepAttempts = 0
+    local maxStepAttemptsPerFrame = maxChunksPerFrame * 18
+    if self.maxChunkStepAttemptsPerFrame ~= nil then
+        maxStepAttemptsPerFrame = self.maxChunkStepAttemptsPerFrame
+    elseif self.maxChunkChecksPerFrame ~= nil then
+        maxStepAttemptsPerFrame = self.maxChunkChecksPerFrame
+    end
+    if maxStepAttemptsPerFrame < (maxChunksPerFrame * 4) then
+        maxStepAttemptsPerFrame = maxChunksPerFrame * 4
+    end
+    local nearRadius = math.min(self.generationFocusRadius or 3, math.max(length, heigth))
+    local nearPasses = self.maxNearChunkStepPasses or 6
 
-    self:generateChunk(centerX, centerY,force,steps)
+    local hasTimer = love ~= nil and love.timer ~= nil and love.timer.getTime ~= nil
+    local startTime = hasTimer and love.timer.getTime() or 0
+    local budgetSeconds = (self.generationTimeBudgetMs or 3.5) / 1000
 
-    local x, y = 0, 0
-    local dx, dy = 1, 0
-    local steps = 1
+    local farGuaranteedAttempts = 0
+    local farRatio = self.farGenerationAttemptRatio or 0.08
+    if farRatio < 0 then farRatio = 0 end
+    if farRatio > 0.5 then farRatio = 0.5 end
+    if maxStepAttemptsPerFrame > 6 then
+        farGuaranteedAttempts = math.max(1, math.floor(maxStepAttemptsPerFrame * farRatio))
+    end
+    local nearAttemptBudget = maxStepAttemptsPerFrame - farGuaranteedAttempts
 
-    while math.max(math.abs(x), math.abs(y)) <= math.max(length, heigth) do
-        for _ = 1, 2 do
-            for _ = 1, steps do
-                x = x + dx
-                y = y + dy
+    local nearTimeBudgetSeconds = budgetSeconds
+    if budgetSeconds > 0 then
+        nearTimeBudgetSeconds = budgetSeconds * 0.65
+    end
 
-                if math.abs(x) <= length and math.abs(y) <= heigth then
-                    local chunkX = centerX + x
-                    local chunkY = centerY + y
-                    if self:checkIfChunkExists(chunkX, chunkY) then
-                        self.chunks[chunkX][chunkY]:updateStructureGeneration()
+    local phaseAttemptLimit = nil
+    local phaseTimeLimit = nil
+    local maxFarScanIterations = maxStepAttemptsPerFrame * 8
+
+    local function outOfBudget()
+        if phaseAttemptLimit ~= nil and stepAttempts >= phaseAttemptLimit then return true end
+        if stepAttempts >= maxStepAttemptsPerFrame then return true end
+        if hasTimer and phaseTimeLimit ~= nil and love.timer.getTime() >= phaseTimeLimit then return true end
+        if hasTimer and (love.timer.getTime() - startTime) >= budgetSeconds then return true end
+        return false
+    end
+
+    local function processChunk(chunkX, chunkY, stepPasses)
+        if outOfBudget() then return false end
+        if math.abs(chunkX - centerX) > length or math.abs(chunkY - centerY) > heigth then return false end
+
+        if self:checkIfChunkExists(chunkX, chunkY) then
+            local existingChunk = self.chunks[chunkX][chunkY]
+            local attemptedStructureGeneration = self.chunks[chunkX][chunkY]:updateStructureGeneration() --debugtimelog("updateStructureGeneration","sub")
+            if attemptedStructureGeneration then
+                if outOfBudget() then return false end
+            end
+
+            -- Do not burn generation attempts on chunks that are already fully generated.
+            if existingChunk:getGenerationStatus() == "done" then
+                return true
+            end
+        end
+
+        for _ = 1, stepPasses do
+            if outOfBudget() then return false end
+            stepAttempts = stepAttempts + 1
+            local generated, stepDone = self:generateChunk(chunkX, chunkY, force, steps) --debugtimelog("generateChunk","sub")
+            local generationStep = self.chunks[chunkX][chunkY]:getGenerationStatus()
+            if stepDone then
+                AttemptAllStructureGenerations(self.chunks[chunkX][chunkY], chunkX, chunkY, self.chunkSize, generationStep, self.generationSteps, self.worldSeed, self.depthProgression, self.biomeList, self.biomeList, self)
+                --debugtimelog("AttemptAllStructureGenerations","sub")
+            end
+
+            if generationStep == "done" then
+                return true
+            end
+
+            -- Chunk cannot currently advance further (usually waiting for neighbors).
+            if not generated and not stepDone then
+                return false
+            end
+        end
+
+        if self:checkIfChunkExists(chunkX, chunkY) then
+            return self.chunks[chunkX][chunkY]:getGenerationStatus() == "done"
+        end
+        return false
+    end
+
+    if self.generationSpiralState == nil then
+        self.generationSpiralState = {
+            x = 0,
+            y = 0,
+            dx = 1,
+            dy = 0,
+            legLength = 1,
+            stepsInLeg = 0,
+            legsDone = 0,
+            radius = math.max(length, heigth)
+        }
+    end
+
+    local spiral = self.generationSpiralState
+    local currentRadius = math.max(length, heigth)
+    if spiral.radius ~= currentRadius then
+        spiral.x = 0
+        spiral.y = 0
+        spiral.dx = 1
+        spiral.dy = 0
+        spiral.legLength = 1
+        spiral.stepsInLeg = 0
+        spiral.legsDone = 0
+        spiral.radius = currentRadius
+    end
+
+    local function runFarPhase()
+        local farScanIterations = 0
+        while (not outOfBudget()) and (farScanIterations < maxFarScanIterations) do
+            farScanIterations = farScanIterations + 1
+            spiral.x = spiral.x + spiral.dx
+            spiral.y = spiral.y + spiral.dy
+            spiral.stepsInLeg = spiral.stepsInLeg + 1
+
+            if spiral.stepsInLeg >= spiral.legLength then
+                spiral.stepsInLeg = 0
+                spiral.dx, spiral.dy = -spiral.dy, spiral.dx
+                spiral.legsDone = spiral.legsDone + 1
+                if spiral.legsDone % 2 == 0 then
+                    spiral.legLength = spiral.legLength + 1
+                end
+            end
+
+            if math.max(math.abs(spiral.x), math.abs(spiral.y)) > spiral.radius then
+                spiral.x = 0
+                spiral.y = 0
+                spiral.dx = 1
+                spiral.dy = 0
+                spiral.legLength = 1
+                spiral.stepsInLeg = 0
+                spiral.legsDone = 0
+            elseif math.abs(spiral.x) <= length and math.abs(spiral.y) <= heigth then
+                local dist = math.max(math.abs(spiral.x), math.abs(spiral.y))
+                if dist > nearRadius then
+                    processChunk(centerX + spiral.x, centerY + spiral.y, 1)
+                end
+            end
+        end
+    end
+
+    -- Guaranteed far generation first so distant chunks always progress.
+    if farGuaranteedAttempts > 0 then
+        phaseAttemptLimit = stepAttempts + farGuaranteedAttempts
+        local farStartRing = nearRadius + 1
+        local farEndRing = math.min(farStartRing + 1, math.max(length, heigth))
+
+        for ring = farStartRing, farEndRing do
+            if outOfBudget() then break end
+            for dx = -ring, ring do
+                if outOfBudget() then break end
+                processChunk(centerX + dx, centerY - ring, 1)
+                if outOfBudget() then break end
+                processChunk(centerX + dx, centerY + ring, 1)
+            end
+            for dy = -ring + 1, ring - 1 do
+                if outOfBudget() then break end
+                processChunk(centerX - ring, centerY + dy, 1)
+                if outOfBudget() then break end
+                processChunk(centerX + ring, centerY + dy, 1)
+            end
+        end
+
+        -- Use leftover guaranteed-far budget on the far spiral.
+        phaseTimeLimit = nil
+        runFarPhase()
+        phaseAttemptLimit = nil
+        phaseTimeLimit = nil
+    end
+
+    -- Prioritize nearby chunks only when they are not already complete for this center/radius.
+    local skipNearPhase =
+        self.nearGenerationComplete and
+        self.nearGenerationCenterX == centerX and
+        self.nearGenerationCenterY == centerY and
+        self.nearGenerationRadius == nearRadius
+
+    if not skipNearPhase then
+        local nearAreaComplete = true
+        phaseAttemptLimit = stepAttempts + nearAttemptBudget
+        if hasTimer then
+            phaseTimeLimit = startTime + (budgetSeconds * 0.85)
+        end
+        for ring = 0, nearRadius do
+            if outOfBudget() then
+                nearAreaComplete = false
+                break
+            end
+            if ring == 0 then
+                if not processChunk(centerX, centerY, nearPasses) then
+                    nearAreaComplete = false
+                end
+            else
+                for dx = -ring, ring do
+                    if outOfBudget() then
+                        nearAreaComplete = false
+                        break
                     end
-                    if chunksGenerated < MaxChunkLoadedPerFrame then
-                        local generated, stepDone = self:generateChunk(chunkX, chunkY, force, steps)
-                        if stepDone then
-                            local generationStep = self.chunks[chunkX][chunkY]:getGenerationStatus()
-                            AttemptAllStructureGenerations(self.chunks[chunkX][chunkY], chunkX, chunkY, self.chunkSize, generationStep, self.generationSteps, self.worldSeed, self.depthProgression, self.biomeList, self.biomeList, self)
-                        end
-                        if stepDone then
-                            chunksGenerated = chunksGenerated + 1 
-                        end
+                    if not processChunk(centerX + dx, centerY - ring, nearPasses) then
+                        nearAreaComplete = false
+                    end
+                    if outOfBudget() then
+                        nearAreaComplete = false
+                        break
+                    end
+                    if not processChunk(centerX + dx, centerY + ring, nearPasses) then
+                        nearAreaComplete = false
+                    end
+                end
+                for dy = -ring + 1, ring - 1 do
+                    if outOfBudget() then
+                        nearAreaComplete = false
+                        break
+                    end
+                    if not processChunk(centerX - ring, centerY + dy, nearPasses) then
+                        nearAreaComplete = false
+                    end
+                    if outOfBudget() then
+                        nearAreaComplete = false
+                        break
+                    end
+                    if not processChunk(centerX + ring, centerY + dy, nearPasses) then
+                        nearAreaComplete = false
                     end
                 end
             end
-            dx, dy = -dy, dx 
         end
-        steps = steps + 1
+
+        self.nearGenerationComplete = nearAreaComplete
+        self.nearGenerationCenterX = centerX
+        self.nearGenerationCenterY = centerY
+        self.nearGenerationRadius = nearRadius
     end
+
+    phaseAttemptLimit = nil
+    phaseTimeLimit = nil
+
+    -- Use a bounded leftover budget for farther chunks.
+    local farTailRatio = farRatio * 0.5
+    local farTailBudget = math.max(1, math.floor(maxStepAttemptsPerFrame * farTailRatio))
+    if self.maxFarStepAttemptsPerFrame ~= nil then
+        farTailBudget = self.maxFarStepAttemptsPerFrame
+    end
+    phaseAttemptLimit = stepAttempts + farTailBudget
+    runFarPhase()
+    phaseAttemptLimit = nil
 end
 
 function World:generateChunk(chunkPosX,chunkPosY,force,steps)
@@ -374,10 +722,10 @@ function World:generateChunk(chunkPosX,chunkPosY,force,steps)
         end
         if self.chunks[chunkPosX][chunkPosY] == nil then
             self.chunks[chunkPosX][chunkPosY] = Chunk(chunkPosX, chunkPosY, self.chunkSize)
-            return true
+            return true, true
         end
     end
-    return false
+    return false, false
 end
 
 function World:openContainer(tileName,tile, position, entity, rows, columns)
@@ -545,7 +893,7 @@ function World:updateTiles(dt,centerX, centerY,length, heigth, parameters)
                 self:updateHealth(ix + centerX, iy + centerY, layers[il], dt)
                 self:updateSize(ix + centerX, iy + centerY, dt)
 
-                local tile = self:getTile(ix + centerX, iy + centerY,"tiles")
+                local tile = self:getTile(ix + centerX, iy + centerY,layers[il])
                 tile:emitParticles(ix + centerX, iy + centerY)
             end
         end
@@ -584,38 +932,109 @@ function World:updateHealth(worldPosX,worldPosY,layer, dt)
     
 end
 
+function World:fogUpdate(dt)
+    if self.fogActivated then
+        if #entities > 0 then
+            for i = 1,#entities do
+                local entity = entities[i]
+                if entity.type == "player" then
+
+                    local fogValue = self:getFogLevel(entity.position.x,entity.position.y,999999999,9999999)
+                    if fogValue > 0 then
+                        
+
+                        entity.fogValue = entity.fogValue + (fogValue * dt)/3
+                        local damage = entity.health:getValueWithoutDamagePreview("fog") * (entity.fogValue/14)
+
+                        if entity.fogValue > 0 then
+                            entity.health:setDamagePreview("fog",damage,{0.1,0,0.35,1},0.1)
+                            if entity.fogValue > 1 then
+                                entity:damage(damage,"fog")
+                                entity.fogValue = 0
+                                entity.health:setDamagePreview("fog",0,{0.1,0,0.35,1},0.1)
+                            end
+                        end
+                    end
+
+                end
+            end
+        end
+    end
+end
+
+function World:drawFog(centerX, centerY, length, heigth, parameters)
+    centerX = centerX
+    centerY = centerY
+    local ix = -length
+    local iy = -heigth
+    for ix = -length, length do
+        for iy = -heigth, heigth do
+            local posX = ix + round(centerX)
+            local posY = iy + round(centerY)
+
+            local fogLevel = self:getFogLevel(posX, posY, centerX, centerY)
+            if fogLevel > 0 then
+                --print("fogLevel", fogLevel)
+                local screenPosX, screenPosY, size = self:getTileScreenPosition(posX, posY)
+                --local size = round2(camv / 8, 8)
+                --love.graphics.setColor(1, 1, 1, fogLevel)
+                --love.graphics.rectangle("fill", screenPosX-size*4, screenPosY-size*4, size*8, size*8)
+                local animation = "fog"..(maximum(minimum(math.ceil((1-fogLevel)*8),1),8))
+                textures["sprites"]["fog"]:draw(animation,self.time,"right",screenPosX,screenPosY,size,size,nil)
+            end
+
+        end
+    end
+end
+
+function World:getFogLevel(posX, posY, centerX, centerY)
+    local fogLevel = 0
+    local depth = self:getDepth(posY)
+    local fogSmoothLayer = 0.02
+    local fogSmoothCamera = 5
+    if depth > (self.currentFogLayer-0.1) then
+        fogLevel = k(0, 1, (depth - (self.currentFogLayer-0.1)) / fogSmoothLayer)
+    end
+    if fogLevel > 1 then fogLevel = 1 end
+    if self.fogViewDistance > 0 then
+        if dist(posX,posY,centerX,centerY) <= self.fogViewDistance + fogSmoothCamera then
+            local closeness = ((dist(posX,posY,centerX,centerY)-self.fogViewDistance) / fogSmoothCamera)
+            fogLevel = k(fogLevel, 0, maximum(minimum(1 - closeness,0),1))
+        end
+    end
+
+    if fogLevel > 1 then fogLevel = 1 end
+
+    return fogLevel
+end
+
 function World:drawTiles(centerX, centerY, length, heigth, parameters)
     centerX = round(centerX)
     centerY = round(centerY)
     showBiomes = parameters["showBiomes"] or false
-    local ix = -length
-    local iy = -heigth
-    local il = 1
     local layers = { "backTiles", "tiles", "topTiles" } -- changer tile pour tiles
     for il = 1, #layers do
+        local layer = layers[il]
         for ix = -length, length do
             for iy = -heigth, heigth do
-                self:drawTile(ix + centerX, iy + centerY, layers[il], self:getTile(ix + centerX, iy + centerY, "lights"))
+                local worldX = ix + centerX
+                local worldY = iy + centerY
+                local light = self:getTile(worldX, worldY, "lights")
+                local tile = self:getTile(worldX, worldY, layer)
 
-                if self:doesTilePropretyExists(ix + centerX, iy + centerY, "health"..layers[il])
-                    and self:getTile(ix + centerX, iy + centerY,layers[il]).canBeMined
-                then
-                    self:drawMineAnimation(ix + centerX, iy + centerY,
-                        self:getTileProprety(ix + centerX, iy + centerY,"health"..layers[il])
-                        / self:getTile(ix + centerX, iy + centerY,layers[il]).health
+                self:drawTile(worldX, worldY, layer, light, tile)
+
+                local healthProperty = "health" .. layer
+                if self:doesTilePropretyExists(worldX, worldY, healthProperty) and tile.canBeMined then
+                    self:drawMineAnimation(worldX, worldY,
+                        self:getTileProprety(worldX, worldY, healthProperty) / tile.health
                     )
                 end
 
-                if showBiomes then
-                    local screenPosX, screenPosY
-                    screenPosX, screenPosY = positiontoscreen(ix + centerX, iy + centerY)
-                    love.graphics.print(self:getBiome(ix + centerX, iy + centerY), screenPosX, screenPosY)
+                if showBiomes and il == 1 then
+                    local screenPosX, screenPosY = positiontoscreen(worldX, worldY)
+                    love.graphics.print(self:getBiome(worldX, worldY), screenPosX, screenPosY)
                 end
-                --[[local currentLayer=layers[il]
-                tile=self.getTile(ix+centerX, centerY+iy, currentLayer)
-                if tile.getName()~="none" then
-                    self.drawTile(ix+centerX, centerY+iy, currentLayer)
-                end]]
             end
         end
     end
@@ -634,23 +1053,29 @@ function World:drawMineAnimation(worldPosX, worldPosY, value)
     textures["sprites"]["destroyAnimation"]:drawSA(1-value,"right",screenPosX, screenPosY,size,size,{0,0,0,0.5})
 end
 
-function World:drawTile(worldPosX, worldPosY, layer, light)
-    local tile = self:getTile(worldPosX, worldPosY, layer)
-    local sizeMultiplyer = 1
-    if self:doesTilePropretyExists(worldPosX, worldPosY,"size") then
-        sizeMultiplyer = self:getTileProprety(worldPosX, worldPosY,"size")
+function World:drawTile(worldPosX, worldPosY, layer, light, tile)
+    if tile == nil then
+        tile = self:getTile(worldPosX, worldPosY, layer)
     end
-    local size = sizeMultiplyer * round2(camv / 8, 8)
     if light == nil then light = { 1, 1, 1, 1 } end
     if (tile == nil) then
         return
     end
 
-    if tile:getName() ~= "none" then
-        local screenPosX
-        local screenPosY
-        screenPosX, screenPosY = positiontoscreen(worldPosX, worldPosY)
-        if layer == "topTiles" then
+    if tile:getName() == "none" then
+        return
+    end
+
+    local sizeMultiplyer = 1
+    if self:doesTilePropretyExists(worldPosX, worldPosY,"size") then
+        sizeMultiplyer = self:getTileProprety(worldPosX, worldPosY,"size")
+    end
+    local size = sizeMultiplyer * round2(camv / 8, 8)
+
+    local screenPosX
+    local screenPosY
+    screenPosX, screenPosY = positiontoscreen(worldPosX, worldPosY)
+    if layer == "topTiles" then
             love.graphics.setColor(1 * light[1], 1 * light[2], 1 * light[3], 1 * light[4])
 
             local border = tile:getBorder()
@@ -697,8 +1122,8 @@ function World:drawTile(worldPosX, worldPosY, layer, light)
                     end
                 end
             end
-        end
-        if layer == "backTiles" or layer == "tiles" then
+    end
+    if layer == "backTiles" or layer == "tiles" then
             local colour = tile:getColor()
 
             love.graphics.setColor(colour[1] * light[1], colour[2] * light[2], colour[3] * light[3], colour[4] * light
@@ -750,11 +1175,10 @@ function World:drawTile(worldPosX, worldPosY, layer, light)
                     end
                 end
             end
-        end
     end
 end
 
-function World:generateTerrainTile(tileX, tileY)
+function World:generateTerrainTile(tileX, tileY, biome, distanceFromBiomeEdge)
     local seed = self.worldSeed
     local dp   = self.depthProgression
     local name = "none"
@@ -776,9 +1200,15 @@ function World:generateTerrainTile(tileX, tileY)
     if n < 0.4 and n > 0.36 then
         name = "none"
     end
+    local n = love.math.noise(tileX / 150 / self.caveSize, tileY / 30 / self.caveSize, seed - 450)
+    if n < 0.4 and n > 0.36 then
+        name = "none"
+    end
 
     --specific biomes
-    local biome, distanceFromBiomeEdge = self:getBiome(tileX, tileY)
+    if biome == nil or distanceFromBiomeEdge == nil then
+        biome, distanceFromBiomeEdge = self:getBiome(tileX, tileY)
+    end
 
     if biome == "hotland" then
         if distanceFromBiomeEdge < 0.15 then
@@ -846,17 +1276,51 @@ end
 function World:updateEntities(dt)
     if #entities > 0 then
         for i = 1, #entities do
-            entities[i]:entityUpdate(dt)
-            entities[i]:controlsUpdate(dt)
-            entities[i]:interactUpdate(dt)
-            entities[i]:movementUpdate(dt)
-            entities[i]:collisionWithEntities(dt)
-            entities[i]:collisionUpdate(dt)
-            entities[i]:InventoryItemsUpdate(dt)
-            entities[i]:groundItemsUpdate(dt)
-            entities[i]:animationUpdate(dt)
-            entities[i]:camUpdate(dt)
-            if entities[i].type == "player" then entities[i]:playerUpdate(dt) end
+            local entity = entities[i]
+
+            entity:entityUpdate(dt) debugtimelog("entityUpdate","update")
+
+            local isPlayer = (entity.ai == "player") or (entity.type == "player")
+
+            if isPlayer then
+                entity:controlsUpdate(dt) debugtimelog("entitycontrolsUpdate","update")
+            else
+                entity._controlsUpdateAccumulator = (entity._controlsUpdateAccumulator or 0) + dt
+                if entity._controlsUpdateAccumulator >= self.nonPlayerControlsUpdateInterval then
+                    entity:controlsUpdate(entity._controlsUpdateAccumulator) debugtimelog("entitycontrolsUpdate","update")
+                    entity._controlsUpdateAccumulator = 0
+                end
+            end
+
+            entity:interactUpdate(dt) debugtimelog("entityinteractUpdate","update")
+            --
+            local movementUpdatesPerTick = maximum(minimum(math.ceil(dt / (1/90)), 1),20)
+            for j = 1, movementUpdatesPerTick do
+                local subDt = dt / movementUpdatesPerTick
+                entity:movementUpdate(subDt) debugtimelog("entitymovementUpdate","update")
+                entity:collisionWithEntities(subDt) debugtimelog("entitycollisionWithEntities","update")
+                entity:collisionUpdate(subDt) debugtimelog("entityCollisionUpdate","update")
+            end
+
+            if isPlayer then
+                --entity:InventoryItemsUpdate(dt) debugtimelog("entityInventoryItemsUpdate","update")
+                entity._inventoryItemsUpdateAccumulator = (entity._inventoryItemsUpdateAccumulator or 0) + dt
+                if entity._inventoryItemsUpdateAccumulator >= self.playerInventoryUpdateInterval then
+                    entity:InventoryItemsUpdate(entity._inventoryItemsUpdateAccumulator) debugtimelog("entityInventoryItemsUpdate","update")
+                    entity._inventoryItemsUpdateAccumulator = 0
+                end
+            else
+                entity._inventoryItemsUpdateAccumulator = (entity._inventoryItemsUpdateAccumulator or 0) + dt
+                if entity._inventoryItemsUpdateAccumulator >= self.nonPlayerInventoryUpdateInterval then
+                    entity:InventoryItemsUpdate(entity._inventoryItemsUpdateAccumulator) debugtimelog("entityInventoryItemsUpdate","update")
+                    entity._inventoryItemsUpdateAccumulator = 0
+                end
+            end
+
+            entity:groundItemsUpdate(dt) debugtimelog("entityGroundItemsUpdate","update")
+            entity:animationUpdate(dt) debugtimelog("entityanimationUpdate","update")
+            entity:camUpdate(dt) debugtimelog("entitycamUpdate","update")
+            if entity.type == "player" then entity:playerUpdate(dt) debugtimelog("entityplayerUpdate","update") end
         end
     end
     if #entities > 0 then
@@ -1035,6 +1499,7 @@ function World:drawEntitiesHealthBars()
 end
 
 function World:DrawUi()
+    debugtimeclear("sub")
     for i = 1, #entities do
         if entities[i].id == camEntityFollow then
             entities[i]:DrawUI()
@@ -1047,7 +1512,61 @@ function World:spawnTextParticle(text,position, time, size, height,color,outline
     table.insert(self.textParticles,TextParticle(text,position:copy(), time, size, height,color,outlineColor,animationColor, flags))
 end
 
+function World:spawnXPparticles(value,position)
+    local count = minimum(maximum(math.abs(math.ceil(value/10)), 10), 1)
+
+    local getXPColor = function (value)
+        local color = {0,0,0,0.5}
+        if value < 3 then
+            color = {0.85,1,1,0.5}
+        elseif value < 10 then
+            color = {0.7,1,1,0.6}
+        elseif value < 18 then
+            color = {0.5,1,1,0.7}
+        elseif value < 27 then
+            color = {0.35,1,1,0.8}
+        elseif value < 50 then
+            color = {0.2,1,1,0.9}
+        elseif value < 100 then
+            color = {0,0.7,1,1}
+        elseif value < 200 then
+            color = {0,0.3,1,1}
+        elseif value < 300 then
+            color = {0.3,0,1,1}
+        elseif value < 400 then
+            color = {0,0,0.8,1}
+        elseif value < 500 then
+            color = {0.4,0,0.8,1}
+        else
+            color = {0.8,0,0.8,1}
+        end
+        return color
+    end
+
+    for ip = 1, count do
+        local singularValue = value/count
+        local spawnPos = position:copy()
+        spawnPos:move(math.random(360),math.random()*0.5)
+        local spawnColor = getXPColor(singularValue)
+        local lightColor = CopyAll(spawnColor)
+        lightColor[4] = lightColor[4]*0.6
+        local spawnFlags = {}
+        spawnFlags.velocity = Vector2(0,0)
+        spawnFlags.velocity:move(math.random(360),math.random()*1)
+        spawnFlags.xpValue = singularValue
+        spawnFlags.lightColor = lightColor
+        spawnFlags.flashColor = {1,1,1,1}
+        spawnFlags.flashTime = 0.5
+        local time = 10 + math.abs((singularValue/3)^0.5) + math.random()*1
+
+        table.insert(self.particles,Particle("xp",spawnPos, spawnColor,time,"floating",spawnFlags))
+    end
+end
+
 function World:spawnParticles(count,name,position,radius,color, colorNoise, timer, timerNoise,motion, motionStrength, motionArcAngle, motionArcSpread, flags)
+    if motionStrength == nil then motionStrength = 0 end
+    if motionArcAngle == nil then motionArcAngle = -90 end
+    if motionArcSpread == nil then motionArcSpread = 360 end
     if count>0 then
         for ip =1, math.ceil(count) do
             local spawnPos = position:copy()
@@ -1113,6 +1632,25 @@ function World:drawGroundItems(dt)
     if #self.groundItems > 0 then
         for i = 1, #self.groundItems do
             self.groundItems[i]:draw()
+        end
+    end
+end
+
+function World:projectileUpdate(dt)
+    if #self.projectiles > 0 then
+        for i = #self.projectiles, 1, -1 do
+            local die = self.projectiles[i]:update(dt)
+            if die then
+                table.remove(self.projectiles, i)
+            end
+        end
+    end
+end
+
+function World:drawProjectiles()
+    if #self.projectiles > 0 then
+        for i = 1, #self.projectiles do
+            self.projectiles[i]:draw()
         end
     end
 end

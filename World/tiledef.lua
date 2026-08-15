@@ -63,9 +63,7 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.hasCollisions = self.flags.hasCollisions or (self.type == "solid") 
     self.canBeMined = self.flags.canBeMined or ((self.type == "   ") or (self.type == "solid") or (self.textureName ~= "none"))
     self.color = self.flags.color or { 1, 1, 1, 1 }
-    self.canbeWall = self.flags.canBeWall or self.type == "solid"
-    self.lightCanGoThrough = self.flags.lightCanGoThrough or self.type ~= "solid"
-    self.canBeOverWritten = self.flags.canBeOverWritten or self.type ~= "solid"
+    self.canbeWall = self.flags.canBeWall or self.type == "solid" or self.type == "leftStair" or self.type == "rightStair"
 
     self.particleColor = self.flags.particleColor or CopyAll(self.mapColor)
     self.particleType = self.flags.particleType or "dust"
@@ -73,8 +71,6 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.actualDropeRate = self.flags.actualDropeRate or 0.1
     self.secondaryDropAmount = self.flags.secondaryDropAmount or 1
     self.secondaryDrop = self.flags.secondaryDrop or "rock"
-
-    self.onInteract = self.flags.onInteract or function(self,x,y,entity) end
 
 
     self.interactable = self.flags.interactable or false
@@ -84,9 +80,17 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     if self.isContainer then self.interactable = true end
     self.containerColor = self.flags.containerColor or CopyAll(self.mapColor)
 
+    self.onInteract = self.flags.onInteract or function(self,x,y,entity) end
+
+    self.lightCanGoThrough = self.flags.lightCanGoThrough or (self.type ~= "solid" and self.type ~= "leftStair" and self.type ~= "rightStair")
+    self.canBeOverWritten = self.flags.canBeOverWritten or (self.type ~= "solid" and self.type ~= "leftStair" and self.type ~= "rightStair" and self.type ~= "platform" and self.interactable == false)
+
+
 
     self.particleEmit = self.flags.particleEmit or "none"
     self.particleEmitData = self.flags.particleEmitData or {}
+    self.particleEmitData.delay = self.particleEmitData.delay or 1
+    self.particleEmitData.chance = self.particleEmitData.chance or 0.08
     self.particleEmitData.amount = self.particleEmitData.amount or 1
     self.particleEmitData.motion = self.particleEmitData.motion or self.particleEmit
     self.particleEmitData.motionStrength = self.particleEmitData.motionStrength or 1
@@ -100,6 +104,8 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.particleEmitData.flags = self.particleEmitData.flags or {}
     self.particleEmitData.hasCollisions = self.particleEmitData.hasCollisions or false
 
+    --particleEmitData = {  chance = 0.08, delay = 1, amount = 1, motion = "dust", motionStrength = 1, motionArcAngle = 0, motionArcSpread = 360, radius = 0.5, timer = 1, timerNoise = 0.5, color = {1,0,1,1}, colorNoise = {0.05,0.05,0.05,0.05}, flags = {}, hasCollisions = false }
+
 
     self.health = self.flags.health or 1
 
@@ -110,7 +116,7 @@ end
 
 function Tile:emitParticles(x,y,dt)
     if self.particleEmit ~= "none" and self.particleEmit ~= nil then
-        if math.random()>0.92 then
+        if math.random() <= self.particleEmitData.chance and tick % math.floor(self.particleEmitData.delay) == 0 then
             
             world:spawnParticles(
                 self.particleEmitData.amount,

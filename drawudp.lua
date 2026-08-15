@@ -2,19 +2,23 @@ function drawgame()
   local drawdistanceX = math.ceil(szx / camv / 2)
   local drawdistanceY = math.ceil(szy / camv / 2)
   if false and (love.keyboard.isDown("n") or love.keyboard.isDown("b")) then
-    drawBiomeMap()
+    drawBiomeMap() debugtimelog("drawBiomeMap","draw")
   else
     if true and love.keyboard.isDown("m") then
-      drawWorldMap()
+      drawWorldMap() debugtimelog("drawWorldMap","draw")
     else
-      world:drawTiles(camx, camy, drawdistanceX, drawdistanceY, {})
-      world:drawParticles()
-      world:DrawEntities()
-      world:drawGroundItems()
-      world:drawTextParticles()
-      world:drawEntitiesHealthBars()
-      world:DrawUi()
-      world.globalDirector:print()
+      world:drawTiles(camx, camy, drawdistanceX, drawdistanceY, {}) debugtimelog("drawTiles","draw")
+      world:drawParticles() debugtimelog("drawParticles","draw")
+      world:DrawEntities() debugtimelog("DrawEntities","draw")
+      world:drawGroundItems() debugtimelog("drawGroundItems","draw")
+      world:drawProjectiles() debugtimelog("drawProjectiles","draw")
+      world:drawTextParticles() debugtimelog("drawTextParticles","draw")
+      world:drawEntitiesHealthBars() debugtimelog("drawEntitiesHealthBars","draw")
+      if world.fogActivated then
+        world:drawFog(camx, camy, drawdistanceX, drawdistanceY, {}) debugtimelog("drawFog","draw")
+      end 
+      world:DrawUi() debugtimelog("DrawUi","draw")
+      world.globalDirector:print() 
     end
   end
 end
@@ -100,13 +104,36 @@ function PauseUpdate()
   end
 
   if results["retryButton"] then
-    StartGame(true)
+    InstantStartGame(true) --StartGame(true)
   end
 
   if results["leaveGameButton"] then
     gamestate = "mainMenu"
   end
 
+end
+
+function InstantStartGame(b)
+  interfaces["worldCreation"]:passDataToElement("cheat",CheatMode)
+  interfaces["worldCreation"]:passDataToElement("BuilderCheat",BuilderCheat)
+  local results = interfaces["worldCreation"]:updateAndDraw()
+
+    local parameters = {}
+    parameters.wh = tonumber(results["worldHeigth"])
+    parameters.ww = tonumber(results["worldWidth"])
+    parameters.freeCam = results["freeCam"]
+    parameters.flyCheat = results["flyCheat"]
+    parameters.biomeSize = results["biomeSize"]
+    parameters.terrainSize = results["terrainSize"]
+    parameters.directorCreditMultiplier = results["directorCreditMultiplier"]
+    parameters.directorSpawnSpeedMultiplier = results["directorSpawnSpeedMultiplier"]
+    parameters.worldseed = results["worldseed"]
+
+    StartGame(b,parameters)
+
+  CheatMode = results["cheat"]
+  BuilderCheat = results["BuilderCheat"]
+  lightreach = results["lightReach"]
 end
 
 function WorldCreationUpdate(dt)
@@ -121,17 +148,7 @@ function WorldCreationUpdate(dt)
   end
 
   if results["createButton"] then
-    local parameters = {}
-    parameters.wh = tonumber(results["worldHeigth"])
-    parameters.ww = tonumber(results["worldWidth"])
-    parameters.freeCam = results["freeCam"]
-    parameters.flyCheat = results["flyCheat"]
-    parameters.biomeSize = results["biomeSize"]
-    parameters.terrainSize = results["terrainSize"]
-    parameters.directorCreditMultiplier = results["directorCreditMultiplier"]
-    parameters.directorSpawnSpeedMultiplier = results["directorSpawnSpeedMultiplier"]
-
-    StartGame(true,parameters)
+    InstantStartGame(true)
   end
 
   CheatMode = results["cheat"]

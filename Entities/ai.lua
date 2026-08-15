@@ -13,7 +13,8 @@ function Entity:setupAI()
     if self.aiInfo.targetHoldTime == nil then self.aiInfo.targetHoldTime = 1.2 end
     if self.aiInfo.targetHoldTimer == nil then self.aiInfo.targetHoldTimer = 0 end
     if self.aiInfo.jumpInterval == nil then self.aiInfo.jumpInterval = 1.6 end
-    if self.aiInfo.jumpTimer == nil then self.aiInfo.jumpTimer = math.random(0.4, self.aiInfo.jumpInterval) end
+    if self.aiInfo.jumpFrequency == nil then self.aiInfo.jumpFrequency = 1 end
+    if self.aiInfo.jumpTimer == nil then self.aiInfo.jumpTimer = math.random(0.4, self.aiInfo.jumpInterval / self.aiInfo.jumpFrequency) end
 
     if self.aiInfo.targetId == nil then self.aiInfo.targetId = nil end
     if self.aiInfo.positionTarget == nil then self.aiInfo.positionTarget = nil end
@@ -100,7 +101,7 @@ function Entity:aiUpdateRegular(dt)
             self.controls.jump = true
         elseif self:canJump() and self.aiInfo.jumpTimer <= 0 then
             self.controls.jump = true
-            self.aiInfo.jumpTimer = self.aiInfo.jumpInterval + math.random() * 0.6
+            self.aiInfo.jumpTimer = (self.aiInfo.jumpInterval + math.random() * 0.6) / self.aiInfo.jumpFrequency
         end
 
         if verticalDelta < -0.4 and self:canJump() and self:hasSafeLanding(self.position.x, self.position.y, self.aiInfo.positionTarget.x, self.aiInfo.positionTarget.y) then

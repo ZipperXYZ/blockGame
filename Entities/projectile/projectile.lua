@@ -34,7 +34,7 @@ function Projectile:init(name,position,velocity,sprite,owner,itemInfo,flags,addT
     end
 
     self.damage = self.flags.damage or 0
-    self.knockback = self.flags.knockback or 0
+    self.knockback = self.flags.knockback or 1
 
     self.targetList = {}
     self.timeAlive = 0
@@ -43,7 +43,10 @@ function Projectile:init(name,position,velocity,sprite,owner,itemInfo,flags,addT
     self.timeMax = self.flags.timeMax or 10
     
 
-    self.hasWorldCollisions = self.flags.hasWorldCollisions or true
+    self.hasWorldCollisions = true
+    if self.flags.hasWorldCollisions ~= nil then
+        self.hasWorldCollisions = self.flags.hasWorldCollisions
+    end
 
 
     self.particleTime = 0
@@ -60,6 +63,7 @@ function Projectile:init(name,position,velocity,sprite,owner,itemInfo,flags,addT
 
     --time | orientation
     self.animationType = self.flags.animationType or "time"
+    self.shader = self.flags.shader or textures["textures"]["itemColorisationShader"]
 
     self.currentAnimation = "none"
 
@@ -215,6 +219,8 @@ function Projectile:damageUpdate(dt)
 
                             if self.itemInfo.item ~= nil then
                                 self.itemInfo.item:attackTarget(entity,self.itemInfo.attributes,self.owner,nil,self.damage,self.knockback,self.position:copy())
+                            else
+                                entity:damage(self.damage * self.owner.attackDamage,"projectile",self.owner,{})
                             end
 
                         end
@@ -234,14 +240,23 @@ function Projectile:collisionsUpdate(dt)
         end
 
 
-        self.velocity.x = k(self.velocity.x, 0, dt / self.movementSlide)
-        self.velocity.y = k(self.velocity.y, 0, dt / self.movementSlide)
+        if self.movementSlide == 0 then
+            --self.velocity.x = k(self.velocity.x, 0,)
+            --self.velocity.y = k(self.velocity.y, 0, dt / self.movementSlide)
+        else
+            self.velocity.x = k(self.velocity.x, 0, dt / self.movementSlide)
+            self.velocity.y = k(self.velocity.y, 0, dt / self.movementSlide)
+        end
         --if self.velocity.y < -(1 / dt / 2) then self.velocity.y = -(1 / dt / 2) end
         --if self.velocity.y < -(1 / (1/20) / 2) then self.velocity.y = -(1 / (1/20) / 2) end
 
 
         local oldY = self.position.y
-        self.position.y = self.position.y + (self.velocity.y * dt * self.movementSlide)
+        if self.movementSlide == 0 then
+            self.position.y = self.position.y + (self.velocity.y * dt)
+        else
+            self.position.y = self.position.y + (self.velocity.y * dt * self.movementSlide)
+        end
 
         if self.hasWorldCollisions then
             local touchedWall = false
@@ -271,7 +286,11 @@ function Projectile:collisionsUpdate(dt)
 
         --update X
         local oldX = self.position.x
-        self.position.x = self.position.x + (self.velocity.x * dt * self.movementSlide)
+        if self.movementSlide == 0 then
+            self.position.x = self.position.x + (self.velocity.x * dt)
+        else
+            self.position.x = self.position.x + (self.velocity.x * dt * self.movementSlide)
+        end
 
         if self.hasWorldCollisions then
             local touchedWall = false
@@ -363,7 +382,7 @@ function Projectile:draw()
         if self.disappearTime > 0 then
             color[4] = color[4] * (1 - (self.disappearTime / 1))
         end
-        self.sprite:draw(self.currentAnimation,animationTime,self:getDirection(),posX,posY,drawSize,drawSize,color,self.colorisation)
+        self.sprite:draw(self.currentAnimation,animationTime,self:getDirection(),posX,posY,drawSize,drawSize,color,{shader = self.shader, colorisation = self.colorisation})
     end
     if self.textureType == "multiple" then
         for i = 1, #self.sprite do
@@ -371,7 +390,7 @@ function Projectile:draw()
             if self.disappearTime > 0 then
                 color[4] = color[4] * (1 - (self.disappearTime / 1))
             end
-            self.sprite[i]:draw(self.currentAnimation,animationTime,self:getDirection(),posX,posY,drawSize,drawSize,color,self.colorisation)
+            self.sprite[i]:draw(self.currentAnimation,animationTime,self:getDirection(),posX,posY,drawSize,drawSize,color,{shader = self.shader, colorisation = self.colorisation})
         end
     end
     if self.textureType == "complex" then
@@ -380,7 +399,7 @@ function Projectile:draw()
             if self.disappearTime > 0 then
                 color[4] = color[4] * (1 - (self.disappearTime / 1))
             end
-            self.sprite[i].sprite:draw(self.currentAnimation,animationTime,self:getDirection(),posX,posY,drawSize,drawSize,color,self.sprite[i].colorisation)
+            self.sprite[i].sprite:draw(self.currentAnimation,animationTime,self:getDirection(),posX,posY,drawSize,drawSize,color,{shader = self.shader, colorisation = self.sprite[i].colorisation})
         end
     end
 end

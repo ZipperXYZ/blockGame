@@ -241,7 +241,7 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                 if love.math.noise(wx / 14, wy / 14, worldSeed - 608) < 0.6 then
                     self.chunkTiles["backTiles"][ix][iy] = "dirt"
                 end
-                if love.math.noise(wx / 15, wy / 30, worldSeed + 100) > (-wy / 30) then
+                if love.math.noise(wx / 5, wy / 30, worldSeed + 150) > ((-wy+5) / 30) then
                     self.chunkTiles["backTiles"][ix][iy] = "none"
                 end
             end
@@ -252,6 +252,13 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                 local wx, wy  = self:convertChunkPosToWorldPos(ix, iy)
                 local tileRaw = self:getRawTile(ix, iy, "tiles")
                 local backRaw = self:getRawTile(ix, iy, "backTiles")
+                local biome   = self.biomeCache[ix][iy]
+                if biome == nil then
+                    biome = self:getBiome(wx, wy, worldSeed, depthProgression, biomeSize, biomeList)
+                    self.biomeCache[ix][iy] = biome
+                end
+
+
                 if backRaw == "dirt" then
                     if love.math.noise(wx / 8, wy / 8, worldSeed + 600) > (wy / (depthProgression * 2)) + 0.75 then
                         if not (love.math.noise(wx / 45, wy / 30, worldSeed + 800) > 0.7) then
@@ -283,6 +290,11 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
                     biome = self:getBiome(wx, wy, worldSeed, depthProgression, biomeSize, biomeList)
                     self.biomeCache[ix][iy] = biome
                 end
+
+
+                
+
+
                 if checkifinlist(tileRaw, tilelists["stones"]) then
                     if biome == "hotland" then self.chunkTiles["tiles"][ix][iy] = "hotstone" end
                     if biome == "coldland" then
@@ -372,7 +384,48 @@ function Chunk:generate(step, stepList, worldSeed, depthProgression, biomeSize, 
             for iy = 1, self.chunkSize do
                 local wx, wy  = self:convertChunkPosToWorldPos(ix, iy)
                 local tileRaw = self:getRawTile(ix, iy, "tiles")
+                local backRaw = self:getRawTile(ix, iy, "backTiles")
                 local isDirtOrStone = checkifinlist(tileRaw, tilelists["dirts"]) or checkifinlist(tileRaw, tilelists["stones"])
+
+
+                if tileRaw == "sand" then
+                    if noise(wx / 30, wy / 22, worldSeed - 855) < 0.3 then
+                        self.chunkTiles["tiles"][ix][iy] = "hardSand"
+                    end
+                    if noise(wx / 40, wy / 90, worldSeed - 950) >0.52 and noise(wx / 40, wy / 90, worldSeed - 950) < 0.55 then
+                        self.chunkTiles["tiles"][ix][iy] = "charredSand"
+                    end
+                end
+                if backRaw == "sand" then
+                    if noise(wx / 30, wy / 22, worldSeed - 855) < 0.34 then
+                        self.chunkTiles["backTiles"][ix][iy] = "hardSand"
+                    end
+                    if noise(wx / 40, wy / 90, worldSeed - 950) >0.52 and noise(wx / 40, wy / 90, worldSeed - 950) < 0.55 then
+                        self.chunkTiles["backTiles"][ix][iy] = "charredSand"
+                    end
+                end
+
+                if tileRaw == "dirt" then
+                    if noise(wx / 20, wy / 15, worldSeed - 855) < 0.1 and noise(wx / 4, wy / 4, worldSeed - 890) < 0.4 then
+                        self.chunkTiles["tiles"][ix][iy] = "coarseDirt"
+                    end
+                end
+                if backRaw == "dirt" then
+                    if noise(wx / 20, wy / 15, worldSeed - 855) < 0.1 and noise(wx / 4, wy / 4, worldSeed - 890) < 0.4 then
+                        self.chunkTiles["backTiles"][ix][iy] = "coarseDirt"
+                    end
+                end
+
+                if tileRaw == "essenceDirt" then
+                    if noise(wx / 20, wy / 15, worldSeed - 855) < 0.1 and noise(wx / 4, wy / 4, worldSeed - 890) < 0.4 then
+                        self.chunkTiles["tiles"][ix][iy] = "essencePebbles"
+                    end
+                end
+                if backRaw == "essenceDirt" then
+                    if noise(wx / 20, wy / 15, worldSeed - 855) < 0.1 and noise(wx / 4, wy / 4, worldSeed - 890) < 0.4 then
+                        self.chunkTiles["backTiles"][ix][iy] = "essencePebbles"
+                    end
+                end
 
                 if isDirtOrStone then
                     if not (love.math.noise(wx / 20, wy / 20, worldSeed + 800) > (wy / (depthProgression * 3)) + 0.85) then

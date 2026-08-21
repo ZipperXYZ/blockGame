@@ -1,4 +1,4 @@
 function love.conf(t)
-  --t.window.title="game name"
-  --t.window.icon = "icon.png"
+  t.window.title="Nadir"
+  t.window.icon = "Textures/logo.png"
   end

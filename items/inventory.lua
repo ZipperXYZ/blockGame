@@ -52,7 +52,7 @@ function Inventory:init(inventoryName,color,screenPos,sizeX,sizeY,sizeZ,maxStack
     end
 
     if self.isMainInventory and entity ~= nil then
-        self:setupIcons()
+        self:setupIcons(entity)
         self:setupMainInventory(entity)
     end
 end
@@ -86,7 +86,7 @@ function Inventory:cheatAccessoryShortcut()
     self.sizeY = newSizeY
 end
 
-function Inventory:setupIcons()
+function Inventory:setupIcons(entity)
     self:setIcon("space",1,1)
     self:setIcon("leftClick",2,1)
     self:setIcon("rightClick",3,1)
@@ -110,6 +110,19 @@ function Inventory:setupIcons()
     self:setSlotAttribute("topIcon","r2",5,1)
     self:setSlotAttribute("topIcon","x2",6,1)
     self:setSlotAttribute("topIcon","c2",7,1)
+
+    if entity ~= nil then
+        if entity.controlsType == "controller" then
+            self:setSlotAttribute("topIcon","space3",1,1)
+            self:setSlotAttribute("topIcon","leftClick3",2,1)
+            self:setSlotAttribute("topIcon","rightClick3",3,1)
+            self:setSlotAttribute("topIcon","shift3",4,1)
+            self:setSlotAttribute("topIcon","r3",5,1)
+            self:setSlotAttribute("topIcon","x3",6,1)
+            self:setSlotAttribute("topIcon","c3",7,1)
+        end
+    end
+
 
     self:setSlotAttribute("disableItemPickup",true,1,1)
     self:setSlotAttribute("disableItemPickup",true,2,1)
@@ -136,48 +149,62 @@ end
 
 function Inventory:setupMainInventory(entity)
 
-    self:setItem("crudePickaxe",1,{dropOnDeath = false},1,1)
-    self:setItem("crudeSword",1,{dropOnDeath = false},2,1)
-    if BuilderCheat then
-        self:setItem("devPickaxe",1,{dropOnDeath = false},1,1)
+    local noItems = false
+    if type(entity.startItems) == "string" then
+        if entity.startItems == "none" then
+            noItems = true
+        end
     end
 
-    if #entity.startItems > 0 then
-        for i=1,#entity.startItems do
-            local itemName = entity.startItems[i]["name"]
-            local itemAmount = entity.startItems[i]["amount"] or 1
-            local itemAttributes = entity.startItems[i]["attributes"] or {}
-            itemAttributes.dropOnDeath = entity.startItems[i]["dropOnDeath"] or false
-            local slotX = entity.startItems[i]["slotX"] or 0
-            local slotY = entity.startItems[i]["slotY"] or 1
-            if slotX == 0 then
-                slotX = 1
-                local item = items[itemName]
-                if item ~= nil and itemName ~= "none" then
-                    local itemCategory = item.category
-                    if itemCategory == "weapon" then
-                        slotX = 2
-                    elseif itemCategory == "movement" then
-                        slotX = 4
-                    elseif itemCategory == "tool" then
-                        slotX = 1
+    if not noItems then
+        self:setItem("crudePickaxe",1,{dropOnDeath = false},1,1)
+        if not (#entity.startItems > 0) then
+            self:setItem("crudeSword",1,{dropOnDeath = false},2,1)
+        end
+        if BuilderCheat then
+            self:setItem("devPickaxe",1,{dropOnDeath = false},1,1)
+        end
+
+
+        if #entity.startItems > 0 then
+            for i=1,#entity.startItems do
+                local itemName = entity.startItems[i]["name"]
+                local itemAmount = entity.startItems[i]["amount"] or 1
+                local itemAttributes = entity.startItems[i]["attributes"] or {}
+                itemAttributes.dropOnDeath = entity.startItems[i]["dropOnDeath"] or false
+                local slotX = entity.startItems[i]["slotX"] or 0
+                local slotY = entity.startItems[i]["slotY"] or 1
+                if slotX == 0 then
+                    slotX = 1
+                    local item = items[itemName]
+                    if item ~= nil and itemName ~= "none" then
+                        local itemCategory = item.category
+                        if itemCategory == "weapon" then
+                            slotX = 2
+                        elseif itemCategory == "movement" then
+                            slotX = 4
+                        elseif itemCategory == "tool" then
+                            slotX = 1
+                        end
+                        if item.subCategory == "ranged" then
+                            slotX = 3
+                        end
                     end
                 end
+                self:setItem(itemName,itemAmount,itemAttributes,slotX,slotY)
             end
-            self:setItem(itemName,itemAmount,itemAttributes,slotX,slotY)
+        else
+            self:addItem("stick",10,{})
         end
-    else
-        self:addItem("stick",10,{})
+        --self:setItem("thunderBirdFeather",1,{},4,1)
+        --self:setItem("angelFeather",1,{},4,2)
+        --self:setItemName("crudePickaxe",1,1)
+        --self:setItemAmount(1,1,1)
+        ---self.items[1][1][1]["amount"] = 1
+        --self.items[1][1][1]["name"] = "crudePickaxe"
+        --self:addItem("crudePickaxe",1,{})
+    
     end
-    --self:setItem("thunderBirdFeather",1,{},4,1)
-    --self:setItem("angelFeather",1,{},4,2)
-    --self:setItemName("crudePickaxe",1,1)
-    --self:setItemAmount(1,1,1)
-    ---self.items[1][1][1]["amount"] = 1
-    --self.items[1][1][1]["name"] = "crudePickaxe"
-    --self:addItem("crudePickaxe",1,{})
-   
-
 end
 
 function Inventory:setIcon(icon,ix,iy,page)
@@ -466,6 +493,123 @@ function Inventory:getItemSize()
     return self.itemSize * InventorySize
 end
 
+function Inventory:drawBasePlate(color,x,y,size,sizeX,sizeY)
+    local style = InventoryStyle -- classic | frutiger
+
+    if style == "classic" then
+        love.graphics.setColor(color[1]*0.8,color[2]*0.8,color[3]*0.8,color[4]*0.75)
+        love.graphics.rectangle("fill"
+            ,x
+            ,y
+            ,((sizeX * size * 1.1) + size * 0.1)
+            ,((sizeY * size * 1.1) + size * 0.1)
+            ,size * 0.1
+            ,size * 0.1
+        )
+    end
+    if style == "frutiger" then
+        love.graphics.setColor(color[1]*0.4,color[2]*0.4,color[3]*0.4,color[4]*0.75)
+        love.graphics.rectangle("fill"
+            ,x
+            ,y
+            ,((sizeX * size * 1.1) + size * 0.1)
+            ,((sizeY * size * 1.1) + size * 0.1)
+            ,size * 0.3
+            ,size * 0.3
+        )
+    end
+    
+end
+
+function Inventory:drawBaseTile(ix,iy,page,actualScreenPosX,actualScreenPosY,actualTileSize,color,hover,itemDraw)
+    local style = InventoryStyle -- classic | frutiger
+
+    if style == "classic" then
+    love.graphics.setColor(color[1],color[2],color[3],color[4])
+                if hover
+                then
+                    itemDraw = {}
+                    itemDraw.item = self:getActualItem(ix,iy,page)
+                    itemDraw.attributes = self:getItemAttributes(ix,iy,page)
+                    itemDraw.amount = self:getItemAmount(ix,iy,page)
+                    love.graphics.setColor(k(color[1],1,0.5),k(color[2],1,0.5),k(color[3],1,0.5),color[4])
+                end
+                love.graphics.rectangle("fill"
+                    ,(actualScreenPosX + actualTileSize * 0.1) + (ix-1)*(actualTileSize*1.1)
+                    ,(actualScreenPosY + actualTileSize * 0.1) + (iy-1)*(actualTileSize*1.1)
+                    ,(actualTileSize)
+                    ,(actualTileSize)
+                    ,actualTileSize * 0.1
+                    ,actualTileSize * 0.1
+                )
+    end
+    if style == "frutiger" then
+        if hover
+            then
+                itemDraw = {}
+                itemDraw.item = self:getActualItem(ix,iy,page)
+                itemDraw.attributes = self:getItemAttributes(ix,iy,page)
+                itemDraw.amount = self:getItemAmount(ix,iy,page)
+                color = {k(color[1],1,0.75),k(color[2],1,0.75),k(color[3],1,0.75),color[4]}
+        end
+        local x = (actualScreenPosX + actualTileSize * 0.1)
+        + (ix - 1) * (actualTileSize * 1.1)
+
+    local y = (actualScreenPosY + actualTileSize * 0.1)
+        + (iy - 1) * (actualTileSize * 1.1)
+
+    local size = actualTileSize
+    local radius = actualTileSize * 0.3
+
+    local r = color[1]*1.4
+    local g = color[2]*1.4
+    local b = color[3]*1.4
+    local a = color[4]
+
+    textures["textures"]["fraetile"]:send("baseColor", {
+        r, g, b, a
+    })
+
+    -- Convert the tile's local position into
+    -- actual window/screen coordinates.
+    --[[local transform = love.graphics:getTransform()
+
+    local shaderX, shaderY =
+        transform:transformPoint(x, y)]]
+
+    textures["textures"]["fraetile"]:send(
+        "baseColor",
+        { r, g, b, a }
+    )
+
+    textures["textures"]["fraetile"]:send(
+        "tilePos",
+        { x, y }
+    )
+
+    textures["textures"]["fraetile"]:send(
+        "tileSize",
+        size
+    )
+
+    love.graphics.setShader(textures["textures"]["fraetile"])
+
+    love.graphics.rectangle(
+        "fill",
+        x,
+        y,
+        size,
+        size,
+        radius,
+        radius
+    )
+
+    love.graphics.setShader()
+    love.graphics.setColor(1, 1, 1, 1)
+end
+    return itemDraw
+end
+
 function Inventory:draw(mode,entity,flags)
     if self.cheat then self:updateCheat() end
     if mode == nil then mode = "complete" end
@@ -505,15 +649,9 @@ function Inventory:draw(mode,entity,flags)
         actualScreenPosY = actualScreenPosY - ((actualSizeY * actualTileSize * 1.1) + actualTileSize * 0.1)
     end
 
-
-    love.graphics.setColor(self.color[1]*0.75,self.color[2]*0.75,self.color[3]*0.75,self.color[4]*0.75)
-    love.graphics.rectangle("fill"
-        ,actualScreenPosX,actualScreenPosY
-        ,((self.sizeX * actualTileSize * 1.1) + actualTileSize * 0.1)
-        ,((actualSizeY * actualTileSize * 1.1) + actualTileSize * 0.1)
-        ,actualTileSize * 0.1
-        ,actualTileSize * 0.1
-    )
+    --draw base Plate 
+    self:drawBasePlate(CopyAll(self.color), actualScreenPosX, actualScreenPosY, actualTileSize, self.sizeX, actualSizeY)
+    
 
     --draw slots
     for ix=1, self.sizeX do
@@ -522,26 +660,12 @@ function Inventory:draw(mode,entity,flags)
             if (not self:getSlotAttribute("disabled",ix,iy,page)) or (self:getSlotAttribute("disabled",ix,iy,page) == 0) then
 
                 --draw base slots + lighter for mouse hover
-                love.graphics.setColor(self.color[1],self.color[2],self.color[3],self.color[4])
-                if mx > (actualScreenPosX + actualTileSize * 0.1) + (ix-1)*(actualTileSize*1.1)
-                    and mx < (actualScreenPosX + actualTileSize * 0.1) + (ix-1)*(actualTileSize*1.1) + actualTileSize
-                    and my > (actualScreenPosY + actualTileSize * 0.1) + (iy-1)*(actualTileSize*1.1)
-                    and my < (actualScreenPosY + actualTileSize * 0.1) + (iy-1)*(actualTileSize*1.1) + actualTileSize
-                then
-                    itemDraw = {}
-                    itemDraw.item = self:getActualItem(ix,iy,page)
-                    itemDraw.attributes = self:getItemAttributes(ix,iy,page)
-                    itemDraw.amount = self:getItemAmount(ix,iy,page)
-                    love.graphics.setColor(k(self.color[1],1,0.5),k(self.color[2],1,0.5),k(self.color[3],1,0.5),self.color[4])
-                end
-                love.graphics.rectangle("fill"
-                    ,(actualScreenPosX + actualTileSize * 0.1) + (ix-1)*(actualTileSize*1.1)
-                    ,(actualScreenPosY + actualTileSize * 0.1) + (iy-1)*(actualTileSize*1.1)
-                    ,(actualTileSize)
-                    ,(actualTileSize)
-                    ,actualTileSize * 0.1
-                    ,actualTileSize * 0.1
-                )
+                local hover = entity.controls.mx > (actualScreenPosX + actualTileSize * 0.1) + (ix-1)*(actualTileSize*1.1)
+                    and entity.controls.mx < (actualScreenPosX + actualTileSize * 0.1) + (ix-1)*(actualTileSize*1.1) + actualTileSize
+                    and entity.controls.my > (actualScreenPosY + actualTileSize * 0.1) + (iy-1)*(actualTileSize*1.1)
+                    and entity.controls.my < (actualScreenPosY + actualTileSize * 0.1) + (iy-1)*(actualTileSize*1.1) + actualTileSize
+                
+                itemDraw = self:drawBaseTile(ix,iy,page,actualScreenPosX,actualScreenPosY,actualTileSize,CopyAll(self.color),hover,itemDraw)
                 
                 
                 local itemName, itemAmount, itemAttributes = self:getItem(ix,iy)
@@ -655,7 +779,7 @@ function Inventory:draw(mode,entity,flags)
                 --draw top icon
                 local itemName, itemAmount, itemAttributes = self:getItem(ix,iy)
 
-                if self:getSlotAttribute("topIcon",ix,iy).."" ~= "0" and itemName ~= "none" then
+                if self:getSlotAttribute("topIcon",ix,iy).."" ~= "0" then--and itemName ~= "none" then
                     local x,y,size = self:getTilePosAndSize(ix,iy)
 
                     textures["sprites"]["inventoryIcons"]:draw(self:getSlotAttribute("topIcon",ix,iy),0,"right",
@@ -680,7 +804,7 @@ function Inventory:draw(mode,entity,flags)
     end
 
     love.graphics.setColor(1,1,1,1)
-    love.graphics.printf(self.inventoryName,actualScreenPosX+5,actualScreenPosY+5,999,"left",0,InventoryTextSize,InventoryTextSize)
+    love.graphics.printf(self.inventoryName,actualScreenPosX+5,actualScreenPosY+5 - 20,999,"left",0,InventoryTextSize,InventoryTextSize)
     return itemDraw
 end
 

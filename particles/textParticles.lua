@@ -20,11 +20,19 @@ function TextParticle:init(text,position, time,size, height,color,outlineColor,a
     self.fadeTime = 0.5
     self.time = 0
 
+    self.size = self.size * (TooltipSize^0.5)
+
     if self.outlineColor == nil then self.outlineColor = {0,0,0,1} end
     if self.animationColor == nil then self.animationColor = {1,1,1,1} end
     if self.color == nil then self.color = {1,1,1,1} end
 
     self.flags = flags or {}
+
+    if self.flags.appearAnimation ~= nil then
+        self.appearAnimation = self.flags.appearAnimation
+    else
+        self.appearAnimation = false
+    end
 
 end
 
@@ -69,15 +77,23 @@ end
 
 function TextParticle:draw()
     local x,y,size = world:getTileScreenPosition(self.position.x,self.position.y)
+    local text = self.text
     local textSize = size * self.size
 
+    if self.appearAnimation then
+        local appearTime = 2
+        if self.time < appearTime then
+            text = string.sub(text,1,math.floor(#text * (self.time / appearTime)))
+        end
+    end
+
     love.graphics.setColor(self.actualOutlineColor)
-    love.graphics.printf(self.text,x-200+1,y,400/textSize,"center",0,textSize,textSize)
-    love.graphics.printf(self.text,x-200-2,y,400/textSize,"center",0,textSize,textSize)
-    love.graphics.printf(self.text,x-200,y+1,400/textSize,"center",0,textSize,textSize)
-    love.graphics.printf(self.text,x-200,y-1,400/textSize,"center",0,textSize,textSize)
+    love.graphics.printf(text,x-200+1,y,400/textSize,"center",0,textSize,textSize)
+    love.graphics.printf(text,x-200-2,y,400/textSize,"center",0,textSize,textSize)
+    love.graphics.printf(text,x-200,y+1,400/textSize,"center",0,textSize,textSize)
+    love.graphics.printf(text,x-200,y-1,400/textSize,"center",0,textSize,textSize)
     love.graphics.setColor(self.actualColor)
-    love.graphics.printf(self.text,x-200,y,400/textSize,"center",0,textSize,textSize)
+    love.graphics.printf(text,x-200,y,400/textSize,"center",0,textSize,textSize)
     --love.graphics.rectangle("fill",x,y,size/1,size/1)
     
 end

@@ -8,8 +8,17 @@ function resetworld()
   worldseed=math.random()*100000]]
   world:spawnEntity("player", 0, 0)
 end
-function generateworldupdate(dt)
+function generateworldupdate(dt,player)
   
+  if Cameras[player] ~= nil then
+    camx = Cameras[player].x
+    camy = Cameras[player].y
+    camv = Cameras[player].v
+    camEntityFollow = Cameras[player].entityFollow
+    backgroundcolorBottom = Cameras[player].backgroundcolorBottom
+    backgroundcolorTop = Cameras[player].backgroundcolorTop
+  end
+
   local totalChunkLoadDistanceX=(chunkloaddistance+(math.ceil(szx/camv/2/chunksize)))
   local totalChunkLoadDistanceY=(chunkloaddistance+(math.ceil(szy/camv/2/chunksize)))
   local centerX=(camx/chunksize)

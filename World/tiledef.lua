@@ -46,6 +46,7 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
         else
         self.mapColor = self.flags.mapColor or {1,1,1,1}
     end
+    self.mapColor[4] = 1
     
 
     --flags comprend tout le reste, la pluspart vont être nil, donc assigner des variables pour tout de base
@@ -74,6 +75,11 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
 
 
     self.interactable = self.flags.interactable or false
+    self.getInteractability = self.flags.getInteractability or function(self,x,y,entity) return true end
+    self.getInteractText = self.flags.getInteractText or function(self,x,y,entity) return "Press "..entity:getInteractButton().." to interact" end
+    self.getNonInteractiveText = self.flags.getNonInteractiveText or function(self,x,y,entity) return "" end
+    self.getInteractColor = self.flags.getInteractColor or function(self,x,y,entity) return {0.8,0.8,0,0.8} end
+    self.getNonInteractColor = self.flags.getNonInteractColor or function(self,x,y,entity) return {0.8,0,0,0.8} end
     self.isContainer = self.flags.isContainer or false
     self.containerRows = self.flags.containerRows or 1
     self.containerColumns = self.flags.containerColumns or 1
@@ -81,6 +87,7 @@ function Tile:init(tilename, tiletype, textureName, quadName, flags)
     self.containerColor = self.flags.containerColor or CopyAll(self.mapColor)
 
     self.onInteract = self.flags.onInteract or function(self,x,y,entity) end
+    self.onInteractLook = self.flags.onInteractLook or function(self,x,y,entity) end
 
     self.lightCanGoThrough = self.flags.lightCanGoThrough or (self.type ~= "solid" and self.type ~= "leftStair" and self.type ~= "rightStair")
     self.canBeOverWritten = self.flags.canBeOverWritten or (self.type ~= "solid" and self.type ~= "leftStair" and self.type ~= "rightStair" and self.type ~= "platform" and self.interactable == false)

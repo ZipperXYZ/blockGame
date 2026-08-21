@@ -222,27 +222,27 @@ end
 
 
 
-function Sprite:draw(animation,animationTime,direction,x,y,sx,sy,color,colorisation)
+function Sprite:draw(animation,animationTime,direction,x,y,sx,sy,color,shaderInfo)
     --return textures["sprites"][self.quadName]
 
     if self.type == "multipleAnimations" then
-        self:drawMA(animation,animationTime,direction,x,y,sx,sy,color,colorisation)
+        self:drawMA(animation,animationTime,direction,x,y,sx,sy,color,shaderInfo)
     end
 
     if self.type == "singleAnimation" then
-        self:drawSA(animationTime,direction,x,y,sx,sy,color,colorisation)
+        self:drawSA(animationTime,direction,x,y,sx,sy,color,shaderInfo)
     end
 
     if self.type == "singleImage" then
-        self:drawSI(direction,x,y,sx,sy,color,colorisation)
+        self:drawSI(direction,x,y,sx,sy,color,shaderInfo)
     end
 
 end
 
-function Sprite:drawMA(animation,animationTime,direction,x,y,sx,sy,color,colorisation)
+function Sprite:drawMA(animation,animationTime,direction,x,y,sx,sy,color,shaderInfo)
 
 if color == nil then color = {1,1,1,1} end
-if colorisation == nil then colorisation = {0,0,0,0} end
+if shaderInfo == nil then shaderInfo = {shader = nil, colorisation = {0,0,0,0}} end
     if self.baseColor == nil then self.baseColor = {1,1,1,1} end
     if direction == nil then direction = "right" end
     if not self.mirrorable then direction = "right" end
@@ -271,15 +271,15 @@ if colorisation == nil then colorisation = {0,0,0,0} end
             sx = -sx
         end
 
-        self:drawColorised(self.texture,self.quads[animation..frameNumber],color,colorisation,x,y,sx,sy,self.spriteData[animation]["spriteCenter"][1] * self.spriteData[animation]["gridMultiplication"],self.spriteData[animation]["spriteCenter"][2] * self.spriteData[animation]["gridMultiplication"])
-
+        --self:drawColorised(self.texture,self.quads[animation..frameNumber],color,colorisation,x,y,sx,sy,self.spriteData[animation]["spriteCenter"][1] * self.spriteData[animation]["gridMultiplication"],self.spriteData[animation]["spriteCenter"][2] * self.spriteData[animation]["gridMultiplication"])
+        self:drawColorised(self.texture,self.quads[animation..frameNumber],color,shaderInfo,x,y,sx,sy,self.spriteData[animation]["spriteCenter"][1] * self.spriteData[animation]["gridMultiplication"],self.spriteData[animation]["spriteCenter"][2] * self.spriteData[animation]["gridMultiplication"])
     end
 end
 
-function Sprite:drawSA(animationTime,direction,x,y,sx,sy,color,colorisation)
+function Sprite:drawSA(animationTime,direction,x,y,sx,sy,color,shaderInfo)
 
     if color == nil then color = {1,1,1,1} end
-    if colorisation == nil then colorisation = {0,0,0,0} end
+    if shaderInfo == nil then shaderInfo = {shader = nil, colorisation = {0,0,0,0}} end
     if self.baseColor == nil then self.baseColor = {1,1,1,1} end
     if direction == nil then direction = "right" end
     if not self.mirrorable then direction = "right" end
@@ -308,15 +308,15 @@ function Sprite:drawSA(animationTime,direction,x,y,sx,sy,color,colorisation)
             sx = -sx
         end
 
-        self:drawColorised(self.texture,self.quads[frameNumber],color,colorisation,x,y,sx,sy,self.spriteData["spriteCenter"][1] * self.spriteData["gridMultiplication"],self.spriteData["spriteCenter"][2] * self.spriteData["gridMultiplication"])
+        self:drawColorised(self.texture,self.quads[frameNumber],color,shaderInfo,x,y,sx,sy,self.spriteData["spriteCenter"][1] * self.spriteData["gridMultiplication"],self.spriteData["spriteCenter"][2] * self.spriteData["gridMultiplication"])
 
     end
 end
 
-function Sprite:drawSI(direction,x,y,sx,sy,color,colorisation)
+function Sprite:drawSI(direction,x,y,sx,sy,color,shaderInfo)
 
     if color == nil then color = {1,1,1,1} end
-    if colorisation == nil then colorisation = {0,0,0,0} end
+    if shaderInfo == nil then shaderInfo = {shader = nil, colorisation = {0,0,0,0}} end
     if self.baseColor == nil then self.baseColor = {1,1,1,1} end
     if direction == nil then direction = "right" end
     if not self.mirrorable then direction = "right" end
@@ -332,13 +332,14 @@ function Sprite:drawSI(direction,x,y,sx,sy,color,colorisation)
         else
             sx = -sx
         end
-        self:drawColorised(self.texture,self.quads,color,colorisation,x,y,sx,sy,self.spriteData["spriteCenter"][1] * self.spriteData["gridMultiplication"],self.spriteData["spriteCenter"][2] * self.spriteData["gridMultiplication"])
+        self:drawColorised(self.texture,self.quads,color,shaderInfo,x,y,sx,sy,self.spriteData["spriteCenter"][1] * self.spriteData["gridMultiplication"],self.spriteData["spriteCenter"][2] * self.spriteData["gridMultiplication"])
     end
 end
 
-function Sprite:drawColorised(texture,quad,color,colorisation,x,y,sx,sy,ox,oy,kx,ky)
+function Sprite:drawColorised(texture,quad,color,shaderInfo,x,y,sx,sy,ox,oy,kx,ky)
     if color == nil then color = {1,1,1,1} end
-    if colorisation == nil then colorisation = {0,0,0,0} end
+    if shaderInfo == nil then shaderInfo = {shader = nil, colorisation = {0,0,0,0}} end
+    if shaderInfo.colorisation == nil then shaderInfo.colorisation = {0,0,0,0} end
     if x == nil then x = 0 end
     if y == nil then y = 0 end
     if sx == nil then sx = 1 end
@@ -347,10 +348,12 @@ function Sprite:drawColorised(texture,quad,color,colorisation,x,y,sx,sy,ox,oy,kx
     if oy == nil then oy = 0 end
     if kx == nil then kx = 0 end
     if ky == nil then ky = 0 end
-    if colorisation[4] > 0 then
-        self.colorisationShader:send("tintColor",{ colorisation[1],colorisation[2],colorisation[3]})
-        self.colorisationShader:send("strength", colorisation[4])
-        love.graphics.setShader(self.colorisationShader)
+    if shaderInfo.shader ~= nil then
+        if shaderInfo.colorisation[4] > 0 then
+            shaderInfo.shader:send("tintColor",{ shaderInfo.colorisation[1],shaderInfo.colorisation[2],shaderInfo.colorisation[3]})
+            shaderInfo.shader:send("strength", shaderInfo.colorisation[4])
+            love.graphics.setShader(shaderInfo.shader)
+        end
     end
     love.graphics.setColor(color[1],color[2],color[3],color[4])
     love.graphics.draw(texture,quad,x,y,0,sx,sy,ox,oy,kx,ky)

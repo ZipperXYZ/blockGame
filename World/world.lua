@@ -30,7 +30,7 @@ function World:init(worldSeed, chunkSize, depthProgression, biomeSize, biomeList
     self.textParticles = {}
     self.projectiles = {}
 
-    self.globalDirector = EntitySpawnDirector(Vector2(0,0),50,15,25,3,12,nil,60,95,0,100,200,150,999999999,40)
+    self.globalDirector = EntitySpawnDirector(Vector2(0,0),50,15,50,3,12,nil,60,95,0,100,200,150,999999999,40)
     self.directors = {}
 
     self.parameters = parameters or {}
@@ -45,7 +45,13 @@ function World:init(worldSeed, chunkSize, depthProgression, biomeSize, biomeList
     self.directorSpawnSpeedMultiplier = self.parameters.directorSpawnSpeedMultiplier or 1
 
 
+    self.mobCap = self.parameters.mobCap or 20
+
     self.fogActivated = self.parameters.fogActivated or true
+    self.itemAttributesMultiplier = self.parameters.itemAttributesMultiplier or 1
+    if self.itemAttributesMultiplier == nil then self.itemAttributesMultiplier = 1 end
+    self.playerFogDistance = self.parameters.playerFogDistance or 50
+    self.playerFog = self.parameters.playerFog or false
     self.currentFogLayer = self.parameters.currentFogLayer or 1
     self.fogViewDistance = self.parameters.fogViewDistance or 6
     self.generationFocusRadius = self.parameters.generationFocusRadius or 4
@@ -89,10 +95,12 @@ function World:placeMainStructures()
     local structureMultipler = minimum(math.ceil(self.borderX/150), 1) *1
     local structureMultipler = 2
     self:placeMainStrucure("dungeon1","dungeon",0,self.borderX*0.5,-((self.borderY/6)*(1-0.35)),self.borderY/12/3,structureMultipler,155,90)
-    self:placeMainStrucure("dungeon1","dungeon",0,self.borderX*0.44,-((self.borderY/6)*(2-0.35)),self.borderY/12/3,structureMultipler,155,90)
-    self:placeMainStrucure("dungeon1","dungeon",0,self.borderX*0.4,-((self.borderY/6)*(3-0.35)),self.borderY/12/3,structureMultipler,155,90)
-    self:placeMainStrucure("dungeon1","dungeon",0,self.borderX*0.35,-((self.borderY/6)*(4-0.35)),self.borderY/12/3,structureMultipler,155,90)
-    self:placeMainStrucure("dungeon1","dungeon",0,self.borderX*0.25,-((self.borderY/6)*(5-0.35)),self.borderY/12/3,structureMultipler,155,90)
+    self:placeMainStrucure("dungeon1","dungeon",0,self.borderX*0.44,-((self.borderY/6)*(2-0.35)),self.borderY/12/3,structureMultipler,140,90)
+    self:placeMainStrucure("dungeon1","dungeon",0,self.borderX*0.4,-((self.borderY/6)*(3-0.35)),self.borderY/12/3,structureMultipler,130,90)
+    self:placeMainStrucure("dungeon1","dungeon",0,self.borderX*0.35,-((self.borderY/6)*(4-0.35)),self.borderY/12/3,structureMultipler,190,90)
+    self:placeMainStrucure("dungeon1","dungeon",0,self.borderX*0.25,-((self.borderY/6)*(5-0.35)),self.borderY/12/3,structureMultipler,180,90)
+    
+    self:placeMainStrucure("dungeon1","dungeon",0,0,-((self.borderY/6)*(6-0.05)),0,1,110,0)
     --self:placeMainStrucure("dungeon1",0,self.borderX/2,-((self.borderY/6)*(6-0.25)),self.borderY/12/3,3,155)
 end
 
@@ -437,7 +445,7 @@ function World:getDefaultTileHealth(worldPosX, worldPosY, layer)
     end
 
     local level = self:getEnvironmentLevel(worldPosY)
-    health = health + (health * 0.05 * level)
+    health = health + (health * 0.2 * level)
 
     return health -- default health if not specified
 end
@@ -728,32 +736,120 @@ function World:generateChunk(chunkPosX,chunkPosY,force,steps)
     return false, false
 end
 
+function World:placePlayerTomb(position,entity)
+    --print("trying to place tomb at",position.x,position.y)
+    local prohibitedTiles = {"evilShrineFunctioning","evilShrineClosed","evilShrine"}
+    local x,y = round(position.x), round(position.y)
+    if (not checkifinlist(world:getRawTile(x, y), prohibitedTiles)) and (not self:doesTilePropretyExists(x,y,"entity")) then
+        self:placeTile("tomb", x, y, "tiles", true)
+        self:setTileProprety(x, y, "entity", entity)
+        print("placed tomb at",x,y)
+        return true
+    end
+    for ix = -1, 1 do
+        for iy = -1, 1 do
+            local nx, ny = x + ix, y + iy
+            if (not checkifinlist(world:getRawTile(nx, ny), prohibitedTiles)) and (not self:doesTilePropretyExists(nx,ny,"entity")) then
+                self:placeTile("tomb", nx, ny, "tiles", true)
+                self:setTileProprety(nx, ny, "entity", entity)
+                print("placed tomb at",nx,ny)
+                return true
+            end
+        end
+    end
+    return false
+end
+
+function World:getBought(position)
+    if self:doesTilePropretyExists(round(position.x), round(position.y), "buyState") then
+        local bought = (self:getTileProprety(round(position.x), round(position.y), "buyState") == "bought")
+        return bought
+    else
+        self:setTileProprety(round(position.x), round(position.y), "buyState", "notBought")
+        return false
+    end
+end
+
+function World:buy(position)
+    if not self:getBought(position) then
+        self:spawnTextParticle("-"..self:getCost(position).."$",Vector2(position.x,position.y+0.5), 6, 0.3, 1.5,{1,0,0,1},{0,0,0,1},{1,1,1,1}, {})
+        self:setTileProprety(round(position.x), round(position.y), "buyState", "bought")
+    end
+end
+
+function World:generateCost(multiplier,position)
+    if self:doesTilePropretyExists(round(position.x), round(position.y), "cost") then
+
+    else
+        local cost = (1 + math.abs(1*self:getDepth(position.y)))^1.4
+        if CheatMode then
+            cost = 0
+        end
+        self:setTileProprety(round(position.x), round(position.y), "cost", math.ceil(cost * multiplier))
+
+    end
+end
+
+function World:getCost(position)
+    if self:doesTilePropretyExists(round(position.x), round(position.y), "cost") then
+        return self:getTileProprety(round(position.x), round(position.y), "cost")
+    else
+        return 999
+    end
+end
+
 function World:openContainer(tileName,tile, position, entity, rows, columns)
     if self:doesTilePropretyExists(round(position.x), round(position.y), "inventory") then
         entity:openInventory(self:getTileProprety(round(position.x), round(position.y), "inventory"))
     else
-        self:setTileProprety(round(position.x), round(position.y), "inventory",
-        Inventory(tileName,CopyAll(tile.containerColor),Vector2(0.5, 0.95),rows,columns,1,100, (0.065), (0.065 / 8),{ ["anchorX"] = "middle", ["anchorY"] = "bottom", ["isChest"] = true, ["chestInfo"] = {x = position.x, y = position.y} },nil)
-    )
+        local format = "normal"
+        if entity ~= nil then
+            format = entity.inventoryFormat
+        end
+        if format == "normal" then
+            self:setTileProprety(round(position.x), round(position.y), "inventory",
+            Inventory(tileName,CopyAll(tile.containerColor),Vector2(0.5, 0.6),rows,columns,1,100, (0.065), (0.065 / 8),{ ["anchorX"] = "middle", ["anchorY"] = "top", ["isChest"] = true, ["chestInfo"] = {x = position.x, y = position.y} },nil))   
+        end
+        if format == "vertical" then
+            self:setTileProprety(round(position.x), round(position.y), "inventory",
+            Inventory(tileName,CopyAll(tile.containerColor),Vector2(0.05, 0.5),rows,columns,1,100, (0.065), (0.065 / 8),{ ["anchorX"] = "left", ["anchorY"] = "top", ["isChest"] = true, ["chestInfo"] = {x = position.x, y = position.y} },nil))   
+        end
         self:openContainer(tileName, tile, position, entity, rows, columns)
     end
 end
 
 function World:generateContainerLoot(position,credit,itemsAmount,creditMinPerItem,creditMaxPerItem,levelBias,enchantCreditMultiplier,cards,enchantCards)
     if position == nil then return false end
+    if creditMaxPerItem ~= nil then creditMaxPerItem = creditMaxPerItem * self.itemAttributesMultiplier end
+    if enchantCreditMultiplier ~= nil then enchantCreditMultiplier = enchantCreditMultiplier * self.itemAttributesMultiplier end
     if cards == nil then cards = CopyAll(ItemCardsList) end
     if enchantCards == nil then enchantCards = CopyAll(EnchantsList) end
     if not self:doesTilePropretyExists(round(position.x), round(position.y), "lootGenerated") then
 
         if self:doesTilePropretyExists(round(position.x), round(position.y), "inventory") then
 
-            local director = ItemDirector(credit,itemsAmount,creditMinPerItem,creditMaxPerItem,levelBias,enchantCreditMultiplier,self:getBiome(position.x,position.y),self:getDepth(position.y),cards,enchantCards)
+            local director = ItemDirector(credit*self.itemAttributesMultiplier,itemsAmount,creditMinPerItem,creditMaxPerItem,levelBias,enchantCreditMultiplier,self:getBiome(position.x,position.y),self:getDepth(position.y),cards,enchantCards)
     
             local itemList = director:giveItems()
 
             if #itemList > 0 then
                 self:setTileProprety(round(position.x), round(position.y), "lootGenerated", true)
                 self:getTileProprety(round(position.x), round(position.y), "inventory"):addItems(itemList,false)
+            else
+                local tries = 0
+                while true do
+                    local director = ItemDirector(credit*self.itemAttributesMultiplier,itemsAmount,creditMinPerItem,creditMaxPerItem,levelBias,enchantCreditMultiplier,self:getBiome(position.x,position.y),self:getDepth(position.y),cards,enchantCards)
+    
+                    local itemList = director:giveItems()
+                    tries = tries + 1
+                    if #itemList > 0 or tries >= 10 then
+                        if #itemList > 0 then
+                            self:setTileProprety(round(position.x), round(position.y), "lootGenerated", true)
+                            self:getTileProprety(round(position.x), round(position.y), "inventory"):addItems(itemList,false)
+                        end
+                        break
+                    end
+                end
             end
         end 
     end
@@ -810,7 +906,10 @@ end
 --updateLight(neighboringChunks) -- (getNeighboringChunks())
 function World:updateLights(worldPosX, worldPosY)
     local chunkx, chunky = self:convertWorldPosToChunkPos(worldPosX, worldPosY)
-    self.chunks[chunkx][chunky]:updateNeighboringLights()
+    if self:checkIfChunkExists(chunkx, chunky) then
+        self.chunks[chunkx][chunky]:updateNeighboringLights()
+    end
+    --self.chunks[chunkx][chunky]:updateNeighboringLights()
 end
 
 function World:updateLight(chunkX, chunkY)
@@ -939,7 +1038,7 @@ function World:fogUpdate(dt)
                 local entity = entities[i]
                 if entity.type == "player" then
 
-                    local fogValue = self:getFogLevel(entity.position.x,entity.position.y,999999999,9999999)
+                    local fogValue = self:getFogLevel(entity.position.x,entity.position.y,999999999,999999999, true)
                     if fogValue > 0 then
                         
 
@@ -987,25 +1086,64 @@ function World:drawFog(centerX, centerY, length, heigth, parameters)
     end
 end
 
-function World:getFogLevel(posX, posY, centerX, centerY)
+function World:getFogLevel(posX, posY, centerX, centerY, ignoreEntities)
+    if ignoreEntities == nil then ignoreEntities = false end
     local fogLevel = 0
     local depth = self:getDepth(posY)
     local fogSmoothLayer = 0.02
     local fogSmoothCamera = 5
+    local fogPlayerDistance = self.playerFogDistance
     if depth > (self.currentFogLayer-0.1) then
         fogLevel = k(0, 1, (depth - (self.currentFogLayer-0.1)) / fogSmoothLayer)
     end
-    if fogLevel > 1 then fogLevel = 1 end
-    if self.fogViewDistance > 0 then
-        if dist(posX,posY,centerX,centerY) <= self.fogViewDistance + fogSmoothCamera then
-            local closeness = ((dist(posX,posY,centerX,centerY)-self.fogViewDistance) / fogSmoothCamera)
-            fogLevel = k(fogLevel, 0, maximum(minimum(1 - closeness,0),1))
+
+    
+    if self:getPlayerAmount() > 1 and (self.playerFog) then
+        centerX, centerY = self:getPlayersCenter()
+        if dist(posX,posY,centerX,centerY) > fogPlayerDistance then
+            fogLevel = k(fogLevel,1,((dist(posX,posY,centerX,centerY)-fogPlayerDistance)/fogSmoothCamera))
         end
     end
 
     if fogLevel > 1 then fogLevel = 1 end
 
+    if fogLevel > 1 then fogLevel = 1 end
+    if (not (ignoreEntities)) then
+        if self.fogViewDistance > 0 then
+            if #entities > 0 then
+                for i = 1,#entities do
+                    local entity = entities[i]
+                    if entity.type == "player" then
+                        if dist(posX,posY,entity.position.x,entity.position.y) <= self.fogViewDistance + fogSmoothCamera then
+                            local closeness = ((dist(posX,posY,entity.position.x,entity.position.y)-self.fogViewDistance) / fogSmoothCamera)
+                            fogLevel = k(fogLevel, 0, maximum(minimum(1 - closeness,0),1))
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if fogLevel > 1 then fogLevel = 1 end
+
+
     return fogLevel
+end
+
+function World:getPlayersCenter()
+    local sumX = 0
+    local sumY = 0
+    local playerCount = self:getPlayerAmount()
+    if #entities > 0 then
+        for i = 1, #entities do
+            local entity = entities[i]
+            if entity.type == "player" then
+                sumX = sumX + entity.position.x
+                sumY = sumY + entity.position.y
+            end
+        end
+    end
+    return sumX / playerCount, sumY / playerCount
 end
 
 function World:drawTiles(centerX, centerY, length, heigth, parameters)
@@ -1183,6 +1321,10 @@ function World:generateTerrainTile(tileX, tileY, biome, distanceFromBiomeEdge)
     local dp   = self.depthProgression
     local name = "none"
 
+    if biome == nil or distanceFromBiomeEdge == nil then
+        biome, distanceFromBiomeEdge = self:getBiome(tileX, tileY)
+    end
+
     if love.math.noise(tileX / 20 / self.caveSize, tileY / 20 / self.caveSize, seed) >= 0.25 then
         name = "dirt"
     end
@@ -1196,19 +1338,22 @@ function World:generateTerrainTile(tileX, tileY, biome, distanceFromBiomeEdge)
         love.math.noise(tileX / 15 / self.caveSize, tileY / 15 / self.caveSize, seed + 100) < (tileY / (dp * 2)) + 1 then
         name = "none"
     end
-    local n = love.math.noise(tileX / 25 / self.caveSize, tileY / 90 / self.caveSize, seed - 200)
-    if n < 0.4 and n > 0.36 then
-        name = "none"
-    end
+
     local n = love.math.noise(tileX / 150 / self.caveSize, tileY / 30 / self.caveSize, seed - 450)
-    if n < 0.4 and n > 0.36 then
-        name = "none"
+        if n < 0.4 and n > 0.36 then
+            name = "none"
+        end
+
+    if biome ~= "coldland" then
+        local n = love.math.noise(tileX / 25 / self.caveSize, tileY / 90 / self.caveSize, seed - 200)
+        if n < 0.4 and n > 0.36 then
+            name = "none"
+        end
+        
     end
 
     --specific biomes
-    if biome == nil or distanceFromBiomeEdge == nil then
-        biome, distanceFromBiomeEdge = self:getBiome(tileX, tileY)
-    end
+    
 
     if biome == "hotland" then
         if distanceFromBiomeEdge < 0.15 then
@@ -1239,6 +1384,9 @@ function World:generateTerrainTile(tileX, tileY, biome, distanceFromBiomeEdge)
         name = "dirt"
         if love.math.noise(tileX / 15 / self.caveSize, tileY / 5 / self.caveSize, seed - 505) < 1.3 * distanceFromBiomeEdge then
             name = "none"
+        end
+        if love.math.noise(tileX / 15 / self.caveSize, tileY / 5 / self.caveSize, seed - 505) < 0.45 then
+            name = "dirt"
         end
         if love.math.noise(tileX / 10 / self.caveSize, tileY / 10 / self.caveSize, seed - 570) < 0.38 * distanceFromBiomeEdge then
             name = "dirt"
@@ -1273,7 +1421,58 @@ function World:getSeed()
     return self.worldSeed
 end
 
+function World:getPlayerAmount()
+    local playerAmount = 0
+    if #entities > 0 then
+        for i = 1, #entities do
+            local entity = entities[i]
+            if entity.ai == "player" or entity.type == "player" then
+                playerAmount = playerAmount + 1
+            end
+        end
+    end
+    return playerAmount
+end
+
+function World:isBossPresent()
+    local bossPresent = false
+    if #entities > 0 then
+        for i = 1, #entities do
+            local entity = entities[i]
+            if entity.isBoss then
+                bossPresent = true
+                break
+            end
+        end
+    end
+    return bossPresent
+end
+
+function World:advanceFog(x, y)
+    self:spawnTextParticle("The fog dissipates...",Vector2(x,y), 6, 0.3, 1.5,{1,1,1,1},{0.3,0,0.6,1},{1,0,1,1}, {appearAnimation = true})
+
+    local depth = self:getDepth(y)
+    if depth > self.currentFogLayer-0.6 then
+        self.currentFogLayer = self.currentFogLayer + 1
+        if self.currentFogLayer > 5.5 then
+            self.currentFogLayer = 99999
+        end
+    end
+    
+end
+
+function World:bossEvent(source, position, data)
+    local depth = world:getDepth(position.y)
+    local multiplier = (1 + math.abs((minimum(depth,0.9)*1.5) ^ 2))
+    local credit = (120+ math.random(60)) * multiplier * (self:getPlayerAmount()^0.5)
+
+    table.insert(self.directors, EntitySpawnDirector(position:copy(),7,0,credit,0,0.01,nil,0,0,1,credit,credit*2,credit*2,0,20,"boss",{mode = "chooseHighest"}))
+
+end
+
 function World:updateEntities(dt)
+    local nop = self:getPlayerAmount()
+    local player = 0
     if #entities > 0 then
         for i = 1, #entities do
             local entity = entities[i]
@@ -1283,11 +1482,12 @@ function World:updateEntities(dt)
             local isPlayer = (entity.ai == "player") or (entity.type == "player")
 
             if isPlayer then
-                entity:controlsUpdate(dt) debugtimelog("entitycontrolsUpdate","update")
+                player = player + 1
+                entity:controlsUpdate(dt,player) debugtimelog("entitycontrolsUpdate","update")
             else
                 entity._controlsUpdateAccumulator = (entity._controlsUpdateAccumulator or 0) + dt
                 if entity._controlsUpdateAccumulator >= self.nonPlayerControlsUpdateInterval then
-                    entity:controlsUpdate(entity._controlsUpdateAccumulator) debugtimelog("entitycontrolsUpdate","update")
+                    entity:controlsUpdate(entity._controlsUpdateAccumulator,0) debugtimelog("entitycontrolsUpdate","update")
                     entity._controlsUpdateAccumulator = 0
                 end
             end
@@ -1319,7 +1519,7 @@ function World:updateEntities(dt)
 
             entity:groundItemsUpdate(dt) debugtimelog("entityGroundItemsUpdate","update")
             entity:animationUpdate(dt) debugtimelog("entityanimationUpdate","update")
-            entity:camUpdate(dt) debugtimelog("entitycamUpdate","update")
+            player = entity:camUpdate(dt,player) debugtimelog("entitycamUpdate","update")
             if entity.type == "player" then entity:playerUpdate(dt) debugtimelog("entityplayerUpdate","update") end
         end
     end
@@ -1481,7 +1681,7 @@ function World:rayTrace(hitLayers,startPos,targetPos,distanceLimit,endBeforeColl
 end
 
 function World:DrawEntities()
-    for i = 1, #entities do
+    for i = #entities, 1, -1 do
         entities[i]:draw()
         ---love.graphics.draw(entities[ix]:getTexture(), entities[ix]:getSprite(), entities[ix]:getPosition():getY(),
         --    entities[ix]:getPosition():getX(),
@@ -1498,10 +1698,10 @@ function World:drawEntitiesHealthBars()
     end
 end
 
-function World:DrawUi()
+function World:DrawUi(playerNumber)
     debugtimeclear("sub")
     for i = 1, #entities do
-        if entities[i].id == camEntityFollow then
+        if entities[i].id == Cameras[playerNumber].entityFollow then
             entities[i]:DrawUI()
         end
     end
@@ -1560,6 +1760,37 @@ function World:spawnXPparticles(value,position)
         local time = 10 + math.abs((singularValue/3)^0.5) + math.random()*1
 
         table.insert(self.particles,Particle("xp",spawnPos, spawnColor,time,"floating",spawnFlags))
+    end
+end
+
+function World:spawnCoinParticles(value,position)
+    local count = minimum(maximum(math.abs(math.ceil(value/10)), 10), 1)
+
+    
+
+    for ip = 1, count do
+        local color = {1,0.8,0,1}
+        local singularValue = value/count
+        if singularValue < 1 then color = {0.6,0.6,0.65,1} end
+        local spawnPos = position:copy()
+        spawnPos:move(math.random(360),math.random()*0.5)
+        local spawnColor = CopyAll(color)
+        local spawnFlags = {}
+        spawnFlags.velocity = Vector2(0,0)
+        spawnFlags.velocity:move(math.random(360),math.random()*1)
+        spawnFlags.coinValue = singularValue
+        local lightColor = CopyAll(color)
+        lightColor[3] = lightColor[3]*0.7
+        lightColor[2] = lightColor[2]*0.7
+        lightColor[1] = lightColor[1]*0.7
+        spawnFlags.lightColor = lightColor
+        spawnFlags.flashColor = {1,1,1,1}
+        spawnFlags.flashTime = 2
+        --spawnFlags.flashColor = {1,1,1,1}
+        --spawnFlags.flashTime = 2
+        local time = 10 + math.abs((singularValue/3)^0.5) + math.random()*1
+
+        table.insert(self.particles,Particle("coin",spawnPos, spawnColor,time,"dust",spawnFlags))
     end
 end
 

@@ -199,6 +199,8 @@ function Item:init(itemName,sprite,flags)
     self.knockbackAdd = self.flags.knockbackAdd or 0
     self.gravityMultiplier = self.flags.gravityMultiplier or 1
     self.gravityAdd = self.flags.gravityAdd or 0
+
+    self.shader = self.flags.shader or textures["textures"]["itemColorisationShader"]
     
     --self.textures = textures or {["groundDisplay"]="none",[""]}
 
@@ -244,7 +246,7 @@ function Item:getDamage(attributes,entity)
     local damage = self.damage
     damage = damage + self.damagePerLevel * (self:getLevel(attributes) - 1)
     if entity ~= nil then
-        damage = damage * entity:getDamage()
+        damage = damage * entity.attackDamage
     end
     return math.ceil(damage)
 end
@@ -352,7 +354,7 @@ function Item:getAllEntitiesInRadius(entity,position,radius,targetList)
     if #entities > 0 then
         for i = 1, #entities do
             if entities[i].state ~= "dead" and entity:canAttack(entities[i]) then
-                if entities[i].position:dist(position) <= radius then
+                if entities[i].position:dist(position) <= radius + entities[i].size then
                     if world:canLineGoThrough(entities[i].position,position) then
                         if not checkIfTargetInList(entities[i],targetList) then
                             local new = {
@@ -382,7 +384,7 @@ function Item:getMeleeWeaponTargets(entity,attributes,cursorX,cursorY)
         local position = entity.position:copy()
         position:move(baseDirection, a / 10)
 
-        targetList = self:getAllEntitiesInRadius(entity, position, self:getAttackRadius(attributes,entity), targetList)
+        targetList = self:getAllEntitiesInRadius(entity, position, self:getAttackRadius(attributes,entity) + entity.size, targetList)
     end
     
     return targetList
@@ -559,14 +561,34 @@ function Item:use(entity,attributes,cursorX,cursorY,slot,stacks)
 
         if self.subCategory == "melee" then
 
-            self:drawWeaponSliceArc(entity.position:copy(),entity.position:angle(Vector2(cursorX,cursorY)),self:getSliceColor(attributes,entity),attributes,entity)
+            local sliceAmount = 3
+            local sliceAngle = 60
+            local signalInfo = {
+                position = Vector2(cursorX,cursorY),
+                entity = entity,
+                item = self,
+                attributes = attributes,
+                cooldownValue = self:getCooldown(attributes,entity),
+                damageValue = self:getDamage(attributes,entity),
+                knockback = self:getKnockback(attributes,entity),
+                criticalChance = 0,
+            }
 
-            local targets = self:getMeleeWeaponTargets(entity, attributes, cursorX, cursorY)
+            for i = 1, sliceAmount do
+                local angleoffset = (i-1) * (sliceAngle/(sliceAmount-1)) - sliceAngle/2
+                local newAngle = entity.position:angle(Vector2(cursorX,cursorY)) + angleoffset
+                local newAttackPosition = entity.position:copy()
+                newAttackPosition:move(newAngle, dist(entity.position.x,entity.position.y,cursorX,cursorY))
 
-            if #targets > 0 then
-                for i = 1, #targets do
-                    local target = targets[i].entity
-                    overrideCooldown = self:attackTarget(target,attributes,entity,overrideCooldown)
+                self:drawWeaponSliceArc(entity.position:copy(),newAngle,self:getSliceColor(attributes,entity),attributes,entity)
+
+                local targets = self:getMeleeWeaponTargets(entity, attributes, newAttackPosition.x, newAttackPosition.y)
+
+                if #targets > 0 then
+                    for i = 1, #targets do
+                        local target = targets[i].entity
+                        overrideCooldown, signalInfo = self:attackTarget(target,attributes,entity,overrideCooldown,nil,nil,nil,signalInfo)
+                    end
                 end
             end
 
@@ -663,18 +685,37 @@ function Item:drawWeaponSliceArc(position,direction,color,attributes,entity)
     end
 end
 
-function Item:attackTarget(target,attributes,entity,overrideCooldown,damageOverride,knockbackOverride,damagePosition)
+function Item:attackTarget(target,attributes,entity,overrideCooldown,damageOverride,knockbackOverride,damagePosition,signalInfo)
+    if signalInfo == nil then
+        signalInfo = {}
+        signalInfo.damageValue = damageOverride or self:getDamage(attributes,entity)
+        signalInfo.knockback = knockbackOverride or self:getKnockback(attributes,entity)
+        signalInfo.criticalChance = 0
+        signalInfo.cooldownValue = overrideCooldown or self:getCooldown(attributes,entity)
+        signalInfo.position = damagePosition or entity.position:copy()
+        signalInfo.target = target
+        signalInfo.enemy = target
+        signalInfo.entity = entity
+    end
     
     local maxHealth = target.health:getMax()
-    local damage = self:getDamage(attributes,entity)
-    local knockback = self:getKnockback(attributes,entity)
+    local damage = signalInfo.damageValue--self:getDamage(attributes,entity)
+    local knockback = signalInfo.knockback--self:getKnockback(attributes,entity)
     if damageOverride ~= nil then damage = damageOverride end
     if knockbackOverride ~= nil then knockback = knockbackOverride end
     if damagePosition == nil then damagePosition = entity.position:copy() end
-    local criticalChance = 0
+    local criticalChance = signalInfo.criticalChance--0
     local critical = false
 
-    local signalInfo = {
+    signalInfo.target = target
+    signalInfo.position = target.position:copy()
+    signalInfo.enemy = target
+    signalInfo.damageValue = damage
+    signalInfo.knockback = knockback
+    signalInfo.criticalChance = criticalChance
+    --signalInfo.cooldownValue = criticalChance
+
+    --[[local signalInfo = {
         position = target.position:copy(),
         target = target,
         enemy = target,
@@ -682,7 +723,7 @@ function Item:attackTarget(target,attributes,entity,overrideCooldown,damageOverr
         knockback = knockback,
         criticalChance = criticalChance,
         cooldownValue = self:getCooldown(attributes,entity),
-    }
+    }]]
     signalInfo = entity:applyEnchantSignal("enemyHit",signalInfo,self,attributes)
 
     if signalInfo.cooldownValue > 0 then overrideCooldown = signalInfo.cooldownValue end
@@ -702,14 +743,14 @@ function Item:attackTarget(target,attributes,entity,overrideCooldown,damageOverr
     end
 
     if death then
-        local signalInfo = {
-            position = target.position:copy(),
-            damageReceiver = target,
-            enemy = target,
-        }
+        --local signalInfo = {
+            signalInfo.position = target.position:copy()--,
+            signalInfo.damageReceiver = target--,
+            signalInfo.enemy = target--,
+        --}
         signalInfo = entity:applyEnchantSignal("enemyKill",signalInfo,self,attributes)
     end
-    return overrideCooldown
+    return overrideCooldown, signalInfo
 end
 
 function Item:spawnProjectile(entity, attributes, cursorX, cursorY,slot,stacks,flags)
@@ -780,6 +821,10 @@ end
 function Item:drawToolTip(draw,screenX,screenY,sizeMultiplyer,maxX,attributes,amount,entity)
     windowSizeX = maxX
     windowSizeY = 0
+
+    --sizeMultiplyer = sizeMultiplyer * TooltipSize
+    --windowSizeX = windowSizeX * TooltipSize
+    --maxX = maxX * TooltipSize
 
     if screenX > szx - windowSizeX then screenX = szx - windowSizeX end
     
@@ -1102,6 +1147,7 @@ function normalizeRichText(textTable)
 
         if value == "#ally" then value = {0.6,1,0.8,1} end
         if value == "#enemy" then value = {1,0.6,0.3,1} end
+        if value == "#boss" then value = {1,0.3,0,1} end
 
         if value == "#health" then value = {0.6,1,0.6,1} end
         if value == "#life" then value = {0.3,0.6,0.3,1} end
@@ -1113,6 +1159,7 @@ function normalizeRichText(textTable)
         if value == "#cooldown" then value = {1,1,0.3,1} end
 
         if value == "#xp" then value = {0,1,1,1} end
+        if value == "#coin" then value = {1,1,0,1} end
 
         if value == "#condition" then value = {0.2,0.6,1,1} end
         if value == "#value" then value = {0.8,0.6,1,1} end
@@ -1223,16 +1270,16 @@ function Item:drawHolding(entity,spriteX,spriteY,size,attributes,quantity)
     if self.holdAnimation ~= nil then
         
         if self.holdAnimationtextureType == "singular" then
-            self.holdAnimation:draw(entity.animation,entity.animationTime,entity.animationDirection,spriteX,spriteY,size,size,self.baseColor,self.baseColorisation)
+            self.holdAnimation:draw(entity.animation,entity.animationTime,entity.animationDirection,spriteX,spriteY,size,size,self.baseColor,{shader = self.shader, colorisation = self.baseColorisation})
         end
         if self.holdAnimationtextureType == "multiple" then
             for i = 1, #self.holdAnimation do
-                self.holdAnimation[i]:draw(entity.animation,entity.animationTime,entity.animationDirection,spriteX,spriteY,size,size,self.baseColor,self.baseColorisation)
+                self.holdAnimation[i]:draw(entity.animation,entity.animationTime,entity.animationDirection,spriteX,spriteY,size,size,self.baseColor,{shader = self.shader, colorisation = self.baseColorisation})
             end
         end
         if self.holdAnimationtextureType == "complex" then
             for i = 1, #self.holdAnimation do
-                self.holdAnimation[i].sprite:draw(entity.animation,entity.animationTime,entity.animationDirection,spriteX,spriteY,size,size,self.holdAnimation[i].color,self.holdAnimation[i].colorisation)
+                self.holdAnimation[i].sprite:draw(entity.animation,entity.animationTime,entity.animationDirection,spriteX,spriteY,size,size,self.holdAnimation[i].color,{shader = self.shader, colorisation = self.holdAnimation[i].colorisation})
             end
         end
 
@@ -1274,16 +1321,16 @@ function Item:draw(state,posX,posY,size,attributes, amount,centerX,centerY,ignor
             drawSize = round(drawSize)
         end
         if self.textureType == "singular" then
-            self.sprite:draw(state,0,"right",posX,posY,drawSize,drawSize,self.baseColor,self.baseColorisation)
+            self.sprite:draw(state,0,"right",posX,posY,drawSize,drawSize,self.baseColor,{shader = self.shader, colorisation = self.baseColorisation})
         end
         if self.textureType == "multiple" then
             for i = 1, #self.sprite do
-                self.sprite[i]:draw(state,0,"right",posX,posY,drawSize,drawSize,self.baseColor,self.baseColorisation)
+                self.sprite[i]:draw(state,0,"right",posX,posY,drawSize,drawSize,self.baseColor,{shader = self.shader, colorisation = self.baseColorisation})
             end
         end
         if self.textureType == "complex" then
             for i = 1, #self.sprite do
-                self.sprite[i].sprite:draw(state,0,"right",posX,posY,drawSize,drawSize,self.sprite[i].color,self.sprite[i].colorisation)
+                self.sprite[i].sprite:draw(state,0,"right",posX,posY,drawSize,drawSize,self.sprite[i].color,{shader = self.shader, colorisation = self.sprite[i].colorisation})
             end
         end
     end

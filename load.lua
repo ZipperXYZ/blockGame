@@ -24,9 +24,10 @@ function loadtextures()
   textures["quads"] = {}
   textures["sprites"] = {}
 
-  textures["textures"]["colorisationShader"]= love.graphics.newShader([[
+  textures["textures"]["itemColorisationShader"]= love.graphics.newShader([[
     extern vec3 tintColor;
     extern float strength;
+    extern vec2 viewportOffset;
 
     vec4 effect(vec4 color, Image texture, vec2 tc, vec2 sc)
     {
@@ -45,14 +46,393 @@ function loadtextures()
     }
     ]])
 
+    textures["textures"]["mobColorisationShader"] = love.graphics.newShader([[
+extern vec3 tintColor;
+extern float strength;
+
+
+// ============================================================
+// RGB -> HSL
+// ============================================================
+
+vec3 rgbToHsl(vec3 c)
+{
+    float maxC = max(c.r, max(c.g, c.b));
+    float minC = min(c.r, min(c.g, c.b));
+
+    float h = 0.0;
+    float s = 0.0;
+    float l = (maxC + minC) * 0.5;
+
+    float d = maxC - minC;
+
+    if (d > 0.00001)
+    {
+        s = d / (1.0 - abs(2.0 * l - 1.0));
+
+        if (maxC == c.r)
+        {
+            h = (c.g - c.b) / d;
+
+            if (h < 0.0)
+                h += 6.0;
+        }
+        else if (maxC == c.g)
+        {
+            h = (c.b - c.r) / d + 2.0;
+        }
+        else
+        {
+            h = (c.r - c.g) / d + 4.0;
+        }
+
+        h /= 6.0;
+    }
+
+    return vec3(h, s, l);
+}
+
+
+// ============================================================
+// HSL -> RGB
+// ============================================================
+
+float hueToRgb(float p, float q, float t)
+{
+    if (t < 0.0)
+        t += 1.0;
+
+    if (t > 1.0)
+        t -= 1.0;
+
+    if (t < 1.0 / 6.0)
+        return p + (q - p) * 6.0 * t;
+
+    if (t < 1.0 / 2.0)
+        return q;
+
+    if (t < 2.0 / 3.0)
+        return p + (q - p) * (2.0 / 3.0 - t) * 6.0;
+
+    return p;
+}
+
+vec3 hslToRgb(vec3 c)
+{
+    float h = c.x;
+    float s = c.y;
+    float l = c.z;
+
+    if (s < 0.00001)
+        return vec3(l, l, l);
+
+    float q;
+
+    if (l < 0.5)
+        q = l * (1.0 + s);
+    else
+        q = l + s - l * s;
+
+    float p = 2.0 * l - q;
+
+    return vec3(
+        hueToRgb(p, q, h + 1.0 / 3.0),
+        hueToRgb(p, q, h),
+        hueToRgb(p, q, h - 1.0 / 3.0)
+    );
+}
+
+
+// ============================================================
+// Main
+// ============================================================
+
+vec4 effect(
+    vec4 color,
+    Image texture,
+    vec2 tc,
+    vec2 sc
+)
+{
+    vec4 tex = Texel(texture, tc);
+
+    vec3 source = tex.rgb;
+    vec3 target = clamp(tintColor, 0.0, 1.0);
+
+    // Convert both colors to HSL.
+    vec3 sourceHSL = rgbToHsl(source);
+    vec3 targetHSL = rgbToHsl(target);
+
+
+    // --------------------------------------------------------
+    // SOURCE LIGHTNESS IS THE IMPORTANT PART.
+    //
+    // The entire brightness/shading structure of the sprite
+    // comes from the source.
+    // --------------------------------------------------------
+
+    float sourceLightness = sourceHSL.z;
+
+
+    // --------------------------------------------------------
+    // TARGET HUE
+    //
+    // The target supplies the color family.
+    // --------------------------------------------------------
+
+    float targetHue = targetHSL.x;
+
+
+    // --------------------------------------------------------
+    // TARGET SATURATION
+    //
+    // Use the target's saturation, but don't blindly use 100%.
+    //
+    // This is particularly useful for colors such as brown,
+    // dark red, olive, etc.
+    // --------------------------------------------------------
+
+    float targetSaturation = targetHSL.y;
+
+
+    // --------------------------------------------------------
+    // Preserve a little of the source saturation.
+    //
+    // This helps already-colored sprites retain some natural
+    // color variation.
+    //
+    // It is deliberately small: the target still dominates.
+    // --------------------------------------------------------
+
+    float sourceSaturation = sourceHSL.y;
+
+    float finalSaturation = mix(
+        targetSaturation,
+        max(targetSaturation, sourceSaturation),
+        0.15
+    );
+
+
+    // --------------------------------------------------------
+    // BUILD THE COLORIZED PIXEL.
+    //
+    // Hue       = target
+    // Saturation= target
+    // Lightness = SOURCE
+    //
+    // This is what preserves the shading.
+    // --------------------------------------------------------
+
+    vec3 colorized = hslToRgb(vec3(
+        targetHue,
+        finalSaturation,
+        sourceLightness
+    ));
+
+
+    // --------------------------------------------------------
+    // Preserve source contrast.
+    //
+    // HSL lightness does a good job preserving shading already,
+    // but this additional contrast preservation keeps highlights
+    // and shadows from becoming compressed during recoloring.
+    // --------------------------------------------------------
+
+    float sourceMid = 0.5;
+
+    colorized = sourceMid +
+        (colorized - sourceMid) * 1.0;
+
+
+    // --------------------------------------------------------
+    // Near-black pixels remain near-black.
+    //
+    // This prevents black outlines/shadows from becoming weirdly
+    // saturated colored pixels.
+    // --------------------------------------------------------
+
+    float shadow = smoothstep(
+        0.0,
+        0.12,
+        sourceLightness
+    );
+
+    colorized *= mix(
+        0.85,
+        1.0,
+        shadow
+    );
+
+
+    // --------------------------------------------------------
+    // Final colorization strength.
+    // --------------------------------------------------------
+
+    vec3 finalColor = mix(
+        source,
+        colorized,
+        clamp(strength, 0.0, 1.0)
+    );
+
+
+    return vec4(finalColor, tex.a) * color;
+}
+]])
+
+textures["textures"]["fraetile"] = love.graphics.newShader([[
+    extern vec4 baseColor;
+    extern vec2 tilePos;
+    extern float tileSize;
+    extern vec2 viewportOffset;
+
+    vec4 effect(
+        vec4 color,
+        Image texture,
+        vec2 texture_coords,
+        vec2 screen_coords
+    )
+    {
+        vec2 localScreenCoords = screen_coords - viewportOffset;
+        vec2 uv =
+            (localScreenCoords - tilePos) / tileSize;
+
+        vec2 center = vec2(0.5, 0.5);
+
+        float dist = distance(uv, center);
+
+        // ==================================================
+        // TOP -> BOTTOM GRADIENT
+        // ==================================================
+
+        // Smooth but noticeable vertical gradient.
+        float gradient = smoothstep(
+            0.0,
+            1.0,
+            uv.y
+        );
+
+        // Make the top noticeably lighter
+        // and the bottom noticeably darker.
+        vec3 topColor = baseColor.rgb * 1.8;
+        vec3 bottomColor = baseColor.rgb * 0.4;
+
+        vec3 result = mix(
+            topColor,
+            bottomColor,
+            gradient
+        );
+
+        // ==================================================
+        // TRANSPARENT BUBBLE INTERIOR
+        // ==================================================
+
+        float interior = 1.3 - smoothstep(
+            0.4,
+            0.6,
+            dist*0.8
+        );
+
+        // Keep the interior fairly transparent,
+        // while still preserving the gradient underneath.
+        result *= 0.55 + interior * 0.20;
+
+        // ==================================================
+        // BUBBLE RIM
+        // ==================================================
+
+        float rim = smoothstep(
+            0.43,
+            0.70,
+            dist*0.9
+        );
+
+        rim *= 1.0 - smoothstep(
+            0.70,
+            0.83,
+            dist*0.9
+        );
+
+        // ==================================================
+        // UPPER-LEFT GLASS HIGHLIGHT
+        // ==================================================
+
+        vec2 lightDirection = normalize(
+            vec2(-0.45, -0.55)
+        );
+
+        vec2 fromCenter = normalize(
+            uv - center
+        );
+
+        float rimLight = dot(
+            fromCenter,
+            lightDirection
+        );
+
+        rimLight = smoothstep(
+            0.0,
+            0.8,
+            rimLight
+        );
+
+        rimLight *= rim;
+
+        // Slight white glass highlight
+        result += vec3(rimLight * 0.85);
+
+        // ==================================================
+        // LOWER DARK GLASS EDGE
+        // ==================================================
+
+        float bottom = smoothstep(
+            0.35,
+            0.90,
+            uv.y
+        );
+
+        float darkRim = rim * bottom;
+
+        result *= 1.0 - darkRim * 0.18;
+
+        // ==================================================
+        // SUBTLE INNER GLOW
+        // ==================================================
+
+        float innerGlow = 1.0 - smoothstep(
+            0.0,
+            0.75,
+            dist/5
+        );
+
+        // Slightly lift the center so it doesn't become muddy
+        result += baseColor.rgb * innerGlow * 0.08;
+
+        // ==================================================
+        // ALPHA
+        // ==================================================
+
+        float alpha =
+            0.16 * interior
+            + 0.52 * rim
+            + 0.25 * rimLight;
+
+        return vec4(
+            result,
+            alpha * baseColor.a
+        );
+    }
+]])
+
+  textures["textures"]["title.png"]=love.graphics.newImage("Textures/title.png")
   textures["textures"]["tiles.png"]=love.graphics.newImage("Textures/tiles.png")
   textures["textures"]["items1.png"]=love.graphics.newImage("Textures/items1.png")
   textures["textures"]["player.png"]=love.graphics.newImage("Textures/player.png")
   textures["textures"]["miscTiles.png"]=love.graphics.newImage("Textures/miscTiles.png")
   textures["textures"]["inventoryIcons.png"]=love.graphics.newImage("Textures/inventoryIcons.png")
   textures["textures"]["projectiles.png"]=love.graphics.newImage("Textures/projectiles.png")
+  textures["textures"]["bosses.png"]=love.graphics.newImage("Textures/bosses.png")
   textures["sprites"]["inventoryIcons"] = Sprite("inventoryIcons","inventoryIcons.png",{
-    ["parts"] = {"space","leftClick","rightClick","shift","r","x","c","space2","leftClick2","rightClick2","shift2","r2","x2","c2","headplate","chestplate","leggings","necklace","armlet","charm","accessory"},
+    ["parts"] = {"space","leftClick","rightClick","shift","r","x","c","space2","leftClick2","rightClick2","shift2","r2","x2","c2","headplate","chestplate","leggings","necklace","armlet","charm","accessory","space3","leftClick3","rightClick3","shift3","r3","x3","c3"},
     ["space"] ={
       ["type"] = "still", ["timePerFrame"] = 1, ["gridMultiplication"] = 16, ["spriteSize"] = {1,1}, ["spriteCenter"] = {0.5,0.5}, ["quads"] = {{0,0}}
     },
@@ -115,7 +495,28 @@ function loadtextures()
     },
     ["accessory"] ={
       ["type"] = "still", ["timePerFrame"] = 1, ["gridMultiplication"] = 16, ["spriteSize"] = {1,1}, ["spriteCenter"] = {0.5,0.5}, ["quads"] = {{6,2}}
-    }
+    },
+    ["space3"] ={
+      ["type"] = "still", ["timePerFrame"] = 1, ["gridMultiplication"] = 16, ["spriteSize"] = {1,1}, ["spriteCenter"] = {0.5,0.5}, ["quads"] = {{0,3}}
+    },
+    ["leftClick3"] ={
+      ["type"] = "still", ["timePerFrame"] = 1, ["gridMultiplication"] = 16, ["spriteSize"] = {1,1}, ["spriteCenter"] = {0.5,0.5}, ["quads"] = {{1,3}}
+    },
+    ["rightClick3"] ={
+      ["type"] = "still", ["timePerFrame"] = 1, ["gridMultiplication"] = 16, ["spriteSize"] = {1,1}, ["spriteCenter"] = {0.5,0.5}, ["quads"] = {{2,3}}
+    },
+    ["shift3"] ={
+      ["type"] = "still", ["timePerFrame"] = 1, ["gridMultiplication"] = 16, ["spriteSize"] = {1,1}, ["spriteCenter"] = {0.5,0.5}, ["quads"] = {{3,3}}
+    },
+    ["r3"] ={
+      ["type"] = "still", ["timePerFrame"] = 1, ["gridMultiplication"] = 16, ["spriteSize"] = {1,1}, ["spriteCenter"] = {0.5,0.5}, ["quads"] = {{4,3}}
+    },
+    ["x3"] ={
+      ["type"] = "still", ["timePerFrame"] = 1, ["gridMultiplication"] = 16, ["spriteSize"] = {1,1}, ["spriteCenter"] = {0.5,0.5}, ["quads"] = {{5,3}}
+    },
+    ["c3"] ={
+      ["type"] = "still", ["timePerFrame"] = 1, ["gridMultiplication"] = 16, ["spriteSize"] = {1,1}, ["spriteCenter"] = {0.5,0.5}, ["quads"] = {{6,3}}
+    },
   }, {})
   textures["sprites"]["essenceStick"] = Sprite("essenceStick","items1.png",{["parts"] = {"small","medium","large"}},{["setupItem"] = true,["itemQuadrant"]={0,0}})
   textures["sprites"]["rock"] = Sprite("rock","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,8}})
@@ -133,6 +534,7 @@ function loadtextures()
 
   textures.sprites.thunderBirdFeather = Sprite("thunderBirdFeather","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,44}})
   textures.sprites.angelFeather = Sprite("angelFeather","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,48}})
+  textures.sprites.lumiFeather = Sprite("lumiFeather","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,52}})
   textures.sprites.crudeBow = Sprite("crudeBow","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,56}})
   textures.sprites.bombItem = Sprite("bombItem","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,60}})
   textures.sprites.stick = Sprite("stick","items1.png",{["parts"] = {"small","medium"}},{["setupItem"] = true,["itemQuadrant"]={0,64}})
@@ -203,6 +605,7 @@ function loadtextures()
 
   textures["sprites"]["placementPreview"] = Sprite("placementPreview","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {0,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
   textures["sprites"]["destroyPreviewReady"] = Sprite("destroyPreviewReady","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {2,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
+  textures["sprites"]["cursor"] = Sprite("cursor","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {5,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
   textures["sprites"]["destroyPreview"] = Sprite("destroyPreview","miscTiles.png",{["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {1,0}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleImage"})
   textures["sprites"]["destroyAnimation"] = Sprite("destroyAnimation","miscTiles.png",{["type"] = "hold", ["timePerFrame"] = 1/9, ["gridMultiplication"] = 8, ["spriteSize"] = {1,1},["quads"] = {{0,1},{1,1},{2,1},{3,1},{4,1},{5,1},{6,1},{7,1},{8,1}}, ["spriteCenter"] = {0.5,0.5}},{["type"] = "singleAnimation"})
   
@@ -214,6 +617,7 @@ function loadtextures()
   textures["sprites"]["bigSlime"] = Sprite("bigSlime","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={3,0},["spriteSizes"]={2,2},["spriteCenters"]={1,2}})
   textures["sprites"]["bear"] = Sprite("bear","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={5,0},["spriteSizes"]={3,2},["spriteCenters"]={1.5,2}})
   textures["sprites"]["skeleton"] = Sprite("skeleton","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={2,0},["spriteSizes"]={1,2},["spriteCenters"]={0.5,1.5}})
+  textures.sprites.rangedSkeleton = Sprite("rangedSkeleton","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={1.5,1},["spriteSizes"]={1,2},["spriteCenters"]={0.5,1.5}})
   textures["sprites"]["crudePickaxe_Hold"] = Sprite("crudePickaxe_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,1},["spriteSizes"]={1.5,2},["spriteCenters"]={0.75,1.5}})
   
   textures["sprites"]["toolBase_Hold"] = Sprite("toolBase_Hold","player.png",{["parts"] = {"idle","walk","jump","use"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,3},["spriteSizes"]={1.5,2},["spriteCenters"]={0.75,1.5}})
@@ -229,6 +633,32 @@ function loadtextures()
   textures.sprites.crudeBow_Hold = Sprite("crudeBow_Hold","player.png",{parts = {"idle","walk","jump","use"}},{setupCharacterAnimation =  true, animationQuadrant={0,5},spriteSizes={2,2},spriteCenters={1,1.5}})
   textures.sprites.bowBase_Hold = Sprite("bowBase_Hold","player.png",{parts = {"idle","walk","jump","use"}},{setupCharacterAnimation =  true, animationQuadrant={0,6},spriteSizes={2,2},spriteCenters={1,1.5}})
   textures.sprites.bowTop_Hold = Sprite("bowTop_Hold","player.png",{parts = {"idle","walk","jump","use"}},{setupCharacterAnimation =  true, animationQuadrant={2,6},spriteSizes={2,2},spriteCenters={1,1.5}})
+
+
+  textures["sprites"]["greatSlime"] = Sprite("greatSlime","bosses.png",{["parts"] = {"idle","walk","jump"},
+    idle = {
+      timePerFrame = 0.5,
+      gridMultiplication = 8,
+      spriteSize = {5,3},
+      spriteCenter = {2.5,3.5},
+      quads = {{0,25}}
+    },
+    walk = {
+      timePerFrame = 0.5,
+      gridMultiplication = 8,
+      spriteSize = {5,3},
+      spriteCenter = {2.5,3.5},
+      quads = {{0,25}}
+    },
+    jump = {
+      timePerFrame = 0.5,
+      gridMultiplication = 8,
+      spriteSize = {5,3},
+      spriteCenter = {2.5,3.5},
+      quads = {{5,25}}
+    },
+  },{mirrorable = false})
+  textures.sprites.motherBear = Sprite("motherBear","bosses.png",{["parts"] = {"idle","walk"}},{["setupCharacterAnimation"] =  true, ["animationQuadrant"]={0,0},["spriteSizes"]={9,6},["spriteCenters"]={4.5,7}})
   
   
   textures.sprites.arrow = Sprite("arrow","projectiles.png",{
@@ -287,6 +717,36 @@ function loadtextures()
     spriteSize = {1,1},
     spriteCenter = {5/9,5/9},
     quads = {{0,1},{1,1},{2,1},{3,1}}
+  }, {
+    mirrorable = false,
+    type = "singleAnimation",
+  })
+  textures.sprites.slimeBall = Sprite("slimeBall","projectiles.png",{
+    timePerFrame = 1/4,
+    gridMultiplication = 9,
+    spriteSize = {1,1},
+    spriteCenter = {5/9,5/9},
+    quads = {{0,2},{1,2}}
+  }, {
+    mirrorable = false,
+    type = "singleAnimation",
+  })
+  textures.sprites.slimeBall2 = Sprite("slimeBall2","projectiles.png",{
+    timePerFrame = 1/4,
+    gridMultiplication = 9,
+    spriteSize = {1,1},
+    spriteCenter = {5/9,5/9},
+    quads = {{0,3},{1,3}}
+  }, {
+    mirrorable = false,
+    type = "singleAnimation",
+  })
+  textures.sprites.fireBall = Sprite("fireBall","projectiles.png",{
+    timePerFrame = 1/8,
+    gridMultiplication = 9,
+    spriteSize = {1,1},
+    spriteCenter = {5/9,5/9},
+    quads = {{0,4},{1,4},{2,4},{3,4}}
   }, {
     mirrorable = false,
     type = "singleAnimation",
@@ -402,15 +862,17 @@ function LoadSpawnCards()
   GlobalEnemyCards = {}
   --EntitySpawnCard(cardCost,cardWeight,cardType,biomes,name,sprite,ai,flags)
   table.insert(GlobalEnemyCards,
-    EntitySpawnCard(3,100,"enemy",{"any"},"slime","slime","regular",{
+    EntitySpawnCard(3,1000,"enemy",{"any"},"slime","slime","regular",{
       team = "enemy",
       size =  0.4,
-      health = 15,
+      health = 25,
       damage = 1.1,
       xpGiveOnDeath = 15,
+      moneyGiveOnDeath = 4,
       knockbackMultiplier = 1.4,
       movevementSpeed = 0.3,
       movementType = "hoplike",
+      cooldownMultipler = 1,
       bloodColor = {0.8,0.4,0.1,1},
       bloodColorNoise = {0.1,0.1,0.1,0},
       aiInfo = {
@@ -419,19 +881,22 @@ function LoadSpawnCards()
       },
       startItems = {
         {name = "slimeSpike", attributes = {dropOnDeath = false}}
-      }
+      },
+      colorisationMultiplier = 1,
     })
   )
   table.insert(GlobalEnemyCards,
-    EntitySpawnCard(12,100,"enemy",{"any"},"big slime","bigSlime","regular",{
+    EntitySpawnCard(12,500,"enemy",{"any"},"big slime","bigSlime","regular",{
       team = "enemy",
       size =  0.85,
-      health = 40,
+      health = 70,
       damage = 1.1,
       xpGiveOnDeath = 40,
+      moneyGiveOnDeath = 10,
       knockbackMultiplier = 0.4,
       movevementSpeed = 0.2,
       movementType = "hoplike",
+      cooldownMultipler = 1,
       bloodColor = {0.8,0.4,0.1,1},
       bloodColorNoise = {0.1,0.1,0.1,0},
       aiInfo = {
@@ -441,43 +906,452 @@ function LoadSpawnCards()
       startItems = {
         {name = "bigSlimeSpike", attributes = {dropOnDeath = false}}
       },
+      colorisationMultiplier = 1,
     })
   )
   table.insert(GlobalEnemyCards,
-    EntitySpawnCard(15,100,"enemy",{"any"},"Bear","bear","regular",{
+    EntitySpawnCard(15,500,"enemy",{"any"},"Bear","bear","regular",{
       team = "enemy",
       size =  0.85,
-      health = 55,
+      health = 80,
       damage = 1.1,
       movementAnimationSpeed = 3,
       xpGiveOnDeath = 70,
+      moneyGiveOnDeath = 10,
       knockbackMultiplier = 1.2,
       movevementSpeed = 0.2,
-      movementType = "humanlike",
+      cooldownMultipler = 1,
+      colorisationMultiplier = 1.3,
+      movementType = "regular",
       aiInfo = {
         jumpFrequency = 0.25,
       },
       startItems = {
-        {name = "bigSlimeSpike", attributes = {dropOnDeath = false}}
+        {name = "bearAttack", attributes = {dropOnDeath = false}}
       },
     })
   )
   table.insert(GlobalEnemyCards,
-    EntitySpawnCard(8,300,"enemy",{"any"},"skeleton","skeleton","regular",{
+    EntitySpawnCard(8,1500,"enemy",{"any"},"skeleton","skeleton","regular",{
       team = "enemy",
       size =  0.4,
-      health = 25,
+      health = 40,
       xpGiveOnDeath = 25,
+      moneyGiveOnDeath = 5,
       damage = 1.2,
       movevementSpeed = 0.5,
-      movementType = "humanlike",
+      cooldownMultipler = 1,
+      movementType = "regular",
       bloodColor = {0.6,0.6,0.6,1},
-      bloodColorNoise = {0.1,0.1,0.1,0}
+      bloodColorNoise = {0.1,0.1,0.1,0},
+      colorisationMultiplier = 1,
     })
   )
+  table.insert(GlobalEnemyCards,
+    EntitySpawnCard(12,500,"enemy",{"any"},"ranged skeleton","rangedSkeleton","ranger",{
+      team = "enemy",
+      size =  0.4,
+      health = 60,
+      xpGiveOnDeath = 40,
+      moneyGiveOnDeath = 5,
+      damage = 1.2,
+      movevementSpeed = 0.35,
+      cooldownMultipler = 0.7,
+      movementType = "regular",
+      bloodColor = {0.6,0.6,0.6,1},
+      bloodColorNoise = {0.1,0.1,0.1,0},
+      colorisationMultiplier = 1,
+      startItems = {
+        {name = "skeletonBow", attributes = {dropOnDeath = false}}
+      },
+    })
+  )
+
+
+  table.insert(GlobalEnemyCards,
+    EntitySpawnCard(240,25,"boss",{"any"},"great slime","greatSlime","custom",{
+      isBoss = true,
+      team = "enemy",
+      size =  1.4,
+      health = 250,
+      damage = 1.5,
+      xpGiveOnDeath = 200,
+      moneyGiveOnDeath = 50,
+      knockbackMultiplier = 1.2,
+      movevementSpeed = 0.2,
+      movementType = "hoplike",
+      cooldownMultipler = 1,
+      bloodColor = {0.8,0.4,0.1,1},
+      bloodColorNoise = {0.1,0.1,0.1,0},
+      --startItems = "none",
+      colorisationMultiplier = 1,
+      startItems = {
+        {name = "bossDrill", attributes = {dropOnDeath = false}},
+        {name = "nothingSword", attributes = {dropOnDeath = false}},
+      },
+      aiInfo = {
+        attentionTime = 60,
+        onUpdate = function(self,dt)
+
+          self.aiInfo.currentStageTime = self.aiInfo.currentStageTime - dt
+
+          if self.health:getValue() < self.health:getMax() * 0.3 then
+            self.aiInfo.enraged = true
+            self.aiInfo.jumpFrequency = 0.6
+          else
+            self.aiInfo.enraged = false
+            self.aiInfo.jumpFrequency = 3
+          end
+
+
+          if self.aiInfo.stage == "none" or self.aiInfo.currentStageTime <= 0 then
+            if self.aiInfo.nextStages ~= nil and #self.aiInfo.nextStages > 0 then
+              self.aiInfo.stage = self.aiInfo.nextStages[math.random(1,#self.aiInfo.nextStages)]
+            else
+              self.aiInfo.stage = "jump"
+            end
+            self.aiInfo.didFirstStageAction = false
+
+            if self.aiInfo.stage == "jump" then
+              self.aiInfo.currentStageTime = 1.2
+              if self.aiInfo.enraged then self.aiInfo.currentStageTime = 0.9 end
+              self.aiInfo.nextStages = {"jump","dash","attack1","attack2"}
+            end
+            if self.aiInfo.stage == "dash" then
+              self.aiInfo.currentStageTime = 5
+              if self.aiInfo.enraged then self.aiInfo.currentStageTime = 2 end
+              self.aiInfo.nextStages = {"jump","attack1"}
+            end
+            if self.aiInfo.stage == "attack1" then
+              self.aiInfo.currentStageTime = 5
+              if self.aiInfo.enraged then self.aiInfo.currentStageTime = 2 end
+              self.aiInfo.nextStages = {"jump","attack1"}
+            end
+            if self.aiInfo.stage == "attack2" then
+              self.aiInfo.currentStageTime = 5
+              if self.aiInfo.enraged then self.aiInfo.currentStageTime = 2 end
+              self.aiInfo.nextStages = {"jump"}
+            end
+            if self.aiInfo.positionTarget ~= nil then
+              if dist(self.position.x,self.position.y,self.aiInfo.positionTarget.x,self.aiInfo.positionTarget.y) > 30 then
+                self.aiInfo.stage = "damagelessDash"
+                self.aiInfo.currentStageTime = 1
+              end
+              if self.position.y < self.aiInfo.positionTarget.y - 15 then
+                self.position.y = self.aiInfo.positionTarget.y + 40
+              end
+            end
+          end
+
+
+          self.contactDamage = 0
+
+          if self.aiInfo.stage == "dash" then
+            self.contactDamage = 10
+          end
+
+          if not self.aiInfo.didFirstStageAction then
+            if self.aiInfo.stage == "jump" then
+              if self:isGrounded() then
+                self.aiInfo.didFirstStageAction = true
+                self:dash(12,0.7,90,0,true,true)
+              end
+            end
+            if self.aiInfo.stage == "damagelessDash" then
+              if self.aiInfo.positionTarget ~= nil then
+                self.aiInfo.didFirstStageAction = true
+                self:dash(22,1.2,pointat180(self.position.x,self.position.y,self.aiInfo.positionTarget.x,self.aiInfo.positionTarget.y+8),0.2)
+              end
+            end
+            if self.aiInfo.stage == "dash" then
+              if self.aiInfo.positionTarget ~= nil then
+                self.aiInfo.didFirstStageAction = true
+                if self.aiInfo.enraged then 
+                  self:dash(18,1,pointat180(self.position.x,self.position.y,self.aiInfo.positionTarget.x,self.aiInfo.positionTarget.y+1),0.2)
+                else
+                  self:dash(22,1.2,pointat180(self.position.x,self.position.y,self.aiInfo.positionTarget.x,self.aiInfo.positionTarget.y+1),0.2)
+                end
+              end
+            end
+            if self.aiInfo.stage == "attack1" then
+              self.aiInfo.didFirstStageAction = true
+              for i = -5, 5 do
+                local velocity = Vector2(0,0)
+                local flags = {damage = 10, hasWorldCollisions = false, gravity = 0.3, damageSize = 0.4}
+                velocity:move(90 + i * 15,30)
+                Projectile("slimeBall",self.position:copy(),velocity,"slimeBall",self,nil,flags,true)
+              end
+            end
+            if self.aiInfo.stage == "attack2" then
+              self.aiInfo.didFirstStageAction = true
+              local direction = 90
+              if self.aiInfo.positionTarget ~= nil then
+                direction = pointat180(self.position.x,self.position.y,self.aiInfo.positionTarget.x,self.aiInfo.positionTarget.y)
+              end
+              local limit = 2
+              if self.aiInfo.enraged then limit = 5 end
+              for i = -limit, limit do
+                local velocity = Vector2(0,0)
+                local flags = {damage = 12, hasWorldCollisions = false, gravity = 0, movementSlide = 0, damageSize = 0.3}
+                velocity:move(direction + i * 12,8)
+                Projectile("slimeBall",self.position:copy(),velocity,"slimeBall2",self,nil,flags,true)
+              end
+            end
+          end
+
+
+        end,
+      },
+    })
+  )
+
+  table.insert(GlobalEnemyCards,
+    EntitySpawnCard(240,25,"boss",{"any"},"Mother bear","motherBear","custom",{
+      isBoss = true,
+      team = "enemy",
+      size =  2,
+      health = 300,
+      damage = 1.5,
+      xpGiveOnDeath = 200,
+      moneyGiveOnDeath = 50,
+      knockbackMultiplier = 1.2,
+      movevementSpeed = 0.6,
+      movementType = "regular",
+      movementAnimationSpeed = 2,
+      cooldownMultipler = 1,
+      bloodColor = {0.8,0.4,0.1,1},
+      bloodColorNoise = {0.1,0.1,0.1,0},
+      --startItems = "none",
+      colorisationMultiplier = 1,
+      startItems = {
+        {name = "bossDrill", attributes = {dropOnDeath = false}},
+        {name = "nothingSword", attributes = {dropOnDeath = false}},
+      },
+      aiInfo = {
+        attentionTime = 60,
+        jumpFrequency = 0.8,
+        onUpdate = function(self,dt)
+
+          self.aiInfo.currentStageTime = self.aiInfo.currentStageTime - dt
+
+          if self.health:getValue() < self.health:getMax() * 0.3 then
+            self.aiInfo.enraged = true
+          else
+            self.aiInfo.enraged = false
+          end
+
+
+          if self.aiInfo.stage == "none" or self.aiInfo.currentStageTime <= 0 then
+            if self.aiInfo.nextStages ~= nil and #self.aiInfo.nextStages > 0 then
+              self.aiInfo.stage = self.aiInfo.nextStages[math.random(1,#self.aiInfo.nextStages)]
+            else
+              self.aiInfo.stage = "jump"
+            end
+            self.aiInfo.didFirstStageAction = false
+
+            if self.aiInfo.stage == "jump" then
+              self.aiInfo.currentStageTime = 3
+              if self.aiInfo.enraged then self.aiInfo.currentStageTime = 2 end
+              self.aiInfo.nextStages = {"jump","smallDash","longDash","attack"}
+              if self.aiInfo.enraged then self.aiInfo.nextStages = {"jump","longDash","attack","attack","attack"} end
+            end
+            if self.aiInfo.stage == "smallDash" then
+              self.aiInfo.currentStageTime = 1.5
+              if self.aiInfo.enraged then self.aiInfo.currentStageTime = 1 end
+              self.aiInfo.nextStages = {"jump","longDash"}
+              if self.aiInfo.enraged then self.aiInfo.nextStages = {"jump","longDash","attack","attack"} end
+            end
+            if self.aiInfo.stage == "longDash" then
+              self.aiInfo.currentStageTime = 3
+              if self.aiInfo.enraged then self.aiInfo.currentStageTime = 2 end
+              self.aiInfo.nextStages = {"jump","attack","longDash","longDash"}
+              if self.aiInfo.enraged then self.aiInfo.nextStages = {"jump","longDash","attack","attack"} end
+            end
+            if self.aiInfo.stage == "attack" then
+              self.aiInfo.currentStageTime = 2
+              if self.aiInfo.enraged then self.aiInfo.currentStageTime = 0.75 end
+              self.aiInfo.nextStages = {"jump"}
+              if self.aiInfo.enraged then self.aiInfo.nextStages = {"jump","attack","attack"} end
+            end
+            if self.aiInfo.positionTarget ~= nil then
+              if dist(self.position.x,self.position.y,self.aiInfo.positionTarget.x,self.aiInfo.positionTarget.y) > 15 then
+                --self.aiInfo.stage = "damagelessDash"
+                --self.aiInfo.currentStageTime = 1
+              end
+              if self.position.y < self.aiInfo.positionTarget.y - 15 then
+                self.position.y = self.aiInfo.positionTarget.y + 40
+              end
+            end
+          end
+
+
+          self.contactDamage = 0
+
+          if self.aiInfo.stage == "smallDash" or self.aiInfo.stage == "longDash" then
+            self.contactDamage = 10
+          end
+
+          if not self.aiInfo.didFirstStageAction then
+            if self.aiInfo.stage == "jump" then
+              if self:isGrounded() then
+                self.aiInfo.didFirstStageAction = true
+                self:dash(12,0.2,90,0,true,true)
+              end
+            end
+            if self.aiInfo.stage == "smallDash" then
+              if self.aiInfo.positionTarget ~= nil then
+                self.aiInfo.didFirstStageAction = true
+                local direction = 0
+                if self.aiInfo.positionTarget.x < self.position.x then direction = 180 end
+                self:dash(12,0.4,direction,0.2)
+              end
+            end
+            if self.aiInfo.stage == "longDash" or self.aiInfo.stage == "damagelessDash" then
+              if self.aiInfo.positionTarget ~= nil then
+                self.aiInfo.didFirstStageAction = true
+                local direction = 0
+                if self.aiInfo.positionTarget.x < self.position.x then direction = 180 end
+                self:dash(15,1.4,direction,0.2)
+              end
+            end
+            if self.aiInfo.stage == "attack" then
+              self.aiInfo.didFirstStageAction = true
+              local direction = 90
+              if self.aiInfo.positionTarget ~= nil then
+                direction = pointat180(self.position.x,self.position.y,self.aiInfo.positionTarget.x,self.aiInfo.positionTarget.y)
+              end
+              local limit = 1
+              if self.aiInfo.enraged then limit = 2 end
+              for i = -limit, limit do
+                local velocity = Vector2(0,0)
+                local flags = {damage = 4, hasWorldCollisions = false, gravity = 0, movementSlide = 0, damageSize = 0.3}
+                flags.spawnParticles =
+                function (self)
+                  world:spawnParticles(3,"fire",self.position:copy(),self.size,{0.9,0.9,0,0.7}, {0.05,0.05,0.05,0.05}, 0.8, 0.4,"fire", 1, -90, 360, {["color2"]={0.8,0.2,0.2,0.8},["color3"]={0.4,0.4,0.4,0.9}})
+                end
+                velocity:move(direction + i * 30,3)
+                Projectile("fireBall",self.position:copy(),velocity,"fireBall",self,nil,flags,true)
+              end
+            end
+          end
+
+
+        end,
+      },
+    })
+  )
+
+  --[[
+      aiInfo = {
+        onUpdate = function(self,dt)
+
+          self.aiInfo.currentStageTime = self.aiInfo.currentStageTime - dt
+
+          if self.aiInfo.stage == "none" or self.aiInfo.currentStageTime <= 0 then
+            if self.aiInfo.nextStages ~= nil and #self.aiInfo.nextStages > 0 then
+              self.aiInfo.stage = self.aiInfo.nextStages[math.random(1,#self.aiInfo.nextStages)]
+            else
+              self.aiInfo.stage = "jump"
+            end
+            self.aiInfo.didFirstStageAction = false
+
+            if self.aiInfo.stage == "jump" then
+              self.aiInfo.currentStageTime = 3
+              self.aiInfo.nextStages = {"jump"}
+            end
+            if self.aiInfo.stage == "dash" then
+              self.aiInfo.currentStageTime = 2
+              self.aiInfo.nextStages = {"jump"}
+            end
+            if self.aiInfo.stage == "attack1" then
+              self.aiInfo.currentStageTime = 2
+              self.aiInfo.nextStages = {"jump"}
+            end
+          end
+
+          if not self.aiInfo.didFirstStageAction then
+            self.aiInfo.didFirstStageAction = true
+            if self.aiInfo.stage == "jump" then
+              
+            end
+            if self.aiInfo.stage == "dash" then
+              
+            end
+            if self.aiInfo.stage == "attack1" then
+              
+            end
+          end
+
+        end,
+      },
+  ]]
+
+
+  local originalSpawnCards = CopyAll(GlobalEnemyCards)
+  local function createElementalCard(card,type,tier,colorisation,flags)
+    if flags == nil then flags = {} end
+    local weightM = flags.weightM or 0.2
+    local costM = flags.costM or 5
+    local xpGiveOnDeathM = flags.xpGiveOnDeathM or 4
+    local moneyGiveOnDeathM = flags.moneyGiveOnDeathM or 2
+    local damageM = flags.damageM or 1
+    local healthM = flags.healthM or 1
+    local movevementSpeedM = flags.movevementSpeedM or 1
+    local cooldownM = flags.cooldownM or 1
+    local colorisation = colorisation or {1,1,1,0}
+    local color = flags.color or {1,1,1,1}
+   
+
+    local newFlags = CopyAll(card.flags)
+    newFlags.colorisation = colorisation
+    newFlags.color = color
+    newFlags.elementalType = type
+    newFlags.nameColor = {colorisation[1],colorisation[2],colorisation[3],1}
+    if newFlags.colorisationMultiplier ~= nil then
+      newFlags.colorisation[4] = newFlags.colorisation[4] * newFlags.colorisationMultiplier
+    end
+    if newFlags.xpGiveOnDeath ~= nil then newFlags.xpGiveOnDeath = newFlags.xpGiveOnDeath * xpGiveOnDeathM end 
+    if newFlags.moneyGiveOnDeath ~= nil then newFlags.moneyGiveOnDeath = newFlags.moneyGiveOnDeath * moneyGiveOnDeathM end
+    if newFlags.damage ~= nil then newFlags.damage = newFlags.damage * damageM end 
+    if newFlags.health ~= nil then newFlags.health = newFlags.health * healthM end 
+    if newFlags.movevementSpeed ~= nil then newFlags.movevementSpeed = newFlags.movevementSpeed * movevementSpeedM end 
+    if newFlags.cooldownMultipler ~= nil then newFlags.cooldownMultipler = newFlags.cooldownMultipler * cooldownM end
+
+    local newCard = EntitySpawnCard(card.cardCost*costM,math.ceil(card.cardWeight*weightM),card.cardType,card.biomes,type.." "..card.name,card.sprite,card.ai,
+    newFlags,tier)
+
+    table.insert(GlobalEnemyCards,newCard)
+    
+  end
+  for i,card in ipairs(originalSpawnCards) do
+    --tier 1
+    createElementalCard(card,"fire",1,{1,0,0,0.8},{healthM = 4,damageM = 2,movevementSpeedM = 1.5,cooldownM = 1.5})
+    createElementalCard(card,"water",1,{0,0,0.6,0.8},{healthM = 2,damageM = 1.2,movevementSpeedM = 1.2,cooldownM = 0.45})
+    createElementalCard(card,"nature",1,{0,0.8,0,0.8},{healthM = 4,damageM = 0.7,movevementSpeedM = 0.8,cooldownM = 0.7})
+    createElementalCard(card,"earth",1,{0.3,0.2,0,0.8},{color = {0.5,0.5,0.5,1},healthM = 5,damageM = 1.4,movevementSpeedM = 0.3,cooldownM = 1.8})
+    --tier 2
+    createElementalCard(card,"void",2,{0.8,0,1,0.95},{xpGiveOnDeathM = 8, moneyGiveOnDeathM = 3, weightM = 0.04, costM = 30, color = {0.8,0.8,0.8,1},healthM = 10,damageM = 3.5,movevementSpeedM = 1.5,cooldownM = 0.4})
+  end
   -- --skeletra
   --skeletor
   --skeletang
+end
+
+function FindCard(cardName,cards)
+  if cards == nil then cards = GlobalEnemyCards end
+  for i,card in ipairs(cards) do
+    if card.name == cardName then
+      return card
+    end
+  end
+  return nil
+end
+
+function SpawnCard(cardName,pos,cards)
+  local card = FindCard(cardName,cards)
+  if card ~= nil then
+    card:use(pos:copy() or Vector2(0,0),0,0,0,card.cardType)
+  end
 end
 
 function loadtiles()
@@ -505,6 +1379,16 @@ function loadtiles()
         ["newQuad"] = { 7, 3, 1, 1, 8 }
       },
       ["health"] = 2.5,
+      ["isDirt"] = true,
+    })
+  tiles["coarseDirt"]          = Tile("coarseDirt", "solid", "tiles.png", "coarseDirt",
+    {
+      ["newQuad"] = { 4, 11, 1, 1, 8 },
+      ["border"] = {
+        ["quad"] = "coarseDirt_top",
+        ["newQuad"] = { 4, 12, 1, 1, 8 }
+      },
+      ["health"] = 4,
       ["isDirt"] = true,
     })
 
@@ -655,6 +1539,25 @@ function loadtiles()
       },
       ["health"] = 1.2
     })
+  tiles["hardSand"]          = Tile("hardSand", "solid", "tiles.png", "hardSand",
+    {
+      ["newQuad"] = { 3, 11, 1, 1, 8 },
+      ["border"] = {
+        ["quad"] = "hardSand_top",
+        ["newQuad"] = { 3, 12, 1, 1, 8 }
+      },
+      ["health"] = 5
+    })
+  tiles["charredSand"]          = Tile("charredSand", "solid", "tiles.png", "charredSand",
+    {
+      ["newQuad"] = { 6, 11, 1, 1, 8 },
+      ["border"] = {
+        ["quad"] = "charredSand_top",
+        ["newQuad"] = { 6, 12, 1, 1, 8 }
+      },
+      ["health"] = 2,
+      ["actualName"] = "charred sand"
+    })
   tiles["magicKelp"]     = Tile("magicKelp", "not-solid", "tiles.png", "magicKelp",
     {
       ["newQuad"] = { 16, 0, 1, 2, 8 },
@@ -715,6 +1618,17 @@ function loadtiles()
       },
       ["health"] = 3,
       ["actualName"] = "essence dirt",
+      ["isDirt"] = true,
+    })
+  tiles["essencePebbles"]          = Tile("essencePebbles", "solid", "tiles.png", "essencePebbles",
+    {
+      ["newQuad"] = { 5, 11, 1, 1, 8 },
+      ["border"] = {
+        ["quad"] = "essencePebbles_top",
+        ["newQuad"] = { 5, 12, 1, 1, 8 }
+      },
+      ["health"] = 1.5,
+      ["actualName"] = "essence pebbles",
       ["isDirt"] = true,
     })
   tiles["essenceLeaves"]          = Tile("essenceLeaves", "solid", "tiles.png", "essenceLeaves",
@@ -831,11 +1745,53 @@ function loadtiles()
     containerRows = 1,
     containerColumns = 1,
     actualName = "crate",
-    onInteract = 
+    onInteractLook =
       function (self, x, y, entity)
-        world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
-        world:generateContainerLoot(Vector2(x,y),2,1,nil,nil,0.5,0.5)
-      end
+        world:generateCost(3, Vector2(x,y))
+      end,
+    onInteract =
+      function (self, x, y, entity)
+        local bought = world:getBought(Vector2(x,y))
+        if not bought then
+          if entity.money > world:getCost(Vector2(x,y)) then
+            entity.money = entity.money - world:getCost(Vector2(x,y))
+            world:buy(Vector2(x,y))
+            world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+            world:generateContainerLoot(Vector2(x,y),2,1,nil,nil,0.5,0.5)
+          end
+        else
+          world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+          world:generateContainerLoot(Vector2(x,y),2,1,nil,nil,0.5,0.5)
+        end
+      end,
+    getInteractability = 
+      function (self, x, y, entity)
+        if entity.money > world:getCost(Vector2(x,y)) or world:getBought(Vector2(x,y)) then
+          return true
+        else
+          return false
+        end
+      end,
+    getNonInteractiveText = 
+      function (self, x, y, entity)
+        return "Press "..entity:getInteractButton().." to buy : "..world:getCost(Vector2(x,y)).."$"
+      end,
+    getInteractText = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return "Press "..entity:getInteractButton().." to open"
+        else
+          return "Press "..entity:getInteractButton().." to buy : "..world:getCost(Vector2(x,y)).."$"
+        end
+      end,
+    getInteractColor = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return {0.8,0.8,0,1}
+        else
+          return {0,0.8,0,1}
+        end
+      end,
   })
   tiles.goldCrate         = Tile("goldCrate", "non-solid", "tiles.png", "goldCrate", {
     newQuad = {1, 4, 1, 1, 8 },
@@ -848,11 +1804,53 @@ function loadtiles()
     containerRows = 1,
     containerColumns = 1,
     actualName = "Gold crate",
-    onInteract = 
+    onInteractLook =
       function (self, x, y, entity)
-        world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
-        world:generateContainerLoot(Vector2(x,y),3.5,1,nil,nil,1,1)
-      end
+        world:generateCost(8, Vector2(x,y))
+      end,
+    onInteract =
+      function (self, x, y, entity)
+        local bought = world:getBought(Vector2(x,y))
+        if not bought then
+          if entity.money > world:getCost(Vector2(x,y)) then
+            entity.money = entity.money - world:getCost(Vector2(x,y))
+            world:buy(Vector2(x,y))
+            world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+            world:generateContainerLoot(Vector2(x,y),3.5,1,nil,nil,1,1)
+          end
+        else
+          world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+          world:generateContainerLoot(Vector2(x,y),3.5,1,nil,nil,1,1)
+        end
+      end,
+    getInteractability = 
+      function (self, x, y, entity)
+        if entity.money > world:getCost(Vector2(x,y)) or world:getBought(Vector2(x,y)) then
+          return true
+        else
+          return false
+        end
+      end,
+    getNonInteractiveText = 
+      function (self, x, y, entity)
+        return "Press "..entity:getInteractButton().." to buy : "..world:getCost(Vector2(x,y)).."$"
+      end,
+    getInteractText = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return "Press "..entity:getInteractButton().." to open"
+        else
+          return "Press "..entity:getInteractButton().." to buy : "..world:getCost(Vector2(x,y)).."$"
+        end
+      end,
+    getInteractColor = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return {0.8,0.8,0,1}
+        else
+          return {0,0.8,0,1}
+        end
+      end,
   })
   tiles.emeraldCrate         = Tile("emeraldCrate", "non-solid", "tiles.png", "emeraldCrate", {
     newQuad = {2, 4, 1, 1, 8 },
@@ -865,11 +1863,53 @@ function loadtiles()
     containerRows = 1,
     containerColumns = 1,
     actualName = "Emerald crate",
-    onInteract = 
+    onInteractLook =
       function (self, x, y, entity)
-        world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
-        world:generateContainerLoot(Vector2(x,y),4.5,1,nil,nil,1.5,1.5)
-      end
+        world:generateCost(20, Vector2(x,y))
+      end,
+    onInteract =
+      function (self, x, y, entity)
+        local bought = world:getBought(Vector2(x,y))
+        if not bought then
+          if entity.money > world:getCost(Vector2(x,y)) then
+            entity.money = entity.money - world:getCost(Vector2(x,y))
+            world:buy(Vector2(x,y))
+            world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+            world:generateContainerLoot(Vector2(x,y),4.5,1,nil,nil,1.5,1.5)
+          end
+        else
+          world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+          world:generateContainerLoot(Vector2(x,y),4.5,1,nil,nil,1.5,1.5)
+        end
+      end,
+    getInteractability = 
+      function (self, x, y, entity)
+        if entity.money > world:getCost(Vector2(x,y)) or world:getBought(Vector2(x,y)) then
+          return true
+        else
+          return false
+        end
+      end,
+    getNonInteractiveText = 
+      function (self, x, y, entity)
+        return "Press "..entity:getInteractButton().." to buy : "..world:getCost(Vector2(x,y)).."$"
+      end,
+    getInteractText = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return "Press "..entity:getInteractButton().." to open"
+        else
+          return "Press "..entity:getInteractButton().." to buy : "..world:getCost(Vector2(x,y)).."$"
+        end
+      end,
+    getInteractColor = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return {0.8,0.8,0,1}
+        else
+          return {0,0.8,0,1}
+        end
+      end,
   })
   tiles.diamondCrate         = Tile("diamondCrate", "non-solid", "tiles.png", "diamondCrate", {
     newQuad = {3, 4, 1, 1, 8 },
@@ -882,11 +1922,53 @@ function loadtiles()
     containerRows = 1,
     containerColumns = 1,
     actualName = "Diamond crate",
-    onInteract = 
+    onInteractLook =
       function (self, x, y, entity)
-        world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
-        world:generateContainerLoot(Vector2(x,y),6,1,nil,nil,2,2)
-      end
+        world:generateCost(35, Vector2(x,y))
+      end,
+    onInteract =
+      function (self, x, y, entity)
+        local bought = world:getBought(Vector2(x,y))
+        if not bought then
+          if entity.money > world:getCost(Vector2(x,y)) then
+            entity.money = entity.money - world:getCost(Vector2(x,y))
+            world:buy(Vector2(x,y))
+            world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+            world:generateContainerLoot(Vector2(x,y),6,1,nil,nil,2,2)
+          end
+        else
+          world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+          world:generateContainerLoot(Vector2(x,y),6,1,nil,nil,2,2)
+        end
+      end,
+    getInteractability = 
+      function (self, x, y, entity)
+        if entity.money > world:getCost(Vector2(x,y)) or world:getBought(Vector2(x,y)) then
+          return true
+        else
+          return false
+        end
+      end,
+    getNonInteractiveText = 
+      function (self, x, y, entity)
+        return "Press "..entity:getInteractButton().." to buy : "..world:getCost(Vector2(x,y)).."$"
+      end,
+    getInteractText = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return "Press "..entity:getInteractButton().." to open"
+        else
+          return "Press "..entity:getInteractButton().." to buy : "..world:getCost(Vector2(x,y)).."$"
+        end
+      end,
+    getInteractColor = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return {0.8,0.8,0,1}
+        else
+          return {0,0.8,0,1}
+        end
+      end,
   })
   tiles.voidCrate         = Tile("voidCrate", "non-solid", "tiles.png", "voidCrate", {
     newQuad = {4, 4, 1, 1, 8 },
@@ -899,11 +1981,53 @@ function loadtiles()
     containerRows = 1,
     containerColumns = 1,
     actualName = "Void crate",
-    onInteract = 
+    onInteractLook =
       function (self, x, y, entity)
-        world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
-        world:generateContainerLoot(Vector2(x,y),8,1,nil,nil,3,2.5)
-      end
+        world:generateCost(50, Vector2(x,y))
+      end,
+    onInteract =
+      function (self, x, y, entity)
+        local bought = world:getBought(Vector2(x,y))
+        if not bought then
+          if entity.money > world:getCost(Vector2(x,y)) then
+            entity.money = entity.money - world:getCost(Vector2(x,y))
+            world:buy(Vector2(x,y))
+            world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+            world:generateContainerLoot(Vector2(x,y),8,1,nil,nil,3,2.5)
+          end
+        else
+          world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+          world:generateContainerLoot(Vector2(x,y),8,1,nil,nil,3,2.5)
+        end
+      end,
+    getInteractability = 
+      function (self, x, y, entity)
+        if entity.money > world:getCost(Vector2(x,y)) or world:getBought(Vector2(x,y)) then
+          return true
+        else
+          return false
+        end
+      end,
+    getNonInteractiveText = 
+      function (self, x, y, entity)
+        return "Press "..entity:getInteractButton().." to buy : "..world:getCost(Vector2(x,y)).."$"
+      end,
+    getInteractText = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return "Press "..entity:getInteractButton().." to open"
+        else
+          return "Press "..entity:getInteractButton().." to buy : "..world:getCost(Vector2(x,y)).."$"
+        end
+      end,
+    getInteractColor = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return {0.8,0.8,0,1}
+        else
+          return {0,0.8,0,1}
+        end
+      end,
   })
   tiles.chest         = Tile("chest", "non-solid", "tiles.png", "chest", {
     newQuad = {11, 2, 1, 1, 8 },
@@ -916,11 +2040,53 @@ function loadtiles()
     containerRows = 4,
     containerColumns = 4,
     actualName = "Chest",
-    onInteract = 
+    onInteractLook =
       function (self, x, y, entity)
-        world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
-        world:generateContainerLoot(Vector2(x,y),14,4,nil,nil,1.1,1)
-      end
+        world:generateCost(12, Vector2(x,y))
+      end,
+    onInteract =
+      function (self, x, y, entity)
+        local bought = world:getBought(Vector2(x,y))
+        if not bought then
+          if entity.money > world:getCost(Vector2(x,y)) then
+            entity.money = entity.money - world:getCost(Vector2(x,y))
+            world:buy(Vector2(x,y))
+            world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+            world:generateContainerLoot(Vector2(x,y),14,4,nil,nil,1.1,1)
+          end
+        else
+          world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+          world:generateContainerLoot(Vector2(x,y),14,4,nil,nil,1.1,1)
+        end
+      end,
+    getInteractability = 
+      function (self, x, y, entity)
+        if entity.money > world:getCost(Vector2(x,y)) or world:getBought(Vector2(x,y)) then
+          return true
+        else
+          return false
+        end
+      end,
+    getNonInteractiveText = 
+      function (self, x, y, entity)
+        return "Press "..entity:getInteractButton().." to buy : "..world:getCost(Vector2(x,y)).."$"
+      end,
+    getInteractText = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return "Press "..entity:getInteractButton().." to open"
+        else
+          return "Press "..entity:getInteractButton().." to buy : "..world:getCost(Vector2(x,y)).."$"
+        end
+      end,
+    getInteractColor = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return {0.8,0.8,0,1}
+        else
+          return {0,0.8,0,1}
+        end
+      end,
   })
   tiles.blueChest         = Tile("blueChest", "non-solid", "tiles.png", "blueChest", {
     newQuad = {12, 2, 1, 1, 8 },
@@ -933,11 +2099,53 @@ function loadtiles()
     containerRows = 3,
     containerColumns = 3,
     actualName = "Blue Chest",
-    onInteract = 
+    onInteractLook =
       function (self, x, y, entity)
-        world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
-        world:generateContainerLoot(Vector2(x,y),18,3,nil,nil,2,1.2)
-      end
+        world:generateCost(20, Vector2(x,y))
+      end,
+    onInteract =
+      function (self, x, y, entity)
+        local bought = world:getBought(Vector2(x,y))
+        if not bought then
+          if entity.money > world:getCost(Vector2(x,y)) then
+            entity.money = entity.money - world:getCost(Vector2(x,y))
+            world:buy(Vector2(x,y))
+            world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+            world:generateContainerLoot(Vector2(x,y),18,3,nil,nil,2,1.2)
+          end
+        else
+          world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+          world:generateContainerLoot(Vector2(x,y),18,3,nil,nil,2,1.2)
+        end
+      end,
+    getInteractability = 
+      function (self, x, y, entity)
+        if entity.money > world:getCost(Vector2(x,y)) or world:getBought(Vector2(x,y)) then
+          return true
+        else
+          return false
+        end
+      end,
+    getNonInteractiveText = 
+      function (self, x, y, entity)
+        return "Press "..entity:getInteractButton().." to buy : "..world:getCost(Vector2(x,y)).."$"
+      end,
+    getInteractText = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return "Press "..entity:getInteractButton().." to open"
+        else
+          return "Press "..entity:getInteractButton().." to buy : "..world:getCost(Vector2(x,y)).."$"
+        end
+      end,
+    getInteractColor = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return {0.8,0.8,0,1}
+        else
+          return {0,0.8,0,1}
+        end
+      end,
   })
   tiles.templeChest         = Tile("templeChest", "non-solid", "tiles.png", "templeChest", {
     newQuad = {17, 4, 3, 2, 8,  },
@@ -945,15 +2153,58 @@ function loadtiles()
     textureCenterY = 12,
     borderType = "none",
     health = 999,
+    --mapColor =  {1,1,1,1}
     isContainer = true,
     containerRows = 6,
     containerColumns = 3,
     actualName = "Temple Chest",
-    onInteract = 
+    onInteractLook =
       function (self, x, y, entity)
-        world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
-        world:generateContainerLoot(Vector2(x,y),26,4,nil,nil,2.2,1.3)
-      end
+        world:generateCost(45, Vector2(x,y))
+      end,
+    onInteract =
+      function (self, x, y, entity)
+        local bought = world:getBought(Vector2(x,y))
+        if not bought then
+          if entity.money > world:getCost(Vector2(x,y)) then
+            entity.money = entity.money - world:getCost(Vector2(x,y))
+            world:buy(Vector2(x,y))
+            world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+            world:generateContainerLoot(Vector2(x,y),26,4,nil,nil,2.2,1.3)
+          end
+        else
+          world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+          world:generateContainerLoot(Vector2(x,y),26,4,nil,nil,2.2,1.3)
+        end
+      end,
+    getInteractability = 
+      function (self, x, y, entity)
+        if entity.money > world:getCost(Vector2(x,y)) or world:getBought(Vector2(x,y)) then
+          return true
+        else
+          return false
+        end
+      end,
+    getNonInteractiveText = 
+      function (self, x, y, entity)
+        return "Press "..entity:getInteractButton().." to buy : "..world:getCost(Vector2(x,y)).."$"
+      end,
+    getInteractText = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return "Press "..entity:getInteractButton().." to open"
+        else
+          return "Press "..entity:getInteractButton().." to buy : "..world:getCost(Vector2(x,y)).."$"
+        end
+      end,
+    getInteractColor = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return {0.8,0.8,0,1}
+        else
+          return {0,0.8,0,1}
+        end
+      end,
   })
   tiles.templeBlock = Tile("templeBlock","solid","tiles.png","templeBlock", {
     newQuad = {13,2,1,1,8},
@@ -1027,7 +2278,133 @@ function loadtiles()
     health = 99999,
     actualName = "evil shrine",
     particleEmit = "evilShrineCircle",
-    particleEmitData = {  chance = 1, delay = 240, amount = 1, motion = "floating", motionStrength = 0, motionArcAngle = 0, motionArcSpread = 360, radius = 0, timer = 4, timerNoise = 0, color = {1,0,0,0.4}, colorNoise = {0.05,0.05,0.05,0.05}, flags = { appearanceType = "circle", size = 0.5, sizeMotion = 0.75}, hasCollisions = false }
+    particleEmitData = {  chance = 1, delay = 240, amount = 1, motion = "floating", motionStrength = 0, motionArcAngle = 0, motionArcSpread = 360, radius = 0, timer = 4, timerNoise = 0, color = {1,0,0,0.4}, colorNoise = {0.05,0.05,0.05,0.05}, flags = { appearanceType = "circle", size = 0.5, sizeMotion = 0.75}, hasCollisions = false },
+    interactable = true,
+    onInteract = 
+      function (self, x, y, entity)
+        world:bossEvent("evilShrine", Vector2(x,y),{})
+        world:placeTile("evilShrineFunctioning", x, y, "tiles", true)
+      end,
+    getInteractability = function(self, x, y, entity)
+      return (not world:isBossPresent())
+    end,
+    getInteractText = 
+      function (self, x, y, entity)
+        return "Press "..entity:getInteractButton().." to activate"
+      end,
+    getInteractColor = 
+      function (self, x, y, entity)
+        return {1,0.4,0,0.8}
+      end,
+  })
+  tiles.evilShrineClosed = Tile("evilShrineClosed","non-solid","tiles.png","evilShrineClosed", {
+    newQuad = {8,7,5,3,8},
+    borderType = "none",
+    health = 99999,
+    actualName = "evil shrine",
+    particleEmit = "fire",
+    particleEmitData = {  chance = 0.03, delay = 2, amount = 1, motion = "fire", motionStrength = 0, motionArcAngle = 0, motionArcSpread = 180, radius = 1.5, timer = 4, timerNoise = 1, color = {0,0,0,0.7}, colorNoise = {0.05,0.05,0.05,0.05}, flags = {lightColor = {0,0,0,0.3}, weight = -0.5}, hasCollisions = false },
+  })
+  tiles.evilShrineFunctioning = Tile("evilShrineFunctioning","non-solid","tiles.png","evilShrineFunctioning", {
+    newQuad = {8,10,5,3,8},
+    borderType = "none",
+    health = 99999,
+    actualName = "evil shrine",
+    particleEmit = "fire",
+    particleEmitData = {  chance = 0.6, delay = 2, amount = 1, motion = "fire", motionStrength = 3, motionArcAngle = 0, motionArcSpread = 180, radius = 1.5, timer = 4, timerNoise = 1, color = {1,0,0,0.4}, colorNoise = {0.05,0.05,0.05,0.05}, flags = {color2 = {1,0.3,0,0.5}, color3 = {0.8,0.5,0,0.5}, color4 = {0.5,0,0.6,0.5}, color5 = {0.3,0.3,0.3,0.5}}, hasCollisions = false },
+    interactable = true,
+    onInteract = 
+      function (self, x, y, entity)
+        world:advanceFog(x,y)
+        world:placeTile("evilShrineClosed", x, y, "tiles", true)
+      end,
+    getInteractability = function(self, x, y, entity)
+      return (not world:isBossPresent())
+    end,
+    getNonInteractiveText = 
+      function (self, x, y, entity)
+        return "Kill the boss before activating"
+      end,
+    getInteractText = 
+      function (self, x, y, entity)
+        return "Press "..entity:getInteractButton().." to dissipate the fog"
+      end,
+    getNonInteractColor = 
+      function (self, x, y, entity)
+        return {0.3,0.3,0.3,0.8}
+      end,
+    getInteractColor = 
+      function (self, x, y, entity)
+        return {0.3,0,0.6,0.8}
+      end,
+  })
+  tiles.tomb         = Tile("tomb", "non-solid", "tiles.png", "tomb", {
+    newQuad = {0, 11, 1, 1, 8 },
+    borderType = "none",
+    health = 999,
+    actualName = "Player tomb",
+    interactable = true,
+    onInteractLook =
+      function (self, x, y, entity)
+        world:generateCost(10, Vector2(x,y))
+      end,
+    onInteract =
+      function (self, x, y, entity)
+        local bought = world:getBought(Vector2(x,y))
+        if not bought then
+          if entity.money > world:getCost(Vector2(x,y)) and world:getTileProprety(round(x), round(y), "entity") ~= nil then
+            entity.money = entity.money - world:getCost(Vector2(x,y))
+            local newEntity = world:getTileProprety(round(x), round(y), "entity")
+            newEntity:revive()
+            newEntity.x = round(x)
+            newEntity.y = round(y)
+            world:buy(Vector2(x,y))
+            table.insert(entities, newEntity)
+            world:setTileProprety(round(x), round(y), "entity", nil)
+            world:placeTile("usedTomb", x, y, "tiles", true)
+
+            --world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+            --world:generateContainerLoot(Vector2(x,y),4.5,1,nil,nil,1.5,1.5)
+          end
+        else
+          --world:openContainer(self.actualName,self, Vector2(x,y), entity, self.containerRows, self.containerColumns)
+          --world:generateContainerLoot(Vector2(x,y),4.5,1,nil,nil,1.5,1.5)
+        end
+      end,
+    getInteractability = 
+      function (self, x, y, entity)
+        if entity.money > world:getCost(Vector2(x,y)) and (world:getTileProprety(round(x), round(y), "entity") ~= nil) then
+          return true
+        else
+          return false
+        end
+      end,
+    getNonInteractiveText = 
+      function (self, x, y, entity)
+        return "Press "..entity:getInteractButton().." to revive player for : "..world:getCost(Vector2(x,y)).."$"
+      end,
+    getInteractText = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return ""
+        else
+          return "Press "..entity:getInteractButton().." to revive player for : "..world:getCost(Vector2(x,y)).."$"
+        end
+      end,
+    getInteractColor = 
+      function (self, x, y, entity)
+        if world:getBought(Vector2(x,y)) then
+          return {0.2,0,0.8,1}
+        else
+          return {0,0.8,0,1}
+        end
+      end,
+  })
+  tiles.usedTomb         = Tile("usedTomb", "non-solid", "tiles.png", "usedTomb", {
+    newQuad = {1, 11, 1, 1, 8 },
+    borderType = "none",
+    health = 5,
+    actualName = "Used tomb",
   })
 end
 
@@ -1058,6 +2435,14 @@ function loadItems()
     mineWidth = 3,
     holdAnimation = "crudePickaxe_Hold",
     description = {"#silent","A crude pickaxe made of sticks and rocks. It can serve a lot more than you might think."},
+  })
+  items.bossDrill = Item("bossDrill","unknown",{category="tool",subCategory = "pickaxe",fullName = "Boss drill",
+    cooldown = 0.5,
+    mineDamage = 3, --1
+    mineDamagePerLevel = 0.5,
+    blockDamageAmount = 9,
+    rangeLimit = 8, 
+    mineWidth = 3,
   })
   items["crudeSpike"] = Item("crudeSpike","crudeSpike",{["category"]="tool",["subCategory"] = "pickaxe",["fullName"] = "Crude spike",
     ["cooldown"] = 0.6,
@@ -1187,6 +2572,15 @@ function loadItems()
     dashTime = 0.2,
     knockback = 1,
   })
+  items.nothingSword = Item("nothingSword","unknown",{["category"]="weapon",["subCategory"] = "melee",["fullName"] = "Nothing",
+    cooldown = 0,
+    damage = 0,
+    damagePerLevel = 0,
+    attackRange = 0,
+    attackRadius = -99, 
+    charge = 0,
+    moveSpeedDuringCharge = 1,
+  })
   items.crudeBow = Item("crudeBow","crudeBow",{["category"]="weapon",["subCategory"] = "ranged",["fullName"] = "Crude bow",
     cooldown = 5,
     damage = 18,
@@ -1198,6 +2592,29 @@ function loadItems()
     projectileBounceFactor = 0.9,
     projectileVelocity = 30,
     projectileGravity = 0.5,
+    onUse = function (self,entity,attributes,cursorX,cursorY,slot,stacks,flags) 
+      local onUseSuccess, onUseCooldown, onUseStacksRemove
+      onUseSuccess = false
+
+      local projectileFlags = {}
+      projectileFlags.animationType = "orientation"
+      
+      onUseSuccess, onUseCooldown, onUseStacksRemove = self:spawnProjectile(entity, attributes, cursorX, cursorY,slot,stacks,projectileFlags)
+
+      return onUseSuccess, onUseCooldown, onUseStacksRemove
+    end
+  })
+  items.skeletonBow = Item("skeletonBow","crudeBow",{["category"]="weapon",["subCategory"] = "ranged",["fullName"] = "skeleton bow",
+    cooldown = 2,
+    damage = 10,
+    damagePerLevel = 3,
+    holdAnimation = "crudeBow_Hold",
+    charge = 1.5,
+    moveSpeedDuringCharge = 0,
+    knockback = 1,
+    projectileBounceFactor = 0.3,
+    projectileVelocity = 33,
+    projectileGravity = 0.3,
     onUse = function (self,entity,attributes,cursorX,cursorY,slot,stacks,flags) 
       local onUseSuccess, onUseCooldown, onUseStacksRemove
       onUseSuccess = false
@@ -1302,6 +2719,14 @@ function loadItems()
     dashVelocity = 16,
     dashTime = 0.04,
     dashGravityMultiplier = 0,
+  })
+  items.lumiFeather = Item("lumiFeather","lumiFeather",{["category"]="movement",["subCategory"] = "dash",["fullName"] = "Lumi-feather",
+    cooldown = 1,
+    cooldownSpeedPerLevel = 0.03,
+    useFreely = true,
+    dashVelocity = 11,
+    dashTime = 0.2,
+    dashGravityMultiplier = 0.5,
   })
   items.clearRing = Item("clearRing","clearRing",{["category"]="accessory",["subCategory"] = "ring",["fullName"] = "Clear ring",
     description = {"#silent","A ring with no innate properties. Can be used to hold enchants"},
@@ -1475,26 +2900,42 @@ function LoadInterfaces()
 
   interfaces = {}
 
-  interfaces["mainMenu"] = Interface("MainMenu",0.5,0.35,0.6,0.6,"invisible",{0.6,0.6,0.9,1},{1,1,1,1},{["gap"]=0.03,["scrollMargin"]=0})
+  interfaces["mainMenu"] = Interface("MainMenu",0.5,0.35,0.6,0.7,"invisible",{0.2,0.2,0.6,0.5},{1,1,1,1},{["gap"]=0.3,["scrollMargin"]=0})
+  --interfaces["mainMenu"] = Interface("MainMenu",0.5,0.35,0.6,0.6,"invisible",{0.2,0.2,0.23,1},{1,1,1,1},{["gap"]=0.03,["scrollMargin"]=0})
+  --interfaces["mainMenu"] = Interface("MainMenu",0.5,0.35,0.6,0.6,"invisible",{0.6,0.6,0.9,1},{1,1,1,1},{["gap"]=0.03,["scrollMargin"]=0})
+  --interfaces["mainMenu"]:addElement("load","button",0.4,0.1,"Load save",{},{},nil,nil)
+  --interfaces["mainMenu"]:addElement("loadSaveName","textinput",0.9,0.05,"Save name to load",{},{["textAlign"] = "left",["gap"]=0,["default"] = "", placeHolder = "save"},nil,nil)
   interfaces["mainMenu"]:addElement("playButton","button",0.4,0.1,"Play",{},{},nil,nil)
   interfaces["mainMenu"]:addElement("settingsButton","button",0.4,0.1,"Settings",{},{},nil,nil)
   interfaces["mainMenu"]:addElement("quitButton","button",0.4,0.1,"Quit",{},{},nil,nil)
 
 
-  interfaces["pause"] = Interface("pause",0.5,0.3,0.6,0.6,"invisible",{0.6,0.6,0.9,1},{1,1,1,1},{["gap"]=0.03,["scrollMargin"]=0})
+  interfaces["pause"] = Interface("pause",0.5,0.3,0.6,0.7,"invisible",{0.2,0.2,0.6,0.5},{1,1,1,1},{["gap"]=0.3,["scrollMargin"]=0})
+  --interfaces["pause"] = Interface("pause",0.5,0.3,0.6,0.6,"invisible",{0.2,0.2,0.23,1},{1,1,1,1},{["gap"]=0.03,["scrollMargin"]=0})
+  --interfaces["pause"] = Interface("pause",0.5,0.3,0.6,0.6,"invisible",{0.6,0.6,0.9,1},{1,1,1,1},{["gap"]=0.03,["scrollMargin"]=0})
+  --interfaces["pause"]:addElement("save","button",0.4,0.1,"Save",{},{},nil,nil)
   interfaces["pause"]:addElement("returnButton","button",0.4,0.1,"Back",{},{},nil,nil)
   interfaces["pause"]:addElement("retryButton","button",0.4,0.1,"Retry",{},{},nil,nil)
   interfaces["pause"]:addElement("leaveGameButton","button",0.4,0.1,"Quit",{},{},nil,nil)
+  
 
 
-  interfaces["worldCreation"] = Interface("worldCreation",0.5,0.15,0.6,0.8,"bland",{0.6,0.9,0.6,1},{1,1,1,1},{["title"]= "World Creation",["gap"]=0.00,["scrollMargin"]=0.1,["showTitle"] = true})
+  --interfaces["worldCreation"] = Interface("worldCreation",0.5,0.15,0.6,0.8,"bland",{0.6,0.9,0.6,1},{1,1,1,1},{["title"]= "World Creation",["gap"]=0.00,["scrollMargin"]=0.1,["showTitle"] = true})
+  --interfaces["worldCreation"] = Interface("worldCreation",0.5,0.15,0.6,0.8,"bland",{0.2,0.23,0.2,1},{1,1,1,1},{["title"]= "World Creation",["gap"]=0.00,["scrollMargin"]=0.1,["showTitle"] = true})
+  interfaces["worldCreation"] = Interface("worldCreation",0.5,0.15,0.6,0.8,"bland",{0.2,0.6,0.2,0.5},{1,1,1,1},{["title"]= "World Creation",["gap"]=0.00,["scrollMargin"]=0.1,["showTitle"] = true})
   interfaces["worldCreation"]:addElement("createButton","button",0.4,0.1,"Create world",{},{},nil,nil)
+  interfaces["worldCreation"]:addElement("saveName","textinput",0.9,0.08,"Save name",{},{["textAlign"] = "left",["gap"]=0,["default"] = "", placeHolder = "save"},nil,nil)
+  interfaces["worldCreation"]:addElement("numberOfPlayer","slider",0.9,0.2,"Number of players",{["round"] = 1,["min"] = 1, ["max"]= 4,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)
   --multiple choices
   interfaces["worldCreation"]:addElement("worldHeigth","options",0.9,0.2,"World deepness :",{"1000","2000","3000","5000","7000"},{["textAlign"] = "left",["gap"]=0,["default"] = "3000"},nil,nil)
   interfaces["worldCreation"]:addElement("worldWidth","options",0.9,0.2,"World width :",{"150","300","450","600","750"},{["textAlign"] = "left",["gap"]=0,["default"] = "450"},nil,nil)
   interfaces["worldCreation"]:addElement("biomeSize","options",0.9,0.2,"Biome size :",{"50","100","150","250","400"},{["textAlign"] = "left",["gap"]=0,["default"] = "150"},nil,nil)
   interfaces["worldCreation"]:addElement("terrainSize","options",0.9,0.2,"Terrain & caves size :",{"0.5","1","2","3","5","10"},{["textAlign"] = "left",["gap"]=0,["default"] = "1"},nil,nil)
   interfaces["worldCreation"]:addElement("worldseed","textinput",0.9,0.08,"World seed",{},{["textAlign"] = "left",["gap"]=0,["default"] = "", acceptOnly = "digits", placeHolder = "random"},nil,nil)
+  
+  
+  interfaces["worldCreation"]:addElement("playerFog","checkbox",0.9,0,"Fog to keep players together",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
+  interfaces["worldCreation"]:addElement("playerFogDistance","slider",0.9,0.2,"Fog distance between players",{["round"] = 5,["min"] = 5, ["max"]= 200,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 50},nil,nil)
   --checkboxes
   interfaces["worldCreation"]:addElement("cheat", "checkbox",0.9,0,"Cheat Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["worldCreation"]:addElement("freeCam","checkbox",0.9,0,"Free cam Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
@@ -1502,13 +2943,17 @@ function LoadInterfaces()
   interfaces["worldCreation"]:addElement("BuilderCheat","checkbox",0.9,0,"Builder Cheat Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   --sliders
   interfaces["worldCreation"]:addElement("lightReach","slider",0.9,0.2,"Light reach",{["round"] = 1,["min"] = 1, ["max"]= 12,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 6},nil,nil)
+  interfaces["worldCreation"]:addElement("mobCap","slider",0.9,0.2,"Mob cap",{["round"] = 1,["min"] = 0, ["max"]= 100,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 20},nil,nil)
   interfaces["worldCreation"]:addElement("directorCreditMultiplier","slider",0.9,0.2,"Director credit multiplier",{["round"] = 0.1,["min"] = 0, ["max"]= 10,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)
   interfaces["worldCreation"]:addElement("directorSpawnSpeedMultiplier","slider",0.9,0.2,"Director spawn speed multiplier",{["round"] = 0.1,["min"] = 0.1, ["max"]= 10,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)
+  interfaces["worldCreation"]:addElement("itemAttributesMultiplier","slider",0.9,0.2,"Item attributes/enchants multiplier",{["round"] = 0.1,["min"] = 0.1, ["max"]= 100,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)
   --interfaces["worldCreation"]:addElement("seed","slider",0.9,0.2,"World seed",{["round"] = 1,["min"] = 1, ["max"]= 9999999,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 6},nil,nil)
   interfaces["worldCreation"]:addElement("resetWorldCreation","button",0.3,0.08,"Default",{},{},nil,nil)
 
 
-  interfaces["settings"] = Interface("settings",0.5,0.15,0.6,0.8,"bland",{0.9,0.6,0.6,1},{1,1,1,1},{["title"]= "Settings",["gap"]=0.00,["scrollMargin"]=0.1,["showTitle"] = true})
+  --interfaces["settings"] = Interface("settings",0.5,0.15,0.6,0.8,"bland",{0.9,0.6,0.6,1},{1,1,1,1},{["title"]= "Settings",["gap"]=0.00,["scrollMargin"]=0.1,["showTitle"] = true})
+  interfaces["settings"] = Interface("settings",0.5,0.15,0.6,0.8,"bland",{0.6,0.2,0.2,0.5},{1,1,1,1},{["title"]= "Settings",["gap"]=0.00,["scrollMargin"]=0.1,["showTitle"] = true})
+  --interfaces["settings"] = Interface("settings",0.5,0.15,0.6,0.8,"bland",{0.23,0.2,0.2,1},{1,1,1,1},{["title"]= "Settings",["gap"]=0.00,["scrollMargin"]=0.1,["showTitle"] = true})
   interfaces["settings"]:addElement("resetSettings","button",0.4,0.1,"Reset Settings",{},{},nil,nil)
   --interfaces["settings"]:addElement("cheat","checkbox",0.9,0,"Cheat Toggle",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   --interfaces["settings"]:addElement("lightReach","slider",0.9,0.2,"Light reach",{["round"] = 1,["min"] = 1, ["max"]= 12,["displayMultiplication"]=1},{["textAlign"] = "left",["gap"]=0,["default"] = 6},nil,nil)
@@ -1519,14 +2964,16 @@ function LoadInterfaces()
   interfaces["settings"]:addElement("MapZoom","slider",0.9,0.2,"Map zoom",{["round"] = 0.2,["min"] = 0.4, ["max"]= 5},{["textAlign"] = "left",["gap"]=0,["default"] = 2},nil,nil)
   interfaces["settings"]:addElement("fullscreen", "checkbox",0.9,0,"Fullscreen",{},{["textAlign"] = "left",["gap"]=0,["default"] = false},nil,nil)
   interfaces["settings"]:addElement("InventorySize","slider",0.9,0.2,"Inventory size",{["round"] = 0.1,["min"] = 0.5, ["max"]= 1.5},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)
+  interfaces["settings"]:addElement("TooltipSize","slider",0.9,0.2,"Tooltip size",{["round"] = 0.1,["min"] = 0.5, ["max"]= 2.5},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)
   interfaces["settings"]:addElement("InventoryTextSize","slider",0.9,0.2,"Inventory text size",{["round"] = 0.1,["min"] = 1, ["max"]= 2},{["textAlign"] = "left",["gap"]=0,["default"] = 1.4},nil,nil)
+  interfaces["settings"]:addElement("InventoryStyle","options",0.9,0.2,"Inventory style :",{"classic","frutiger"},{["textAlign"] = "left",["gap"]=0,["default"] = "frutiger"},nil,nil)
   interfaces["settings"]:addElement("SelectedFont","slider",0.9,0.2,"Font",{["round"] = 1,["min"] = 1, ["max"]= #Fonts},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)
   interfaces["settings"]:addElement("UISize","slider",0.9,0.2,"UI size",{["round"] = 0.1,["min"] = 0.5, ["max"]= 1.5},{["textAlign"] = "left",["gap"]=0,["default"] = 1},nil,nil)
   interfaces["settings"]:addElement("resetUI","button",0.4,0.1,"Reset UI",{},{},nil,nil)
   
 
 
-  interfaces["back"] = Interface("back",0.1,-0.05,0.3,0.3,"invisible",{0.6,0.6,0.9,1},{1,1,1,1},{["gap"]=0.03,["scrollMargin"]=0,["elementsStayInBound"]=false})
+  interfaces["back"] = Interface("back",0.1,-0.05,0.3,0.3,"invisible",{0.2,0.2,0.2,0.5},{1,1,1,1},{["gap"]=0.03,["scrollMargin"]=0,["elementsStayInBound"]=false})
   interfaces["back"]:addElement("back","button",0.4,0.075,"Back",{},{["gap"]=0},nil,nil)
 
 end
@@ -1556,10 +3003,10 @@ function LoadItemSets()
   LoadItemSet("titanium",nil,{0.52,0.72,0.86,0.7},{0.16,0.2,0.24,0.5},{0.56,0.78,0.9,0.5},{damageM=2.3,cooldownM=0.74,rangeM=1.1,blockAmountM=0.88,weightM=0.3,enchantM=3.1,minLevel=34,maxLevel=62, toolSpriteNameAdd = "Tough"})
   LoadItemSet("platinum",nil,{0.86,0.9,0.95,0.75},nil,{0.4,0.4,0.2,0.5},{damageM=2,cooldownM=0.7,rangeM=1.15,blockAmountM=0.8,weightM=0.25,enchantM=3.2,minLevel=38,maxLevel=70})
   LoadItemSet("orichalcum",nil,{0.28,0.9,0.82,0.75},nil,{0.25,0.7,0.68,0.58},{damageM=2.6,cooldownM=0.98,rangeM=1.04,blockAmountM=0.92,weightM=0.2,enchantM=3.3,minLevel=40,maxLevel=78,toolSpriteNameAdd = "Crystal"})
-  LoadItemSet("voidstone",nil,{0.18,0.08,0.24,0.85},nil,{0.2,0.1,0.3,0.65},{damageM=2.75,cooldownM=1.12,rangeM=0.9,blockAmountM=1.1,weightM=0.15,enchantM=3.4,minLevel=44,maxLevel=90,toolSpriteNameAdd = "Crystal"})
-  LoadItemSet("adamantite",nil,{1,0.15,0.15,0.78},nil,{0.78,0.98,1,0.55},{damageM=2.85,cooldownM=0.62,rangeM=1.2,blockAmountM=0.72,weightM=0.13,enchantM=3.45,minLevel=50,maxLevel=999, toolSpriteNameAdd = "Tough"})
+  LoadItemSet("voidstone",nil,{0.18,0.08,0.24,0.85},nil,{0.2,0.1,0.3,0.65},{damageM=2.75,cooldownM=1.12,rangeM=0.9,blockAmountM=1.1,weightM=0.15,enchantM=3.4,minLevel=44,maxLevel=999999999,toolSpriteNameAdd = "Crystal"})
+  LoadItemSet("adamantite",nil,{1,0.15,0.15,0.78},nil,{0.78,0.98,1,0.55},{damageM=2.85,cooldownM=0.62,rangeM=1.2,blockAmountM=0.72,weightM=0.13,enchantM=3.45,minLevel=50,maxLevel=999999999, toolSpriteNameAdd = "Tough"})
 
-  LoadItemSet("diamond",nil,{0.7,1,1,0.75},nil,{0.2,0.3,0.3,0.5},{damageM=3,cooldownM=0.5,rangeM=1.2,blockAmountM=0.7,weightM=0.1,enchantM=3.5,minLevel=50,maxLevel=999,toolSpriteNameAdd = "Crystal"})
+  LoadItemSet("diamond",nil,{0.7,1,1,0.75},nil,{0.2,0.3,0.3,0.5},{damageM=3,cooldownM=0.5,rangeM=1.2,blockAmountM=0.7,weightM=0.1,enchantM=3.5,minLevel=50,maxLevel=999999999,toolSpriteNameAdd = "Crystal"})
 
   
 end
@@ -1817,11 +3264,11 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
   addSetWeapon(name.." knife", "smallSwordTop"..toolSpriteNameAdd, "toolBase", "melee", {
     cooldown = 1,
     cooldownSpeedPerLevel = 0.02,
-    damage = 6,
-    damagePerLevel = 0.35,
+    damage = 4,
+    damagePerLevel = 0.15,
     attackRange = 2.5,
     attackRadius = 1, 
-    charge = 0.2,
+    charge = 0,
     moveSpeedDuringCharge = 0.8,
     dashVelocity = 8,
     dashTime = 0.2,
@@ -1830,26 +3277,26 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
   addSetWeapon(name.." sword", "swordTop"..toolSpriteNameAdd, "toolBase", "melee", {
     cooldown = 2.4,
     cooldownSpeedPerLevel = 0.01,
-    damage = 14,
-    damagePerLevel = 1.4,
+    damage = 20,
+    damagePerLevel = 1.2,
     attackRange = 4,
     attackRadius = 1, 
-    charge = 0.5,
+    charge = 0.2,
     moveSpeedDuringCharge = 0.4,
-    dashVelocity = 8,
+    dashVelocity = 10,
     dashTime = 0.3,
     knockback = 1.2,
   })
-  addSetWeapon(name.." big sword", "bigSwordTop"..toolSpriteNameAdd, "toolBase", "melee", {
-    cooldown = 4.3,
-    cooldownSpeedPerLevel = 0,
-    damage = 25,
-    damagePerLevel = 2.8,
+  addSetWeapon(name.." Greatsword", "bigSwordTop"..toolSpriteNameAdd, "toolBase", "melee", {
+    cooldown = 4.8,
+    cooldownSpeedPerLevel = 0.01,
+    damage = 35,
+    damagePerLevel = 3.5,
     attackRange = 2.5,
     attackRadius = 2, 
-    charge = 0.8,
+    charge = 0.4,
     moveSpeedDuringCharge = 0.15,
-    dashVelocity = 8,
+    dashVelocity = 11,
     dashTime = 0.15,
     dashGravityMultiplier = 0.75,
     knockback = 2,
@@ -1857,14 +3304,14 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
   addSetWeapon(name.." spear", "lanceTop"..toolSpriteNameAdd, "toolBase", "melee", {
     cooldown = 3,
     cooldownSpeedPerLevel = 0.015,
-    damage = 13,
-    damagePerLevel = 0.8,
+    damage = 15,
+    damagePerLevel = 1,
     attackRange = 6,
     attackRadius = 1, 
-    charge = 0.3,
+    charge = 0.2,
     moveSpeedDuringCharge = 0.5,
-    dashVelocity = 10,
-    dashTime = 0.5,
+    dashVelocity = 12,
+    dashTime = 0.4,
     dashGravityMultiplier = 0.01,
     knockback = 1,
   })
@@ -1874,7 +3321,7 @@ function LoadItemSet(name,topColor,topColorisation,baseColor,baseColorisation,fl
     damagePerLevel = 1.1,
     charge = 0.1,
     moveSpeedDuringCharge = 0.4,
-    knockback = 1,
+    knockback = 0.02,
     projectileVelocity = 35,
     projectileGravity = 0.5,
     projectileSprite = {

@@ -6,7 +6,12 @@ function Entity:setupAI()
     if self.aiInfo.sightRange == nil then self.aiInfo.sightRange = 12 end
     if self.aiInfo.alertTime == nil then self.aiInfo.alertTime = 0.8 end
     if self.aiInfo.newPositionTargetTime == nil then self.aiInfo.newPositionTargetTime = 10 end
+    if self.aiInfo.rangerDistanceFromTarget == nil then self.aiInfo.rangerDistanceFromTarget = 4 end --distance the entity stays from their target
     if self.aiInfo.state == nil then self.aiInfo.state = "idle" end -- idle | attack
+    if self.aiInfo.stage == nil then self.aiInfo.stage = "none" end -- a bit like state, but for more complex ai, like bosses, that have multiple stages of behavior
+    if self.aiInfo.nextStages == nil then self.aiInfo.nextStages = {} end
+    if self.aiInfo.didFirstStageAction == nil then self.aiInfo.didFirstStageAction = false end
+    if self.aiInfo.currentStageTime == nil then self.aiInfo.currentStageTime = 0 end
 
     if self.aiInfo.jumpBlocks == nil then self.aiInfo.jumpBlocks = 3 end
     if self.aiInfo.movePositionTargetDistanceMax == nil then self.aiInfo.movePositionTargetDistanceMax = 18 end
@@ -19,28 +24,107 @@ function Entity:setupAI()
     if self.aiInfo.targetId == nil then self.aiInfo.targetId = nil end
     if self.aiInfo.positionTarget == nil then self.aiInfo.positionTarget = nil end
     if self.aiInfo.aimTarget == nil then self.aiInfo.aimTarget = nil end
+    if self.aiInfo.ownerId == nil then self.aiInfo.ownerId = nil end
     if self.seclusionTime == nil then self.seclusionTime = 0 end
 
     if self.aiInfo.attentionTimer == nil then self.aiInfo.attentionTimer = 0 end
     if self.aiInfo.alertTimer == nil then self.aiInfo.alertTimer = 0 end
     if self.aiInfo.jumpTimer == nil then self.aiInfo.jumpTimer = 0 end
     if self.aiInfo.newPositionTargetTimer == nil then self.aiInfo.newPositionTargetTimer = 0 end
+
+    if self.aiInfo.enraged == nil then self.aiInfo.enraged = false end
+
+    if self.aiInfo.onUpdate == nil then self.aiInfo.onUpdate = function(self,dt) end end
 end
 
 --regular
---ranger (keeps distance)
---follower (has a secondary 'owner' target, and follows him when not attacking)
---fleer (runs away)
+--ranger (keeps distance, defined by rangerDistanceFromTarget)
+--follower (has a secondary 'owner' target defined by ownerId, and follows him when not attacking)
+--boss (follows a specific set of states) (not the same from isBoss, which makes the ai ignore block colisions the same level or above its target)
 function Entity:aiUpdate(dt)
     self:setupAI()
     if self.ai == "regular" then
         self:aiTargetUpdate(dt)
+        self:updatePositionTarget(dt)
         self:aiUpdateRegular(dt)
+    end
+    if self.ai == "ranger" then
+        self:aiTargetUpdate(dt)
+        self:updateRangerPositionTarget(dt)
+        self:aiUpdateRegular(dt)
+    end
+    if self.ai == "follower" then
+        self:aiTargetUpdate(dt)
+        self:updateFollowerPositionTarget(dt)
+        self:aiUpdateRegular(dt)
+    end
+    if self.ai == "custom" then
+        self:aiTargetUpdate(dt)
+        self:updatePositionTarget(dt)
+        self:aiUpdateRegular(dt)
+    end
+
+    if self.aiInfo.onUpdate ~= nil then
+        self.aiInfo.onUpdate(self, dt)
+    end
+
+    if self.isBoss then
+        if self.aiInfo.targetId ~= nil then
+            local target = self:getTarget(self.aiInfo.targetId)
+            if target ~= nil then
+                if self.position:dist(target.position) > 60 then
+                    local newPosition = target.position:copy()
+                    newPosition:moveTowards(self.position, 55) 
+                    self.position = newPosition
+                end
+            end
+        end
+    end
+end
+
+function Entity:updateRangerPositionTarget(dt)
+    if self.aiInfo.state == "attack" and self.aiInfo.targetId ~= nil then
+        local target = self:getTarget(self.aiInfo.targetId)
+        if target ~= nil then
+            local distanceToTarget = self.position:dist(target.position)
+            local desiredDistance = self.aiInfo.rangerDistanceFromTarget
+
+            if distanceToTarget < desiredDistance - 0.75 then
+                local awayPosition = target.position:copy()
+                local awayDir = pointat180(target.position.x, target.position.y, self.position.x, self.position.y)
+                awayPosition:move(awayDir, desiredDistance)
+                self.aiInfo.positionTarget = awayPosition
+            elseif distanceToTarget > desiredDistance + 0.75 then
+                self.aiInfo.positionTarget = target.position:copy()
+            else
+                self.aiInfo.positionTarget = nil
+            end
+            return
+        end
+    end
+    self:updatePositionTarget(dt)
+end
+
+function Entity:updateFollowerPositionTarget(dt)
+    if self.aiInfo.state == "idle" then
+        local owner = self:getTarget(self.aiInfo.ownerId)
+        if owner == nil then
+            self:updatePositionTarget(dt)
+            return
+        end
+
+        local distanceToOwner = self.position:dist(owner.position)
+        if distanceToOwner > 3 then
+            if self.aiInfo.positionTarget == nil or self.aiInfo.positionTarget:dist(owner.position) > 2 then
+                self.aiInfo.positionTarget = owner.position:copy()
+            end
+        else
+            self.aiInfo.positionTarget = nil
+        end
     end
 end
 
 function Entity:aiUpdateRegular(dt)
-    self:updatePositionTarget(dt)
     self.controls.left = false
     self.controls.right = false
     self.controls.down = false
@@ -56,7 +140,7 @@ function Entity:aiUpdateRegular(dt)
         local target = self:getTarget(self.aiInfo.targetId)
         if target ~= nil then
             self.aiInfo.aimTarget = target.position
-            if world:canLineGoThrough(self.position, target.position, 2) then
+            if world:canLineGoThrough(self.position, target.position, 2) or self.isBoss then
                 self.controls.leftClick = true
                 self.controls.rightClick = true
                 self.seclusionTime = 0
@@ -87,7 +171,7 @@ function Entity:aiUpdateRegular(dt)
         if desiredDir ~= 0 then
             local checkX = math.floor(self.position.x + 0.5 + desiredDir)
             local checkY = math.floor(self.position.y + 0.5)
-            if not world:getColision(checkX, checkY) then
+            if not self:getColision(checkX, checkY) then
                 if desiredDir < 0 then
                     self.controls.left = true
                 else
@@ -154,7 +238,7 @@ end
 function Entity:getBlockHeightFromGround(x,y)
     local height = 0
     for i = 1, 10 do
-        if world:getColision(x,y-i) then
+        if self:getColision(x,y-i) then
             height = height + 1
         else
             break
@@ -181,11 +265,11 @@ function Entity:isValidPositionTarget(target)
         return false
     end
 
-    if world:getColision(targetX, targetY) then
+    if self:getColision(targetX, targetY) then
         return false
     end
 
-    if world:getColision(targetX, targetY - 1) then
+    if self:getColision(targetX, targetY - 1) then
         return true
     end
 
@@ -212,15 +296,15 @@ function Entity:hasSafeLanding(startX, startY, endX, endY)
         local tx = math.floor(px + 0.5)
         local ty = math.floor(py + 0.5)
 
-        if world:getColision(tx, ty) then
+        if self:getColision(tx, ty) then
             return false
         end
 
-        if not world:getColision(tx, ty - 1) then
+        if not self:getColision(tx, ty - 1) then
             if xDir ~= 0 then
                 local sideX = tx + xDir
                 local sideY = ty
-                if world:getColision(sideX, sideY) and world:getColision(sideX, sideY - 1) then
+                if self:getColision(sideX, sideY) and self:getColision(sideX, sideY - 1) then
                     return true
                 end
             end
@@ -252,7 +336,7 @@ function Entity:shouldJumpTowardsTarget(target)
 
     local testX = startX + dir
     local testY = startY
-    if world:getColision(testX, testY) and not world:getColision(testX + dir, testY) and world:getColision(testX + dir, testY - 1) then
+    if self:getColision(testX, testY) and not self:getColision(testX + dir, testY) and self:getColision(testX + dir, testY - 1) then
         return true
     end
 
@@ -263,7 +347,7 @@ function Entity:shouldJumpTowardsTarget(target)
     for offset = 1, self.aiInfo.jumpBlocks do
         local tileX = startX + (dir * offset)
         local tileY = startY
-        if world:getColision(tileX, tileY) and not world:getColision(tileX + dir, tileY) and world:getColision(tileX + dir, tileY - 1) then
+        if self:getColision(tileX, tileY) and not self:getColision(tileX + dir, tileY) and self:getColision(tileX + dir, tileY - 1) then
             return true
         end
     end
@@ -347,8 +431,8 @@ function Entity:aiTargetUpdate(dt)
         for i = 1, #entities do
             if self:canAttack(entities[i]) then
                 local distance = self.position:dist(entities[i].position)
-                if distance < self.aiInfo.sightRange then
-                    if world:canLineGoThrough(self.position, entities[i].position, 2) then
+                if distance < self.aiInfo.sightRange or self.isBoss then
+                    if world:canLineGoThrough(self.position, entities[i].position, 2) or self.isBoss then
                         self.aiInfo.alertTimer = self.aiInfo.alertTimer + dt
                         if self.aiInfo.alertTimer > self.aiInfo.alertTime then
                             self.aiInfo.targetId = entities[i].id
@@ -369,7 +453,7 @@ function Entity:aiTargetUpdate(dt)
         local target = self:getTarget(self.aiInfo.targetId)
         if target == nil then self.aiInfo.targetId = nil return end
         self.aiInfo.positionTarget = target.position:copy()
-        if not world:canLineGoThrough(self.position, target.position, 2) or self.position:dist(target.position) > self.aiInfo.sightRange then
+        if (not world:canLineGoThrough(self.position, target.position, 2) or self.position:dist(target.position) > self.aiInfo.sightRange) and (not self.isBoss) then
             self.aiInfo.attentionTimer = self.aiInfo.attentionTimer + dt
             if self.aiInfo.attentionTimer > self.aiInfo.attentionTime then
                 self.aiInfo.targetId = nil

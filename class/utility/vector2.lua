@@ -75,6 +75,14 @@ function Vector2:getDistance(other)
     return self:distance(other)
 end
 
+function Vector2:len()
+    return self:length()
+end
+
+function Vector2:lenght()
+    return self:length()
+end
+
 function Vector2:move(direction360,length)
     self.x = self.x + length * math.cos((direction360*math.pi)/180)
     self.y = self.y + length * math.sin((direction360*math.pi)/180)

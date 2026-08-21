@@ -4,7 +4,7 @@ require "lighting/raycast"
 function love.load()
   --bonjour
 
-  require "lume"
+  lume = require "lume"
   require "gameudp"
   require "drawudp"
   require "mathsc" 
@@ -31,12 +31,16 @@ function love.load()
   require "particles/textParticles"
   require "interfaces/interface"
   require "bars/bar"
+  require "save/save"
   love.graphics.setDefaultFilter("nearest", "nearest")
 
   require "World/tiledef"
   require "World/chunk"
   require "World/world"
-  love.filesystem.setIdentity("GAMENAMEPLEASEFINDONE")
+  love.filesystem.setIdentity("Nadir")
+
+  --icon = love.graphics.newImage("textures/logo.png")
+  --love.window.setIcon(icon)
 
   Fonts = {
     love.graphics.newFont("/fonts/Pixelify_Sans/PixelifySans-VariableFont_wght.ttf", 12, "light", 4),
@@ -63,6 +67,7 @@ function love.load()
   textures = {}
   interfaces = {}
   GlobalEnemyCards = {}
+  SaveName = "save"
 
   --[[
   --commandes:
@@ -94,6 +99,7 @@ function love.load()
   --world.generationFocusRadius = (world.generationFocusRadius or 3) + 1
   --world.farGenerationAttemptRatio = 0.01
   --world.maxFarStepAttemptsPerFrame = 1
+  Cameras = {}
   generateBaseBiomes()
 
   debugseebiome = false
@@ -102,6 +108,8 @@ function love.load()
   chunkloaddistance = 20 
   MaxChunkLoadedPerFrame = 6
   InventorySize = 1
+  InventoryStyle = "frutiger"
+  TooltipSize = 1
   UISize = 1
   InventoryTextSize = 1.4
   SelectedFont = 1
@@ -149,7 +157,7 @@ function love.load()
   fullscreen = false
   scrollValueX = 0
   scrollValueY = 0
-  buttons = {"w","e","tab","click","rclick","shiftclick","shiftrclick"}
+  buttons = {"w","e","tab","click","rclick","shiftclick","shiftrclick","m"}
   SelectedMouseDrag = "none"
   buttonFramePress = {}
   for ib = 1, #buttons do
@@ -169,6 +177,8 @@ function love.load()
   loadeverything()
   resetworld()
   backgroundcolor = { 0.15, 0.15, 0.2, 1 }
+  backgroundcolorTop = { 0.15, 0.15, 0.2, 1 }
+  backgroundcolorBottom = { 0.15, 0.15, 0.2, 1 }
   love.window.setFullscreen(fullscreen)
   love.window.setMode(800, 600, { resizable = true, minwidth = 400, minheight = 300 })
 
@@ -182,6 +192,9 @@ function love.load()
       debugtimes[i]={["global"]={},["draw"]={},["update"]={},["sub"]={}}
     end
     debugtimegraph=false
+
+
+    --StartGame(true,{freeCam = true, worldSeed = 0})
 end
 
 --code totalement pas écrit par chatgpt
@@ -275,10 +288,161 @@ function cameramove(dt)
   camy = round2(realcamy, 8)
 end
 
+function updateBackground(dt,camx,camy)
+  --backgroundcolor = { 0.15, 0.15, 0.2, 1 }
+  --backgroundcolorTop = { 0.15, 0.15, 0.2, 1 }
+  --backgroundcolorBottom = { 0.15, 0.15, 0.2, 1 }
+  local goalBackgroundColor = { 0.15, 0.15, 0.2, 1 }
+  local goalBackgroundColorTop = { 0.15, 0.15, 0.2, 1 }
+  local goalBackgroundColorBottom = { 0.15, 0.15, 0.2, 1 }
+
+  if gamestate == "game" or gamestate == "pause" then
+    goalBackgroundColorTop = { 0.2, 0.2, 0.3, 1 }
+    goalBackgroundColorBottom = { 0.1, 0.1, 0.1, 1 }
+
+    local biome = world:getBiome(camx, camy)
+    if biome == "none" then
+      --goalBackgroundColorTop = { 0.05, 0.05, 0.05, 1 }
+      --goalBackgroundColorBottom = { 0.2, 0.2, 0.4, 1 }
+    end
+    if biome == "coldland" then
+      goalBackgroundColorTop = { 0.7, 0.85, 0.85, 1 }
+      goalBackgroundColorBottom = { 0.4, 0.4, 0.4, 1 }
+    end
+    if biome == "hotland" then
+      goalBackgroundColorTop = { 0.8, 0.4, 0.1, 1 }
+      goalBackgroundColorBottom = { 0.3, 0.1, 0.05, 1 }
+    end
+    if biome == "darkland" then
+      goalBackgroundColorTop = { 0.5, 0.2, 0.5, 1 }
+      goalBackgroundColorBottom = { 0.2, 0.1, 0.2, 1 }
+    end
+    if biome == "ancientland" then
+      goalBackgroundColorTop = { 0.6, 0.8, 0.6, 1 }
+      goalBackgroundColorBottom = { 0.3, 0.4, 0.3, 1 }
+    end
+    if biome == "duneland" then
+      goalBackgroundColorTop = { 0.8, 0.8, 0.6, 1 }
+      goalBackgroundColorBottom = { 0.3, 0.3, 0.2, 1 }
+    end
+    if biome == "edgeLands" then
+      goalBackgroundColorTop = { 0.3, 0.22, 0, 1 }
+      goalBackgroundColorBottom = { 0.1, 0.07, 0, 1 }
+    end
+    if biome == "essenceLand" then
+      goalBackgroundColorTop = { 0, 0.02, 0.07, 1 }
+      goalBackgroundColorBottom = { 0.1, 0.4, 0.5, 1 }
+    end
+
+    if world:isBossPresent() then
+      goalBackgroundColorTop = { 0.8, 0, 0.3, 1 }
+      goalBackgroundColorBottom = { 0.1, 0, 0.1, 1 }
+    end
+  else
+    if gamestate == "settings" then
+      goalBackgroundColorTop = {0, 0, 0, 1}
+      goalBackgroundColorBottom = {0.5, 0.3, 0.1, 1}
+    end
+    if gamestate == "worldCreation" then
+      goalBackgroundColorTop = {0, 0, 0, 1}
+      goalBackgroundColorBottom = {0.1, 0.5, 0.3, 1}
+    end
+    if gamestate == "mainMenu" then
+      goalBackgroundColorTop = {0, 0, 0, 1}
+      goalBackgroundColorBottom = {0.1, 0.3, 0.5, 1}
+      --goalBackgroundColorBottom = {0.5, 0.1, 0.3, 1}
+    end
+  end
+
+  goalBackgroundColor = {
+    goalBackgroundColorTop[1] + goalBackgroundColorBottom[1]/2,
+    goalBackgroundColorTop[2] + goalBackgroundColorBottom[2]/2,
+    goalBackgroundColorTop[3] + goalBackgroundColorBottom[3]/2,
+    goalBackgroundColorTop[4] + goalBackgroundColorBottom[4]/2,
+  }
+
+  backgroundcolor = {
+    k(backgroundcolor[1], goalBackgroundColor[1], 0.01),
+    k(backgroundcolor[2], goalBackgroundColor[2], 0.01),
+    k(backgroundcolor[3], goalBackgroundColor[3], 0.01),
+    k(backgroundcolor[4], goalBackgroundColor[4], 0.01),
+  }
+  backgroundcolorTop = {
+    k(backgroundcolorTop[1], goalBackgroundColorTop[1], 0.01),
+    k(backgroundcolorTop[2], goalBackgroundColorTop[2], 0.01),
+    k(backgroundcolorTop[3], goalBackgroundColorTop[3], 0.01),
+    k(backgroundcolorTop[4], goalBackgroundColorTop[4], 0.01),
+  }
+  backgroundcolorBottom = {
+    k(backgroundcolorBottom[1], goalBackgroundColorBottom[1], 0.01),
+    k(backgroundcolorBottom[2], goalBackgroundColorBottom[2], 0.01),
+    k(backgroundcolorBottom[3], goalBackgroundColorBottom[3], 0.01),
+    k(backgroundcolorBottom[4], goalBackgroundColorBottom[4], 0.01),
+  }
+
+  love.graphics.setBackgroundColor(backgroundcolor)
+  love.graphics.setColor(backgroundcolor)
+  love.graphics.rectangle("fill", 0, 0, szx, szy)
+  drawBackgroundGradient(backgroundcolorTop, backgroundcolorBottom)
+end
+
+function getCursorColor(entity)
+   local pn = 0 
+  if entity ~= nil and entity.playerNumber ~= nil then pn = entity.playerNumber end
+
+  if pn == 1 then return { 0.2, 0.4, 0.6, 1 } end
+  if pn == 2 then return { 0.6, 0.4, 0.2, 1 } end
+  if pn == 3 then return { 0.4, 0.6, 0.2, 1 } end
+  if pn == 4 then return { 0.6, 0.2, 0.4, 1 } end
+
+  return { 1, 1, 1, 1 }
+end
+
+function getInventoryColor(inv,entity)
+  local pn = 0 
+  if entity ~= nil and entity.playerNumber ~= nil then pn = entity.playerNumber end
+  if inv == "main" then
+    if pn == 1 then return { 0.2, 0.4, 0.6, 1 } end
+    if pn == 2 then return { 0.6, 0.4, 0.2, 1 } end
+    if pn == 3 then return { 0.4, 0.6, 0.2, 1 } end
+    if pn == 4 then return { 0.6, 0.2, 0.4, 1 } end
+    return { 0.2, 0.4, 0.6, 1 }
+  end
+  if inv == "armor" then
+    if pn == 1 then return { 0.4, 0.6, 0.8, 1 } end
+    if pn == 2 then return { 0.8, 0.6, 0.4, 1 } end
+    if pn == 3 then return { 0.6, 0.8, 0.4, 1 } end
+    if pn == 4 then return { 0.8, 0.4, 0.6, 1 } end
+    return { 0.6, 0.6, 0.4, 1 }
+  end
+
+  return { 0.5, 0.6, 0.7, 1 }
+end
+
+function drawBackgroundGradient(top,bottom)
+  --local startColor = {0.1, 0.1, 0.1, 1}
+  local startColor = top
+  --local endColor = {0.3, 0.6, 0, 1}
+  local endColor = bottom
+  love.graphics.setColor(startColor)
+  love.graphics.rectangle("fill", 0, 0, szx, szy)
+  
+  --gradiant
+  for i = 0, szy, 1 do
+    local c = i / szy
+    love.graphics.setColor(startColor[1] + c * (endColor[1] - startColor[1]),
+                           startColor[2] + c * (endColor[2] - startColor[2]),
+                           startColor[3] + c * (endColor[3] - startColor[3]),
+                           startColor[4] + c * (endColor[4] - startColor[4]))
+    love.graphics.rectangle("fill", 0, i, szx, 1)
+  end
+end
+
 function love.draw()
  
   debugtimeclear("draw")
-  love.graphics.setBackgroundColor(backgroundcolor)
+  
+  --love.graphics.setBackgroundColor(backgroundcolor)
 
   if gamestate == "game" then
     drawgame()
@@ -291,12 +455,15 @@ function love.draw()
     PauseUpdate()
   end
   if gamestate == "mainMenu" then
+    updateBackground(delta,camx,camy)
     MainMenuUpdate()
   end
   if gamestate == "settings" then
+    updateBackground(delta,camx,camy)
     SettingsUpdate()
   end
   if gamestate == "worldCreation" then
+    updateBackground(delta,camx,camy)
     WorldCreationUpdate(delta)
   end
 
@@ -356,6 +523,28 @@ function UnfocusTextInput()
   end
 end
 
+function love.gamepadpressed(joystick, button)
+  if button == "start" then
+    PressPause()
+  end
+  if button == "b" then
+    if gamestate == "settings" then
+      gamestate = "mainMenu"
+    end
+    if gamestate == "worldCreation" then
+      gamestate = "mainMenu"
+    end
+  end
+end
+
+function PressPause()
+  if gamestate == "game" then
+    gamestate = "pause"
+  elseif gamestate == "pause" then
+    gamestate = "game"
+  end
+end
+
 function love.keypressed(key)
   if key == "backspace" then textInputFrame.backspacePressed = true end
   if key == "return" or key == "kpenter" then textInputFrame.enterPressed = true end
@@ -372,13 +561,7 @@ function love.keypressed(key)
   end
 
   if key == "escape" then
-    if gamestate == "game" then
-      gamestate = "pause"
-    else
-      if gamestate == "pause" then
-        gamestate = "game"
-      end
-    end
+    PressPause()
   end
   if key == "r" then
    --[[ world = World(math.random() * 1000000, 10, 100, 150, {},
@@ -407,6 +590,8 @@ function love.keypressed(key)
     end
   end
   if key == "3" then
+    --SpawnCard("great slime",Vector2(camx,camy))
+    --SpawnCard("Mother bear",Vector2(camx,camy))
     --entities[1].inventory[1]:setItemAttribute("level",entities[1].inventory[1]:getItemAttribute("level",1,1,1,1) + 1,1,1,1)
   end
     if CheatMode then

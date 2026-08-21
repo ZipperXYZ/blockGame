@@ -1,14 +1,26 @@
 function gameupdate(dt)
+  
   gametime = gametime + dt
   debugtimelog("misc","update")
   --debugtimeclear("update")
-  generateworldupdate(dt) debugtimelog("generateworldupdate","update")
+  playerNumberMax = world:getPlayerAmount()
+  --for i = 1, playerNumberMax do
+    local i = math.floor(tick/10) % playerNumberMax + 1
+    generateworldupdate(dt,i) debugtimelog("generateworldupdate","update")
+  --end
   --debugtimeclear("update")
 
   local udpDistanceX = math.ceil(szx / camv / 2)
   local udpDistanceY = math.ceil(szy / camv / 2)
 
-  world:updateTiles(dt, camx, camy, udpDistanceX, udpDistanceY, {}) debugtimelog("updateTiles","update")
+  --for i = 1, math.max(playerNumberMax, 1) do
+    local i = math.floor(tick/10) % playerNumberMax + 1
+    if Cameras[i] ~= nil then
+      camx = Cameras[i].x
+      camy = Cameras[i].y
+    end
+    world:updateTiles(dt, camx, camy, udpDistanceX, udpDistanceY, {}) debugtimelog("updateTiles","update")
+  --end
   DirectorUpdate(dt) debugtimelog("directorUpdate","update")
   world:updateDirectors(dt) debugtimelog("updateDirectors","update")
   world:updateEntities(dt) --debugtimelog("updateEntities","update")
@@ -22,12 +34,7 @@ function gameupdate(dt)
   --entityupdate(dt)
   --playerupdate(dt)
   --updatelight(dt)
-  GameEndUpdate(dt) debugtimelog("GameEndUpdate","update")
-
-  if IsAPlayerAlive() then
-    love.graphics.setColor(1,0,0,1)
-    love.graphics.print("alaal",0,0)
-  end
+  
   
 end
 
@@ -117,15 +124,18 @@ function DirectorUpdate(dt)
         directorCount = directorCount + 1
         if directorCount == 0 then
           local depth = world:getDepth(entities[i].position.y)
-          local multiplier = (1 + math.abs((depth*1.5) ^ 2))
+          local multiplier = (1 + math.abs((depth*2) ^ 2))
           world.globalDirector.position = entities[i].position:copy()
           world.globalDirector.maxCredit = (100 + 30 * multiplier) * world.directorCreditMultiplier
-          world.globalDirector.maxCreditBank = 40 + 30 * multiplier
-          world.globalDirector.creditGain = (0.25 + 0.22 * multiplier) * world.directorCreditMultiplier
-          world.globalDirector.spawnFrequency = 12 / (1 + 0.035 * multiplier) / world.directorSpawnSpeedMultiplier
+          world.globalDirector.maxCreditBank = (40 + 30 * multiplier) * world.directorCreditMultiplier
+          world.globalDirector.creditGain = (0.25 + 0.3 * multiplier) * world.directorCreditMultiplier
+          world.globalDirector.spawnFrequency = 12 / (1.4 + 0.09 * multiplier) / world.directorSpawnSpeedMultiplier
           world.globalDirector.minCreditPerSpawn = -30 + (3 * multiplier)
           world.globalDirector.maxCreditPerSpawn = 50 + (10 * multiplier) * world.directorCreditMultiplier
-          world.globalDirector.mobLimit = 60
+          world.globalDirector.mobLimit = world.mobCap
+          if world.mobCap == 100 then
+              world.globalDirector.mobLimit = 999999999
+            end
           world.globalDirector.decay = world.globalDirector.decay + 10
         else
           if #world.directors < directorCount then
@@ -134,15 +144,18 @@ function DirectorUpdate(dt)
           else
             world.directors[directorCount].position = entities[i].position:copy()
             local depth = world:getDepth(entities[i].position.y)
-            local multiplier = (1 + math.abs((depth*1.5) ^ 2)) 
+            local multiplier = (1 + math.abs((depth*2) ^ 2)) 
             world.directors[directorCount].position = entities[i].position:copy()
             world.directors[directorCount].maxCredit = (100 + 30 * multiplier)* world.directorCreditMultiplier
-            world.directors[directorCount].maxCreditBank = 40 + 30 * multiplier
-            world.directors[directorCount].creditGain = (0.25 + 0.22 * multiplier) * world.directorCreditMultiplier
-            world.directors[directorCount].spawnFrequency = 12 / (1 + 0.035 * multiplier) / world.directorSpawnSpeedMultiplier
+            world.directors[directorCount].maxCreditBank = (40 + 30 * multiplier) * world.directorCreditMultiplier
+            world.directors[directorCount].creditGain = (0.25 + 0.3 * multiplier) * world.directorCreditMultiplier
+            world.directors[directorCount].spawnFrequency = 12 / (1.4 + 0.09 * multiplier) / world.directorSpawnSpeedMultiplier
             world.directors[directorCount].minCreditPerSpawn = -30 + (3 * multiplier)
             world.directors[directorCount].maxCreditPerSpawn = 50 + (10 * multiplier) * world.directorCreditMultiplier
-            world.directors[directorCount].mobLimit = 60
+            world.directors[directorCount].mobLimit = world.mobCap
+            if world.mobCap == 100 then
+              world.directors[directorCount].mobLimit = 999999999
+            end
             world.directors[directorCount].decay = world.directors[directorCount].decay + 10
           end
         end
@@ -163,6 +176,11 @@ function StartGame(changeGameState,parameters)
   if parameters.directorCreditMultiplier == nil then parameters.directorCreditMultiplier = 1 end
   if parameters.directorSpawnSpeedMultiplier == nil then parameters.directorSpawnSpeedMultiplier = 1 end
   if parameters.terrainSize == nil then parameters.terrainSize = 1 end
+  if parameters.numberOfPlayer == nil then parameters.numberOfPlayer = 1 end
+  if parameters.playerFogDistance == nil then parameters.playerFogDistance = 50 end
+  if parameters.playerFog == nil then parameters.playerFog = false end
+  if parameters.itemAttributesMultiplier == nil then parameters.itemAttributesMultiplier = 1 end
+  if parameters.mobCap == nil then parameters.mobCap = 20 end
 
 
   camEntityFollow = 0
@@ -170,6 +188,7 @@ function StartGame(changeGameState,parameters)
   camy = 0
   DeathAnimation = 0
   entities = {}
+  Cameras = {}
   local worldParameters = {}
   EndGameWhenNoPlayer = true
   worldParameters.caveSize = parameters.terrainSize or 1
@@ -177,6 +196,10 @@ function StartGame(changeGameState,parameters)
   worldParameters.borderY = parameters.wh * 1.2
   worldParameters.directorCreditMultiplier = parameters.directorCreditMultiplier or 1
   worldParameters.directorSpawnSpeedMultiplier = parameters.directorSpawnSpeedMultiplier or 1
+  worldParameters.playerFogDistance = parameters.playerFogDistance or 50
+  worldParameters.playerFog = parameters.playerFog or false
+  worldParameters.mobCap = parameters.mobCap or 20
+  worldParameters.itemAttributesMultiplier = parameters.itemAttributesMultiplier or 1
   UnfocusTextInput()
   world = World(parameters.worldseed, 10, parameters.wh/5, parameters.biomeSize, {}, GlobalWorldGenStepList, worldParameters)
   --local spawnX, spawnY = world:getSpawn()
@@ -192,11 +215,22 @@ function StartGame(changeGameState,parameters)
     spectator = true
     EndGameWhenNoPlayer = false
   else
-    --world:spawnEntity("player", 0, 0)
-    table.insert(entities, Entity("player", "player", "player", Vector2(0, 0), 100, 0.425, nil, "player", {}))
-    --table.insert(entities, Entity("player", "player", "bigSlime", Vector2(0, 0), 100, 0.85, 0, "player", {}))
-    if parameters.flyCheat then
-      entities[1].flyCheat = true
+    if parameters.numberOfPlayer > 0 then
+      for i = 1, parameters.numberOfPlayer do
+        local flags = {}
+        flags.controlsType = "keyboard"
+        flags.playerNumber = i
+        if i == 1 then flags.controlsType = "keyboard" end
+        if i > 1 then flags.controlsType = "controller" flags.controllerNumber = i - 1 end
+        if parameters.numberOfPlayer == 2 then flags.inventoryFormat = "vertical" end
+
+        table.insert(entities, Entity("player", "player", "player", Vector2(0, 0), 100, 0.425, nil, "player", flags))
+        
+       
+      end
+      if parameters.flyCheat then
+        entities[1].flyCheat = true
+      end
     end
   end
 

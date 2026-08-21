@@ -34,11 +34,12 @@ function EntitySpawnDirector:init(position,spawnRadiusMax,spawnRadiusMin,startCr
     self.time = 0
     self.id = math.random()
     self.credit = self.startCredit
-    self.timeTillNextSpawn = 0
+    self.timeTillNextSpawn = 15
     self.inactive = false
 
     self.flags = flags or {}
     self.maxEnemyPerSpawn = self.flags.maxEnemyPerSpawn or 5
+    self.mode = self.flags.mode or "random"
 
 end
 
@@ -234,7 +235,26 @@ function EntitySpawnDirector:rollCard(cards,cardType,minimumCost,maximumCost,min
             end
         end
         if #cardPool > 0 then
-            chosenCard = cardPool[math.random(1,#cardPool)]
+            if self.mode == "random" or true then
+                chosenCard = cardPool[math.random(1,#cardPool)]
+            end
+            if self.mode == "chooseHighest" then
+                -- if can choose an elemental, it will only choose elementals
+                local highestTier = 0
+                for i = 1, #cardPool do
+                    if cardPool[i].elementalTier > highestTier then
+                        highestTier = cardPool[i].elementalTier
+                    end
+                end
+                local newPool = {}
+                for i = 1, #cardPool do
+                    if cardPool[i].elementalTier == highestTier then
+                        table.insert(newPool, cardPool[i])
+                    end
+                end
+                cardPool = newPool
+                chosenCard = cardPool[math.random(1,#cardPool)]
+            end
         end
     end
 

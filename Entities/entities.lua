@@ -8,13 +8,15 @@ Entity.className = "Entity"
 
 --init()
 function Entity:init(name, type, sprite, position, health, size, level, ia, flags)
+    self.flags = flags or {}
     --name : player, slime, skeleton...
     --type : player, enemy, boss, specialBoss, other
     --ai : player, regular, other...
     --movevementType : humanlike, hoplike, flying, other
     self.name = name or "none"
+    self.nameColor = self.flags.nameColor or {1,1,1,1}
     self.type = type or "enemy"
-    self.flags = flags or {}
+    
     self.team = self.flags.team or "neutral"
     if self.flags.team == nil then
         if self.type == "player" then
@@ -28,15 +30,21 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
 
     self.xpBar = Bar("xp",{1,1,1,1},{1,1,1,1},"multisection")
     self.xpAccumulated = 0
+    self.moneyAccumulated = 0
+    self.money = 0
+    if self.type == "player" then
+        self.money = 25
+    end
     self.xpGiveOnDeath = self.flags.xpGiveOnDeath or 0
+    self.moneyGiveOnDeath = self.flags.moneyGiveOnDeath or 0
     self.xpToLevelUp = self.flags.xpToLevelUp or 50
-    self.xpToLevelUpPerLevel = self.flags.xpToLevelUpPerLevel or self.xpToLevelUp/5
+    self.xpToLevelUpPerLevel = self.flags.xpToLevelUpPerLevel or self.xpToLevelUp
     self.xpBar:addSection("xp",{0,1,1,1},self.xpToLevelUp,0,3,true,false,false)
     self.xpBar:setValue(0,"xp")
     
 
     self.baseHealth = health or self.flags.health or 1
-    self.baseRegen = self.flags.regen or (health/100)
+    self.baseRegen = self.flags.regen or (maximum(health,100)/100)
     self.healthPerLevel = self.flags.healthPerLevel or (self.baseHealth * 0.05)
 
     self.health = Bar("health",{1,0.5,0.5,1},{1,1,1,1},"multisection")
@@ -58,7 +66,7 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
 
     if sprite ~= nil and sprite ~= "none" then
         if textures["sprites"][sprite] ~= nil then
-            self.sprite = textures["sprites"][sprite]
+            self.sprite = sprite--textures["sprites"][sprite]
         else
             self.sprite = "none"
         end
@@ -81,7 +89,7 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.state = "alive"
     --self.deathEvent:on(self:death())
 
-    self.movementType = self.flags.movementType or "humanlike"
+    self.movementType = self.flags.movementType or "regular"
 
     self.movementSlide = self.flags["movementSlide"] or 0.25
     self.dashes = {}
@@ -110,11 +118,21 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.knockbackMultiplier = self.flags.knockbackMultiplier or 1
     self.baseKnockbackMultiplier = self.knockbackMultiplier
     self.cooldownReduction = 1
+    self.cooldownMultipler = self.flags.cooldownMultipler or 1
+    self.baseCooldownMultipler = self.cooldownMultipler
+
+    self.contactDamage = self.flags.contactDamage or 0
 
 
+    self.color = self.flags.color or {1,1,1,1}
     self.colorisation = self.flags.colorisation or {0,0,0,0}
+    self.shaderName = self.flags.shader or "mobColorisationShader" --or textures["textures"]["mobColorisationShader"]
     self.bloodColor = self.flags.bloodColor or {0.4,0,0.1,1}
     self.bloodColorNoise = self.flags.bloodColorNoise or {0.3,0.05,0.075,1}
+
+    self.elementalType = self.flags.elementalType or "none"
+    self.isBoss = self.flags.isBoss or false
+    self.hasFallDamage = self.flags.hasFallDamage or (not self.isBoss)
 
 
     self.directorId = self.flags.directorId or 0
@@ -124,6 +142,9 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
 
 
     self.controls = {}
+    self.controlsType = self.flags.controlsType or "keyboard"
+    self.inventoryControlsType = self.flags.inventoryControlsType or "mouse"
+    self.controllerNumber =  self.flags.controllerNumber or 0
     self:resetControls()
 
     self.platformDropHoldFrames = self.flags.platformDropHoldFrames or 2
@@ -140,21 +161,32 @@ function Entity:init(name, type, sprite, position, health, size, level, ia, flag
     self.redTime = 1
     self.greenTime = 1
     self.lastDamageTakenEntityId = 0
+    self.playerNumber = self.flags.playerNumber or 0
     self.inventorySpaceHighlights = {}
-    self.cursorColor = { 1, 1, 1, 1 }
+    self.cursorColor = getCursorColor(self)
 
 
     self.inventoryOpened = false
+    self.inventoryFormat = self.flags.inventoryFormat or "normal"
+    self.mapOpened = false
     self.inventoryCursor = { ["amount"] = 0, ["name"] = "none", ["attributes"] = {} }
     if (self.type == "player") then
-        self.inventory = { --(inventoryName,color,screenPos,sizeX,sizeY,sizeZ,maxStack,tileSize,itemSize,flags)
-            Inventory("inventory", { 0.5, 0.6, 0.7, 1 }, Vector2(0.5, 0.05), 7, 5, 1, 100, (0.065), (0.065 / 8), { ["isMainInventory"] = true },self)
-            --Inventory("inventory", { 0.15, 0.15, 0.15, 1 }, Vector2(0.5, 0.05), 7, 6, 1, 100, (0.065), (0.065 / 8), { ["isMainInventory"] = true },self)
-            , Inventory("armor", { 0.5, 0.6, 0.7, 1 }, Vector2(0.95, 0.05), 3, 4, 1, 1, (0.065), (0.065 / 8),
-            { ["isEquipmentInventory"] = true, ["anchorX"] = "right", ["anchorY"] = "top" },self)
-        , --Inventory("chest test", { 0.7, 0.5, 0.5, 1 }, Vector2(0.5, 0.95), 8, 3, 1, 100, (0.065), (0.065 / 8),
-            --{ ["anchorX"] = "middle", ["anchorY"] = "bottom" },self)
-        }
+        if self.inventoryFormat == "normal" or true then
+            self.inventory = { --(inventoryName,color,screenPos,sizeX,sizeY,sizeZ,maxStack,tileSize,itemSize,flags)
+                Inventory("inventory", getInventoryColor("main",self), Vector2(0.5, 0.05), 7, 5, 1, 100, (0.065), (0.065 / 8), { ["isMainInventory"] = true },self)
+                --Inventory("inventory", { 0.15, 0.15, 0.15, 1 }, Vector2(0.5, 0.05), 7, 6, 1, 100, (0.065), (0.065 / 8), { ["isMainInventory"] = true },self)
+                , Inventory("armor", getInventoryColor("armor",self), Vector2(0.95, 0.05), 3, 4, 1, 1, (0.065), (0.065 / 8),
+                { ["isEquipmentInventory"] = true, ["anchorX"] = "right", ["anchorY"] = "top" },self)
+            }
+        end
+        if self.inventoryFormat == "vertical" then
+            self.inventory = { --(inventoryName,color,screenPos,sizeX,sizeY,sizeZ,maxStack,tileSize,itemSize,flags)
+                Inventory("inventory", getInventoryColor("main",self), Vector2(0.5, 0.05), 7, 5, 1, 100, (0.065), (0.065 / 8), { ["isMainInventory"] = true },self)
+                --Inventory("inventory", { 0.15, 0.15, 0.15, 1 }, Vector2(0.5, 0.05), 7, 6, 1, 100, (0.065), (0.065 / 8), { ["isMainInventory"] = true },self)
+                , Inventory("armor", getInventoryColor("armor",self), Vector2(0.95, 0.5), 3, 4, 1, 1, (0.065), (0.065 / 8),
+                { ["isEquipmentInventory"] = true, ["anchorX"] = "right", ["anchorY"] = "top" },self)
+            }
+        end
         --self.inventory[1]:setupMainInventory()
         if CheatMode then
             table.insert(self.inventory,
@@ -254,21 +286,23 @@ function Entity:applyEnchantSignal(signal,signalInfo,item,itemAttributes)
                     local attributes = inventory:getItemAttributes(ix,iy)
                     local slot = inventory:getSlotAttribute("button",ix,iy)..""
                     local icon = inventory:getSlotAttribute("icon",ix,iy)..""
-                    if item.itemName ~= nil and item.itemName ~= "none" then
-                        if item.applyEnchantFromAnyItem and (checkifinlist(slot,item.desiredInventorySpots) or checkifinlist(icon,item.desiredInventorySpots)) then
-                            --print("Applying enchant signal from item: "..item.itemName)
-                            if attributes.enchants ~= nil then
-                                if #attributes.enchants > 0 then
-                                    for i = 1, #attributes.enchants do
-                                        local enchant = attributes.enchants[i]
-                                        --print("    Applying enchant signal from enchant")
-                                        if enchant ~= nil then
-                                            success, signalInfo = enchantReceiveSignal(signal,signalInfo,enchant.cause,enchant.condition,enchant.reaction,attributes,item,self)
+                    if item ~= nil then
+                        if item.itemName ~= nil and item.itemName ~= "none" then
+                            if item.applyEnchantFromAnyItem and (checkifinlist(slot,item.desiredInventorySpots) or checkifinlist(icon,item.desiredInventorySpots)) then
+                                --print("Applying enchant signal from item: "..item.itemName)
+                                if attributes.enchants ~= nil then
+                                    if #attributes.enchants > 0 then
+                                        for i = 1, #attributes.enchants do
+                                            local enchant = attributes.enchants[i]
+                                            --print("    Applying enchant signal from enchant")
+                                            if enchant ~= nil then
+                                                success, signalInfo = enchantReceiveSignal(signal,signalInfo,enchant.cause,enchant.condition,enchant.reaction,attributes,item,self)
+                                            end
                                         end
                                     end
                                 end
-                            end
 
+                            end
                         end
                     end
                 end
@@ -366,18 +400,35 @@ function Entity:gainHealth(value,hpType,source,entitySource)
     return overflow,downflow
 end
 
+function Entity:revive()
+    self.state = "alive"
+    self.health:setValue(self.baseHealth,"hp")
+    --self.position.y = self.position.y - 1
+    
+end
+
 function Entity:death()
-    if #self.inventory > 0 then
-        for ii = 1, #self.inventory do
-            self.inventory[ii]:throwEveryItem(self.position.x, self.position.y)
+
+    if self.type == "player" then
+        self.state = "death"
+        world:placePlayerTomb(self.position:copy(), self)
+    else
+        if #self.inventory > 0 then
+            for ii = 1, #self.inventory do
+                self.inventory[ii]:throwEveryItem(self.position.x, self.position.y)
+            end
         end
+        self:dropXp()
+        self:dropCoins()
+        self.state = "death"
     end
-    self:dropXp()
-    self.state = "death"
 end
 
 function Entity:resetControls()
     self.controls = {}
+
+
+    self.controls.camZoom = 1
 
     self.controls.invClick = false
     self.controls.invClickHold = false
@@ -399,14 +450,26 @@ function Entity:resetControls()
     self.controls.c = false
 
     self.controls.interact = false
+
+    self.controls.mx = 0
+    self.controls.my = 0
+    self.controls.mxWorld = 0
+    self.controls.myWorld = 0
+    self.controls.inventoryCursor = {inventory = 1, x = 1, y = 1}
+
+    self.controls.openInventory = false
+    self.controls.openMap = false
+
+    self.controls.horisontalMove = 1
+    self.controls.verticalMove = 1
 end
 
 function Entity:getAim(axis)
     if self.ai == "player" then
         if axis == nil then
-            return world:getMouseTile(false)
+            return Vector2(self.controls.mxWorld, self.controls.myWorld)
         else
-            local returnValue = world:getMouseTile(false)
+            local returnValue = Vector2(self.controls.mxWorld, self.controls.myWorld)
             return returnValue[axis]
         end
     else
@@ -429,72 +492,434 @@ function Entity:getAim(axis)
     end
 end
 
-function Entity:controlsUpdate(dt)
-    if self.ai == "player" or false then
-        self.controls.left = love.keyboard.isDown("a")
-        self.controls.right = love.keyboard.isDown("d")
-        self.controls.jump = love.keyboard.isDown("w")
-        self.controls.up = love.keyboard.isDown("w")
-        self.controls.down = love.keyboard.isDown("s")
-        if self.inventoryOpened then
-            self.controls.invClick = buttonFramePress["click"]
-            self.controls.invRightClick = buttonFramePress["rclick"]
-            self.controls.invShiftClick = buttonFramePress["shiftclick"]
-            self.controls.invShiftRightClick = buttonFramePress["shiftrclick"]
-            self.controls.invClickHold = love.mouse.isDown(1) and (not love.keyboard.isDown("lshift")) and
-            (not buttonFramePress["click"])
-            self.controls.invShiftClickHold = love.mouse.isDown(1) and (love.keyboard.isDown("lshift")) and
-            (not buttonFramePress["shiftclick"])
-            self.controls.invRightClickHold = love.mouse.isDown(2) and (not love.keyboard.isDown("lshift")) and
-            (not buttonFramePress["rclick"])
-            self.controls.invShiftRightClickHold = love.mouse.isDown(2) and (love.keyboard.isDown("lshift")) and
-            (not buttonFramePress["shiftrclick"])
+function Entity:justPressedButton(buttonName)
+    if self.currentControllerInputs == nil then return false end
+    if self.controls.previousControllerInputs == nil then return false end
+    if self.currentControllerInputs[buttonName] == nil then return false end
+    if self.controls.previousControllerInputs[buttonName] == nil then return false end
+    if self.currentControllerInputs[buttonName] and (not self.controls.previousControllerInputs[buttonName]) then
+        return true
+    else
+        return false
+    end
+end
 
-            self.controls.mine = false
+function Entity:getButtonHoldTime(buttonName)
+    if self.currentControllerInputs == nil then return 0 end
+    if self.controls.previousControllerInputs == nil then return 0 end
+    if self.currentControllerInputs[buttonName] == nil then return 0 end
+    if self.controls.previousControllerInputs[buttonName] == nil then return 0 end
+    if self.currentControllerInputs[buttonName] and (not self.controls.previousControllerInputs[buttonName]) then
+        return 0
+    elseif self.currentControllerInputs[buttonName] and self.controls.previousControllerInputs[buttonName] then
+        return (self.controls.buttonHoldTimes[buttonName] or 0) + love.timer.getDelta()
+    else
+        return 0
+    end
+    
+end
 
-            self.controls.leftClick = false
-            self.controls.rightClick = false
-            self.controls.space = false
-            self.controls.shift = false
-            self.controls.r = false
-            self.controls.x = false
-            self.controls.c = false
-
-            self.controls.interact = buttonFramePress["e"]
-        else
-            self.controls.invClick = false
-            self.controls.invClickHold = false
-            self.controls.invRightClick = false
-            self.controls.invRightClickHold = false
-            self.controls.invShiftClick = false
-            self.controls.invShiftClickHold = false
-            self.controls.invShiftRightClick = false
-            self.controls.invShiftRightClickHold = false
-
-            self.controls.mine = false -- love.mouse.isDown(1)
-
-            self.controls.leftClick = love.mouse.isDown(1)
-            self.controls.rightClick = love.mouse.isDown(2)
-            self.controls.space = love.keyboard.isDown("space")
-            self.controls.shift = love.keyboard.isDown("lshift")
-            self.controls.r = love.keyboard.isDown("r")
-            self.controls.x = love.keyboard.isDown("x")
-            self.controls.c = love.keyboard.isDown("c")
-            self.controls.v = love.keyboard.isDown("v")
-            self.controls.b = love.keyboard.isDown("b")
-            self.controls.n = love.keyboard.isDown("n")
-            self.controls.m = love.keyboard.isDown("m")
-            self.controls.h = love.keyboard.isDown("h")
-            self.controls.j = love.keyboard.isDown("j")
-            self.controls.k = love.keyboard.isDown("k")
-            self.controls.l = love.keyboard.isDown("l")
-
-            self.controls.interact = buttonFramePress["e"]
+function Entity:findClosestEnemy()
+    local enemy = nil
+    local distance = 0
+    if #entities > 0 then
+        for i = 1, #entities do
+            local otherEntity = entities[i]
+            if self:canAttack(otherEntity) then
+                local distToOther = dist(self.position.x, self.position.y, otherEntity.position.x, otherEntity.position.y)
+                if enemy == nil then
+                    enemy = otherEntity
+                    distance = distToOther
+                else
+                    if distToOther < distance then
+                        enemy = otherEntity
+                        distance = distToOther
+                    end
+                end
+            end
         end
-        self.controls.openInventory = buttonFramePress["tab"]
+    end
+    return enemy,distance
+end
+
+function Entity:controlsUpdate(dt,playerNumber)
+    self.controls.horisontalMove = 1
+    self.controls.verticalMove = 1
+    
+    if self.ai == "player" or false then
+        if self.controlsType == "controller" then
+            local controller = love.joystick.getJoysticks()[self.controllerNumber]
+            if controller == nil then return end
+            
+
+            local buttons = {
+                "a", "b", "x", "y",
+                "back", "guide", "start",
+                "leftstick", "rightstick",
+                "leftshoulder", "rightshoulder",
+                "dpup", "dpdown", "dpleft", "dpright"
+            }
+
+            if self.controls.previousControllerInputs == nil then
+                self.controls.previousControllerInputs = {}
+                for i, button in ipairs(buttons) do
+                    self.controls.previousControllerInputs[button] = controller:isGamepadDown(button)
+                end
+            end
+
+            self.controls.previousControllerInputs = {}
+            if self.currentControllerInputs ~= nil then
+                for k, v in pairs(self.currentControllerInputs) do
+                    self.controls.previousControllerInputs[k] = v
+                end
+            end
+            self.currentControllerInputs = {}
+            for i, button in ipairs(buttons) do
+                self.currentControllerInputs[button] = controller:isGamepadDown(button)
+            end
+            if self.controls.buttonHoldTimes == nil then
+                self.controls.buttonHoldTimes = {}
+            end
+            for i, button in ipairs(buttons) do
+                if self.currentControllerInputs[button] then
+                    self.controls.buttonHoldTimes[button] = (self.controls.buttonHoldTimes[button] or 0) + dt
+                else
+                    self.controls.buttonHoldTimes[button] = 0
+                end
+            end
+
+
+
+            --self.controls.mx, self.controls.my = getMousePosition(playerNumber, world:getPlayerAmount())
+            --setScreenSize(playerNumber, world:getPlayerAmount())
+            if dist(0,0,controller:getGamepadAxis("rightx"),controller:getGamepadAxis("righty")) > 0.4 then
+                self.controls.mxWorld = self.position.x + controller:getGamepadAxis("rightx") * 8
+                self.controls.myWorld = self.position.y - controller:getGamepadAxis("righty") * 8
+            else
+                enemy,distance = self:findClosestEnemy()
+                if enemy ~= nil and distance < 10 then
+                    if world:canLineGoThrough(self.position:copy(), enemy.position:copy()) then
+                        self.controls.mxWorld = enemy.position.x
+                        self.controls.myWorld = enemy.position.y
+                    end
+                else
+                    --self.controls.mxWorld = self.position.x + controller:getGamepadAxis("rightx") * 8
+                    --self.controls.myWorld = self.position.y - controller:getGamepadAxis("righty") * 8
+                end
+            end
+            self.controls.horisontalMove = controller:getGamepadAxis("leftx")
+            self.controls.verticalMove = controller:getGamepadAxis("lefty") 
+
+            if controller:isGamepadDown("dpdown") and (controller:isGamepadDown("leftshoulder") and self:getButtonHoldTime("leftshoulder") > 0.05) then
+                self.controls.camZoom = self.controls.camZoom / (1 + 3 * dt)
+            end
+            if (controller:isGamepadDown("dpdown") and (controller:isGamepadDown("rightshoulder") and self:getButtonHoldTime("rightshoulder") > 0.05))
+            then
+                self.controls.camZoom = self.controls.camZoom * (1 + 3 * dt)
+            end
+            if (controller:isGamepadDown("leftstick") and (controller:getGamepadAxis("lefty") > 0.3)) then
+                self.controls.camZoom = self.controls.camZoom / (1 + (controller:getGamepadAxis("lefty")*4) * dt)
+            end
+            if (controller:isGamepadDown("leftstick") and (controller:getGamepadAxis("lefty") < -0.3)) then
+                self.controls.camZoom = self.controls.camZoom * (1 + math.abs(controller:getGamepadAxis("lefty")*4) * dt)
+            end
+
+            self.controls.left = false
+            self.controls.right = false
+            self.controls.up = false
+            self.controls.down = false
+            if self.controls.horisontalMove > 0.2 then
+                self.controls.right = true
+            end
+            if self.controls.horisontalMove < -0.2 then
+                self.controls.left = true
+            end
+            if self.controls.verticalMove > 0.2 then
+                self.controls.down = true
+            end
+            if self.controls.verticalMove < -0.2 then
+                self.controls.up = true
+            end
+            self.controls.horisontalMove = math.abs(self.controls.horisontalMove)
+            self.controls.verticalMove = math.abs(self.controls.verticalMove)
+
+            
+            if self.inventoryOpened then
+                --self.inventoryControlsType = "controller"
+                self.controls.invClick = self:justPressedButton("a")
+                self.controls.invRightClick = self:justPressedButton("b")
+                self.controls.invClickHold = self:getButtonHoldTime("a") > 0.4
+                self.controls.invRightClickHold = self:getButtonHoldTime("b") > 0.4
+                self.controls.invShiftClick = controller:getGamepadAxis("triggerright") > 0.5
+                self.controls.invShiftRightClick = controller:getGamepadAxis("triggerleft") > 0.5
+                self.controls.invShiftClickHold = self:getButtonHoldTime("triggerright") > 0.4
+                self.controls.invShiftRightClickHold = self:getButtonHoldTime("triggerleft") > 0.4
+
+                self.controls.mine = false
+
+                if self.controls.inventoryCursor.inventory == nil then
+                    self.controls.inventoryCursor.inventory = 1
+                end
+                if self.controls.inventoryCursor.inventory > #self.inventory then
+                    self.controls.inventoryCursor.inventory = 1
+                end
+                if self.controls.inventoryCursor.inventory < 1 then
+                    self.controls.inventoryCursor.inventory = #self.inventory
+                end
+                if self.controls.inventoryCursor.y > self.inventory[self.controls.inventoryCursor.inventory].sizeY then
+                    self.controls.inventoryCursor.y = 1
+                end
+                if self.controls.inventoryCursor.y < 1 then
+                    self.controls.inventoryCursor.y = self.inventory[self.controls.inventoryCursor.inventory].sizeY
+                end
+                if self.controls.inventoryCursor.x < 1 then
+                    self.controls.inventoryCursor.x = self.inventory[self.controls.inventoryCursor.inventory].sizeX
+                end
+                if self.controls.inventoryCursor.x > self.inventory[self.controls.inventoryCursor.inventory].sizeX then
+                    self.controls.inventoryCursor.x = 1
+                end
+
+                if dist(0,0,controller:getGamepadAxis("rightx"),controller:getGamepadAxis("righty")) > 0.3 then
+                    self.controls.mx = self.controls.mx + controller:getGamepadAxis("rightx") * 900 * dt * InventorySize
+                    self.controls.my = self.controls.my + controller:getGamepadAxis("righty") * 900 * dt * InventorySize
+                    self.inventoryControlsType = "mouse"
+                end
+                
+
+                if self:justPressedButton("rightshoulder") or (self:getButtonHoldTime("rightshoulder") > 0.4 and tick%4==1) then
+                    self.controls.inventoryCursor.inventory = self.controls.inventoryCursor.inventory + 1
+                    if self.controls.inventoryCursor.inventory > #self.inventory then
+                        self.controls.inventoryCursor.inventory = 1
+                    end
+                    self.inventoryControlsType = "controller"    
+                end
+                if self:justPressedButton("leftshoulder") or (self:getButtonHoldTime("leftshoulder") > 0.4 and tick%4==1) then 
+                    self.controls.inventoryCursor.inventory = self.controls.inventoryCursor.inventory - 1
+                    if self.controls.inventoryCursor.inventory < 1 then
+                        self.controls.inventoryCursor.inventory = #self.inventory
+                    end
+                    self.inventoryControlsType = "controller"    
+                end
+
+                local overFlowType = "nextInventory" --"nextInventory" | "loop"
+
+                if self:justPressedButton("dpdown") or (self:getButtonHoldTime("dpdown") > 0.4 and tick%4==1) then 
+                    self.controls.inventoryCursor.y = self.controls.inventoryCursor.y + 1
+                    if self.controls.inventoryCursor.y > self.inventory[self.controls.inventoryCursor.inventory].sizeY then
+                        if overFlowType == "loop" then
+                        self.controls.inventoryCursor.y = 1
+                        end
+                        if overFlowType == "nextInventory" then
+                            self.controls.inventoryCursor.inventory = self.controls.inventoryCursor.inventory + 1
+                            if self.controls.inventoryCursor.inventory > #self.inventory then
+                                self.controls.inventoryCursor.inventory = 1
+                            end
+                            self.controls.inventoryCursor.y = 1
+                        end
+                    end
+                    self.inventoryControlsType = "controller"    
+                end
+                if self:justPressedButton("dpup") or (self:getButtonHoldTime("dpup") > 0.4 and tick%4==1) then 
+                    self.controls.inventoryCursor.y = self.controls.inventoryCursor.y - 1
+                    if self.controls.inventoryCursor.y < 1  then
+                        if overFlowType == "loop" then
+                            self.controls.inventoryCursor.y = self.inventory[self.controls.inventoryCursor.inventory].sizeY
+                        end
+                        if overFlowType == "nextInventory" then
+                            self.controls.inventoryCursor.inventory = self.controls.inventoryCursor.inventory - 1
+                            if self.controls.inventoryCursor.inventory < 1 then
+                                self.controls.inventoryCursor.inventory = #self.inventory
+                            end
+                            self.controls.inventoryCursor.y = self.inventory[self.controls.inventoryCursor.inventory].sizeY
+                        end
+                    end
+                    self.inventoryControlsType = "controller"    
+                end
+                if self:justPressedButton("dpright") or (self:getButtonHoldTime("dpright") > 0.4 and tick%4==1) then 
+                    self.controls.inventoryCursor.x = self.controls.inventoryCursor.x + 1
+                    if self.controls.inventoryCursor.x > self.inventory[self.controls.inventoryCursor.inventory].sizeX then
+                        if overFlowType == "loop" then
+                            self.controls.inventoryCursor.x = 1
+                        end
+                        if overFlowType == "nextInventory" then
+                            self.controls.inventoryCursor.inventory = self.controls.inventoryCursor.inventory + 1
+                            if self.controls.inventoryCursor.inventory > #self.inventory then
+                                self.controls.inventoryCursor.inventory = 1
+                            end
+                            self.controls.inventoryCursor.x = 1
+                        end
+                    end
+                    self.inventoryControlsType = "controller"    
+                end
+                if self:justPressedButton("dpleft") or (self:getButtonHoldTime("dpleft") > 0.4 and tick%4==1) then 
+                    self.controls.inventoryCursor.x = self.controls.inventoryCursor.x - 1
+                    if self.controls.inventoryCursor.x < 1  then
+                        if overFlowType == "loop" then
+                            self.controls.inventoryCursor.x = self.inventory[self.controls.inventoryCursor.inventory].sizeX
+                        end
+                        if overFlowType == "nextInventory" then
+                            self.controls.inventoryCursor.inventory = self.controls.inventoryCursor.inventory - 1
+                            if self.controls.inventoryCursor.inventory < 1 then
+                                self.controls.inventoryCursor.inventory = #self.inventory
+                            end
+                            self.controls.inventoryCursor.x = self.inventory[self.controls.inventoryCursor.inventory].sizeX
+                        end
+                    end
+                    self.inventoryControlsType = "controller"    
+                end
+
+                self.controls.jump = false
+
+                self.controls.leftClick = false
+                self.controls.rightClick = false
+                self.controls.space = false
+                self.controls.shift = false
+                self.controls.r = false
+                self.controls.x = false
+                self.controls.c = false
+
+                self.controls.interact = self:justPressedButton("x")
+            else
+                if controller:isGamepadDown("dpup") then self.controls.up = true end
+                if controller:isGamepadDown("dpdown") then self.controls.down = true end
+                if controller:isGamepadDown("dpright") then self.controls.right = true end
+                if controller:isGamepadDown("dpleft") then self.controls.left = true end
+
+                self.controls.invClick = false
+                self.controls.invClickHold = false
+                self.controls.invRightClick = false
+                self.controls.invRightClickHold = false
+                self.controls.invShiftClick = false
+                self.controls.invShiftClickHold = false
+                self.controls.invShiftRightClick = false
+                self.controls.invShiftRightClickHold = false
+
+                self.controls.mine = false
+
+                self.controls.leftClick =  controller:getGamepadAxis("triggerright") > 0.5
+                self.controls.rightClick = controller:getGamepadAxis("triggerleft") > 0.5
+                self.controls.space = controller:isGamepadDown("rightshoulder") and (not controller:isGamepadDown("dpdown")) 
+                self.controls.shift = controller:isGamepadDown("leftshoulder") and (not controller:isGamepadDown("dpdown")) 
+                self.controls.r = controller:isGamepadDown("dpleft") or controller:isGamepadDown("rightstick")
+                self.controls.x = controller:isGamepadDown("dpup")
+                self.controls.c = controller:isGamepadDown("dpright")
+
+                self.controls.jump = controller:isGamepadDown("a") or controller:isGamepadDown("b")
+                --[[self.controls.v = love.keyboard.isDown("v")
+                self.controls.b = love.keyboard.isDown("b")
+                self.controls.n = love.keyboard.isDown("n")
+                self.controls.m = love.keyboard.isDown("m")
+                self.controls.h = love.keyboard.isDown("h")
+                self.controls.j = love.keyboard.isDown("j")
+                self.controls.k = love.keyboard.isDown("k")
+                self.controls.l = love.keyboard.isDown("l")]]
+
+                self.controls.interact = self:justPressedButton("x")
+            end
+            self.controls.openInventory = self:justPressedButton("y")
+            self.controls.openMap = self:justPressedButton("back")
+        end
+
+
+
+
+
+        if self.controlsType == "keyboard" then
+            self.inventoryControlsType = "mouse"
+            self.controls.mx, self.controls.my = getMousePosition(playerNumber, world:getPlayerAmount())
+            --setScreenSize(playerNumber, world:getPlayerAmount())
+            self.controls.mxWorld, self.controls.myWorld = getMouseWorldPosition(playerNumber, world:getPlayerAmount())
+            self.controls.left = love.keyboard.isDown("a")
+            self.controls.right = love.keyboard.isDown("d")
+            self.controls.jump = love.keyboard.isDown("w")
+            self.controls.up = love.keyboard.isDown("w")
+            self.controls.down = love.keyboard.isDown("s")
+
+            if love.keyboard.isDown("-") then
+                self.controls.camZoom = self.controls.camZoom / (1 + 3 * dt)
+            end
+            if love.keyboard.isDown("=") or love.keyboard.isDown("+") then
+                self.controls.camZoom = self.controls.camZoom * (1 + 3 * dt)
+            end
+
+            if self.inventoryOpened then
+                self.controls.invClick = buttonFramePress["click"]
+                self.controls.invRightClick = buttonFramePress["rclick"]
+                self.controls.invShiftClick = buttonFramePress["shiftclick"]
+                self.controls.invShiftRightClick = buttonFramePress["shiftrclick"]
+                self.controls.invClickHold = love.mouse.isDown(1) and (not love.keyboard.isDown("lshift")) and
+                (not buttonFramePress["click"])
+                self.controls.invShiftClickHold = love.mouse.isDown(1) and (love.keyboard.isDown("lshift")) and
+                (not buttonFramePress["shiftclick"])
+                self.controls.invRightClickHold = love.mouse.isDown(2) and (not love.keyboard.isDown("lshift")) and
+                (not buttonFramePress["rclick"])
+                self.controls.invShiftRightClickHold = love.mouse.isDown(2) and (love.keyboard.isDown("lshift")) and
+                (not buttonFramePress["shiftrclick"])
+
+                self.controls.mine = false
+
+                self.controls.leftClick = false
+                self.controls.rightClick = false
+                self.controls.space = false
+                self.controls.shift = false
+                self.controls.r = false
+                self.controls.x = false
+                self.controls.c = false
+
+                self.controls.interact = buttonFramePress["e"]
+            else
+                self.controls.invClick = false
+                self.controls.invClickHold = false
+                self.controls.invRightClick = false
+                self.controls.invRightClickHold = false
+                self.controls.invShiftClick = false
+                self.controls.invShiftClickHold = false
+                self.controls.invShiftRightClick = false
+                self.controls.invShiftRightClickHold = false
+
+                self.controls.mine = false -- love.mouse.isDown(1)
+
+                self.controls.leftClick = love.mouse.isDown(1)
+                self.controls.rightClick = love.mouse.isDown(2)
+                self.controls.space = love.keyboard.isDown("space")
+                self.controls.shift = love.keyboard.isDown("lshift")
+                self.controls.r = love.keyboard.isDown("r")
+                self.controls.x = love.keyboard.isDown("x")
+                self.controls.c = love.keyboard.isDown("c")
+                self.controls.v = love.keyboard.isDown("v")
+                self.controls.b = love.keyboard.isDown("b")
+                self.controls.n = love.keyboard.isDown("n")
+                self.controls.m = love.keyboard.isDown("m")
+                self.controls.h = love.keyboard.isDown("h")
+                self.controls.j = love.keyboard.isDown("j")
+                self.controls.k = love.keyboard.isDown("k")
+                self.controls.l = love.keyboard.isDown("l")
+
+                self.controls.interact = buttonFramePress["e"]
+            end
+            self.controls.openInventory = buttonFramePress["tab"]
+            self.controls.openMap = buttonFramePress["m"]
+        end
     end
     if self.ai ~= "player" then
         self:aiUpdate(dt)
+    end
+    if self.controls.openMap then
+        self.mapOpened = not self.mapOpened
+    end
+    if self.controls.camZoom < 0.75 then self.controls.camZoom = 0.75 end
+    if self.controls.camZoom > 8 then self.controls.camZoom = 8 end
+end
+
+function Entity:getInteractButton()
+    if self.ai == "player" then
+        if self.controlsType == "controller" then
+            return "X"
+        else
+            return "E"
+        end
+    else
+        return ""
     end
 end
 
@@ -572,6 +997,8 @@ function Entity:getInventoryData(data,type,default,baseValue)
 end
 
 function Entity:updateFallDamage()
+
+    if not self.hasFallDamage then return end
     
     if (not self.groundedLastFrame)  then
         if self.highestPositionBeforeFall ~= nil then
@@ -667,7 +1094,7 @@ function Entity:entityDeathUpdate(dt)
 end
 
 function Entity:getCooldownReductionMultiplier()
-    local cooldownReduction = 1
+    local cooldownReduction = 1 / self.baseCooldownMultipler
     cooldownReduction = cooldownReduction * self:getInventoryData("cooldownReduction","multiply")
     return cooldownReduction
 end
@@ -743,11 +1170,11 @@ function Entity:movementUpdate(dt)
     
         if self.controls.right then
             self.velocity.x = self.velocity.x +
-                (10 * dt / self.movementSlide)
+                (10 * dt / self.movementSlide) * self.controls.horisontalMove
         end
         if self.controls.left then
             self.velocity.x = self.velocity.x -
-                (10 * dt / self.movementSlide)
+                (10 * dt / self.movementSlide) * self.controls.horisontalMove
         end
 
         --self:updateFallDamage()
@@ -808,6 +1235,9 @@ function Entity:getStairSurfaceYAt(x, y)
 end
 
 function Entity:isStairCollisionAt(x, y)
+    if self:shouldIgnoreBossCollision(y) then
+        return false
+    end
     local surfaceY = self:getStairSurfaceYAt(x, y)
     if surfaceY == nil then return false end
     return y < (surfaceY - 0.0001)
@@ -857,6 +1287,9 @@ end
 function Entity:isPlatformCollisionAt(x, y, centerY)
     local tileX = round(x)
     local tileY = round(y)
+    if self:shouldIgnoreBossCollision(y) then
+        return false
+    end
     local tile = world:getTile(tileX, tileY, "tiles")
     if tile == nil or tile.type ~= "platform" then return false end
     if self.platformDropThroughTimer > 0 then return false end
@@ -877,14 +1310,31 @@ function Entity:isPlatformCollisionAt(x, y, centerY)
     return false
 end
 
+-- bosses ignore block collisions at or above their current target's y level
+function Entity:shouldIgnoreBossCollision(y)
+    if not self.isBoss then return false end
+    if self.aiInfo == nil or self.aiInfo.targetId == nil then return false end
+    local target = self:getTarget(self.aiInfo.targetId)
+    if target == nil then return false end
+    return round(y) >= round(target.position.y)
+end
+
+function Entity:getColision(x, y)
+    if self:shouldIgnoreBossCollision(y) then
+        return false
+    end
+    return world:getColision(x, y)
+end
+
 function Entity:isGrounded()
     local yCheck = self.position.y - self.size - 0.05
     local xCheck
     for ix = 0, math.ceil(self.size * 2) + 2 do
         xCheck = self.position.x - self.size + ((self.size * 2) / (math.ceil(self.size * 2) + 2) * ix)
-        if world:getColision(xCheck, yCheck)
+        if (self:getColision(xCheck, yCheck)
             or self:isStairCollisionAt(xCheck, yCheck)
-            or self:isPlatformCollisionAt(xCheck, yCheck, self.position.y)
+            or self:isPlatformCollisionAt(xCheck, yCheck, self.position.y))
+            and (not self:shouldIgnoreBossCollision(yCheck))
         then
             return true
         end
@@ -957,6 +1407,7 @@ function Entity:dashUpdate(dt)
 end
 
 function Entity:getDashVelocity(axis)
+    local dashVelocityLimit = 70
     local dashVelocity = Vector2(0,0)
     if #self.dashes > 0 then
         for i = 1, #self.dashes do
@@ -966,6 +1417,9 @@ function Entity:getDashVelocity(axis)
             end
         end
     end
+    if dashVelocity:lenght() > dashVelocityLimit then
+        dashVelocity = dashVelocity:normalized() * dashVelocityLimit
+    end
     if axis == nil then
         return dashVelocity
     end
@@ -973,6 +1427,9 @@ function Entity:getDashVelocity(axis)
 end
 
 function Entity:collisionUpdate(dt)
+    if self.velocity:lenght() > 60 then
+        self.velocity = self.velocity:normalized() * 60
+    end
     self:dashUpdate(dt)
     if self.platformDropThroughTimer > 0 then
         self.platformDropThroughTimer = self.platformDropThroughTimer - dt
@@ -981,16 +1438,16 @@ function Entity:collisionUpdate(dt)
     --self:dash(10,1,100)
     if self.flyCheat then
         if self.controls.up then
-            self.position.y = self.position.y + 20 * dt
+            self.position.y = self.position.y + 20 * dt * self.controls.verticalMove
         end
         if self.controls.down then
-            self.position.y = self.position.y - 20 * dt
+            self.position.y = self.position.y - 20 * dt * self.controls.verticalMove
         end
         if self.controls.right then
-            self.position.x = self.position.x + 20 * dt
+            self.position.x = self.position.x + 20 * dt * self.controls.horisontalMove
         end
         if self.controls.left then
-            self.position.x = self.position.x - 20 * dt
+            self.position.x = self.position.x - 20 * dt * self.controls.horisontalMove
         end
     else
         --update Y
@@ -1010,8 +1467,16 @@ function Entity:collisionUpdate(dt)
         end
 
         --update X
-        self.position.x = self.position.x + (self.velocity.x * dt * self:getMovementSpeed()) + (self:getDashVelocity("x") * dt)
-
+        if self.movementType == "regular"  then
+            self.position.x = self.position.x + (self.velocity.x * dt * self:getMovementSpeed()) + (self:getDashVelocity("x") * dt)
+        end
+        if self.movementType == "hoplike" then
+            if not self:isGrounded() then
+                self.position.x = self.position.x + (self.velocity.x * dt * self:getMovementSpeed()) + (self:getDashVelocity("x") * dt)
+            else
+                self.position.x = self.position.x + (self:getDashVelocity("x") * dt)
+            end
+        end
         if self.hasWorldCollisions then
             local x
             local y
@@ -1029,37 +1494,29 @@ function Entity:collisionUpdate(dt)
 
         --s'assurer que le joueur n'est toujours pas coincé dans un block
         if self.hasWorldCollisions then
-            if world:getColision(self.position.x, self.position.y)
-                or self:isStairCollisionAt(self.position.x, self.position.y)
-                or self:isPlatformCollisionAt(self.position.x, self.position.y, self.position.y)
+            if self:getColision(self.position.x, self.position.y)
+                --or self:isStairCollisionAt(self.position.x, self.position.y)
+                --or self:isPlatformCollisionAt(self.position.x, self.position.y, self.position.y)
             then
                 local stuckCheckLimit = 1
                 if self.type == "player" then stuckCheckLimit = 3 end
                 for distan = 1, stuckCheckLimit do
-                    if (not world:getColision(self.position.x, self.position.y-distan))
-                        and (not self:isStairCollisionAt(self.position.x, self.position.y-distan))
-                        and (not self:isPlatformCollisionAt(self.position.x, self.position.y-distan, self.position.y))
+                    if (not self:getColision(self.position.x, self.position.y-distan))
                     then
                         self.position.y = self.position.y - distan
                         return
                     end
-                    if (not world:getColision(self.position.x, self.position.y+distan))
-                        and (not self:isStairCollisionAt(self.position.x, self.position.y+distan))
-                        and (not self:isPlatformCollisionAt(self.position.x, self.position.y+distan, self.position.y))
+                    if (not self:getColision(self.position.x, self.position.y+distan))
                     then
                         self.position.y = self.position.y + distan
                         return
                     end
-                    if (not world:getColision(self.position.x+distan, self.position.y))
-                        and (not self:isStairCollisionAt(self.position.x+distan, self.position.y))
-                        and (not self:isPlatformCollisionAt(self.position.x+distan, self.position.y, self.position.y))
+                    if (not self:getColision(self.position.x+distan, self.position.y))
                     then
                         self.position.x = self.position.x + distan
                         return
                     end
-                    if (not world:getColision(self.position.x-distan, self.position.y))
-                        and (not self:isStairCollisionAt(self.position.x-distan, self.position.y))
-                        and (not self:isPlatformCollisionAt(self.position.x-distan, self.position.y, self.position.y))
+                    if (not self:getColision(self.position.x-distan, self.position.y))
                     then
                         self.position.x = self.position.x - distan
                         return
@@ -1070,9 +1527,15 @@ function Entity:collisionUpdate(dt)
     end
 end
 
-function Entity:camUpdate()
-    if (camEntityFollow == self.id) then
+function Entity:camUpdate(dt,player)
+    --if (camEntityFollow == self.id) then
+    if self.cameraFocus then
+        --player = player + 1
+        setScreenSize(player,world:getPlayerAmount())
+        
         camv = math.sqrt(szy * szx) / 30
+
+        camv = camv * self.controls.camZoom 
 
         camv = round(camv / 8) * 8
 
@@ -1084,19 +1547,51 @@ function Entity:camUpdate()
         camx = realcamx
         camy = realcamy
         spectator = false
+
+        if Cameras[player] == nil then
+            Cameras[player] = {}
+        end
+        if Cameras[player].entityFollow ~= self.id then
+            Cameras[player].entityFollow = self.id
+        end
+        if Cameras[player].x == nil then
+            Cameras[player].x = camx
+        end
+        if Cameras[player].y == nil then
+            Cameras[player].y = camy
+        end
+        if Cameras[player].v == nil then
+            Cameras[player].v = camv
+        end
+        if Cameras[player].backgroundcolorBottom == nil then
+            Cameras[player].backgroundcolorBottom = CopyAll(backgroundcolorBottom)
+        end
+        if Cameras[player].backgroundcolorTop == nil then
+            Cameras[player].backgroundcolorTop = CopyAll(backgroundcolorTop)
+        end
+        Cameras[player].x = camx
+        Cameras[player].y = camy
+        Cameras[player].v = camv
+        Cameras[player].entityFollow = self.id
+
+        --Cameras[player] = {x = camx, y = camy, v = camv, entityFollow = self.id, backgroundcolorBottom = CopyAll(backgroundcolorBottom), backgroundcolorTop = CopyAll(backgroundcolorTop)}
     end
-    if self.cameraFocus then
+    --[[if self.cameraFocus then
         if (camEntityFollow == 0) then
             camEntityFollow = self.id
         end
-    end
+    end]]
+    return player
 end
 
 function Entity:interactUpdate(dt)
     if self.controls.interact then
         local success, interactable, interactablePosition = self:getInteractable(self.position, self:getAim(), 8)
         if success and interactable ~= nil and interactablePosition ~= nil then
-            interactable:interact(interactablePosition.x, interactablePosition.y, self)
+            if interactable:getInteractability(round(interactablePosition.x), round(interactablePosition.y), self) then
+                interactable:interact(interactablePosition.x, interactablePosition.y, self)
+                self:setAnimation("use",3)
+            end
         end
     end
 end
@@ -1116,15 +1611,21 @@ function Entity:getInteractable(entityPosition, aimPosition, interactionRange)
         if position == nil then return false end
         local tile = world:getTile(round(position.x), round(position.y), "tiles")
         if tile ~= nil and tile ~= tiles["none"] and tile.interactable then
-            interactable = tile
-            interactablePosition = Vector2(round(position.x), round(position.y))
-            return true
+            --if tile:getInteractability(round(position.x), round(position.y), self) then
+                interactable = tile
+                interactablePosition = Vector2(round(position.x), round(position.y))
+                return true
+            --end
         end
         return false
     end
 
     if checkTileAt(aimPosition) and aimPosition:dist(entityPosition) <= interactionRange and world:canLineGoThrough(entityPosition, aimPosition) then
-        return true, interactable, interactablePosition
+        if interactable ~= nil and interactablePosition ~= nil then
+            --if interactable:getInteractability(round(interactablePosition.x), round(interactablePosition.y), self) then
+                return true, interactable, interactablePosition
+            --end
+        end
     end
 
     for i = 0, interactionRange, 0.5 do
@@ -1176,15 +1677,24 @@ end
 
 function Entity:drawInteractionPreview()
     local success, interactable, interactablePosition = self:getInteractable(self.position, self:getAim(), 8)
-    if success and interactablePosition ~= nil then
+    if success and interactablePosition ~= nil and interactable ~= nil then
+        local interactionX = round(interactablePosition.x)
+        local interactionY = round(interactablePosition.y)
+        interactable:onInteractLook(interactionX, interactionY, self)
+
+        local canInteract = interactable:getInteractability(interactionX, interactionY, self)
         local x, y, size = world:getTileScreenPosition(round(interactablePosition.x), round(interactablePosition.y))
-        local color = { 0.8, 0.8, 0, 0.8 }
+        local color = (interactable:getInteractColor(interactionX, interactionY, self))
+        if not canInteract then color = interactable:getNonInteractColor(interactionX, interactionY, self) end
         if textures["sprites"]["placementPreview"] ~= nil then
             textures["sprites"]["placementPreview"]:drawSI("right", x, y, size, size, color)
         end
-        local textSize = size / 4
+        local textSize = size / 4 * TooltipSize
+        local text = interactable:getInteractText(interactionX, interactionY, self)
+        if not canInteract then text = interactable:getNonInteractiveText(interactionX, interactionY, self) end
         love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.printf("Press E to interact", x - size * 2, y + size * 1.5, (size * 15)/textSize, "left",0,textSize,textSize)
+        love.graphics.printf(text, x - size * 2, y + size * 1.5, (size * 25 * TooltipSize)/textSize, "left",0,textSize,textSize)
+        
     end
 end
 
@@ -1280,10 +1790,12 @@ function Entity:drawMinePreview()
 end
 
 function Entity:DrawUI()
-    self:drawBlocPreview() debugtimelog("blocPreview","sub")
-    self:drawMinePreview() debugtimelog("minePreview","sub")
-    self:drawInteractionPreview() debugtimelog("interactionPreview","sub")
-    self:drawAttackPreview() debugtimelog("attackPreview","sub")
+    self:drawBlocPreview() --debugtimelog("blocPreview","sub")
+    self:drawMinePreview() --debugtimelog("minePreview","sub")
+    self:drawInteractionPreview() --debugtimelog("interactionPreview","sub")
+    self:drawAttackPreview() --debugtimelog("attackPreview","sub")
+
+    self:drawDamageScreen() --debugtimelog("damageScreen","sub")
 
     if self.controls.openInventory then
         if self.inventoryOpened then
@@ -1307,47 +1819,116 @@ function Entity:DrawUI()
         end
     else
         if #self.inventory > 0 then
-            itemDraw = self.inventory[1]:draw("firstLine", self) debugtimelog("hotBarDraw","sub")
+            itemDraw = self.inventory[1]:draw("firstLine", self) --debugtimelog("hotBarDraw","sub")
         end
     end
+
+    if self.mapOpened then
+        drawWorldMap(szx*0.1, szy*0.1, szx*0.8, szy*0.8)
+    end
+
+    local barProportion = 0.35
+    if HealthBarPosition == "top" then
+        barProportion = 0.25
+    end
+    local barSize = szx * barProportion
+    if szy * barProportion > barSize then barSize = szy * barProportion end
 
     if self.xpBar ~= nil then
         if HealthBarPosition == "top" then
-            self.xpBar:draw(szx*0.05,szy*0.05+szy*0.07,szx*0.25,szy*0.02,HealthBarStyle,"total",szy*0.02/10,5,nil,"Level: "..self.level..", xp: ")
+            self.xpBar:draw(szx*0.05,szy*0.05+szy*0.07,barSize,szy*0.02,HealthBarStyle,"total",szy*0.02/10,5,nil,"Level: "..self.level..", xp: ")
         else
-            self.xpBar:draw(szx*0.05,szy*0.89-szy*0.03,szx*0.25,szy*0.02,HealthBarStyle,"total",szy*0.02/10,5,nil,"Level: "..self.level..", xp: ")
+            self.xpBar:draw(szx*0.05,szy*0.89-szy*0.03,barSize,szy*0.02,HealthBarStyle,"total",szy*0.02/10,5,nil,"Level: "..self.level..", xp: ")
         end
         --self.health:draw(szx*0.05,szy*0.89-szy*0.1,szx*0.25,szy*0.06,HealthBarStyle,"total",nil,5)
     end
-    debugtimelog("xpBarDraw","sub")
+    --debugtimelog("xpBarDraw","sub")
 
     if self.health ~= nil then
         if HealthBarPosition == "top" then
-            self.health:draw(szx*0.05,szy*0.05,szx*0.25,szy*0.06,HealthBarStyle,"sectionned",nil,5)
+            self.health:draw(szx*0.05,szy*0.05,barSize,szy*0.06,HealthBarStyle,"sectionned",nil,5)
         else
-            self.health:draw(szx*0.05,szy*0.89,szx*0.25,szy*0.06,HealthBarStyle,"sectionned",nil,5)
+            self.health:draw(szx*0.05,szy*0.89,barSize,szy*0.06,HealthBarStyle,"sectionned",nil,5)
         end
         --self.health:draw(szx*0.05,szy*0.89-szy*0.1,szx*0.25,szy*0.06,HealthBarStyle,"total",nil,5)
     end
-    debugtimelog("healthBarDraw","sub")
+
+    if self.money > 0 or true then
+        local y = szy*0.89-szy*0.07
+        if HealthBarPosition == "top" then 
+            y = szy*0.05+szy*0.1
+        end
+        love.graphics.setColor(0,0,0,1)
+        local text = {{0,0,0,1},"$: "..math.ceil(self.money),{0,0,0,0.75},"."..string.format("%02d",math.ceil((self.money-math.floor(self.money))*100))}
+        love.graphics.printf(text,szx*0.05+1,y,barSize,"left",0,szy*0.02/10,szy*0.02/10)
+        love.graphics.printf(text,szx*0.05-1,y,barSize,"left",0,szy*0.02/10,szy*0.02/10)
+        love.graphics.printf(text,szx*0.05,y+1,barSize,"left",0,szy*0.02/10,szy*0.02/10)
+        love.graphics.printf(text,szx*0.05,y-1,barSize,"left",0,szy*0.02/10,szy*0.02/10)
+        love.graphics.setColor(1,1,1,1)
+        local text = {{1,1,1,1},"$: "..math.ceil(self.money),{0.6,0.6,0.65,0.75},"."..string.format("%02d",math.ceil((self.money-math.floor(self.money))*100))}
+        love.graphics.printf(text,szx*0.05,y,barSize,"left",0,szy*0.02/10,szy*0.02/10)
+    end
+    --debugtimelog("healthBarDraw","sub")
 
     if itemDraw ~= nil then
-        if itemDraw.item ~= nil and itemDraw.item.itemName ~= "none" then
-            itemToolTipOffset = itemDraw.item:drawToolTip(true,mx+100,my,math.ceil(szx*0.07),szx * 0.35,itemDraw.attributes,itemDraw.amount,self)
+        if itemDraw.item ~= nil and itemDraw.item.itemName ~= "none" and (self.inventoryOpened or self.controlsType == "keyboard") then
+            itemToolTipOffset = itemDraw.item:drawToolTip(true,self.controls.mx+100,self.controls.my,math.ceil(szx*0.07*TooltipSize),szx * 0.35*TooltipSize,itemDraw.attributes,itemDraw.amount,self)
         end
     end
-    debugtimelog("itemToolTipDraw","sub")
+    --debugtimelog("itemToolTipDraw","sub")
 
-    if self.inventoryCursor.name ~= "none" then
+    if self.inventoryCursor.name ~= "none" and (self.inventoryOpened or self.controlsType == "keyboard") then
         self:drawCursorItem(itemToolTipOffset)
-        debugtimelog("drawCursorItem","sub")
+        --debugtimelog("drawCursorItem","sub")
+    end
+
+    if self.controlsType == "controller" then
+        self:drawCursor() --debugtimelog("drawCursor","sub")
+    end
+end
+
+function Entity:drawCursor()
+
+    if self.inventoryOpened then
+        x = self.controls.mx
+        y = self.controls.my
+        size = (szx * 0.03 /4) * (1 + math.sin(gametime * 10) * 0.2) * InventorySize
+
+        --local color = CopyAll(self.cursorColor)
+        --color[4] = 0.5
+        local color = { 0, 0, 0, 0.1 }
+        textures["sprites"]["cursor"]:drawSI("right", x+2, y, size, size, color)
+        textures["sprites"]["cursor"]:drawSI("right", x-2, y, size, size, color)
+        textures["sprites"]["cursor"]:drawSI("right", x, y-2, size, size, color)
+        textures["sprites"]["cursor"]:drawSI("right", x, y+2, size, size, color)
+        local color = { 1, 1, 0, 0.6 }
+        textures["sprites"]["cursor"]:drawSI("right", x, y, size, size, color)
+
+    else
+
+        local x, y, size = world:getTileScreenPosition(round(self.controls.mxWorld,8), round(self.controls.myWorld,8))
+
+        local color = { 1, 1, 1, 0.5 }
+        textures["sprites"]["cursor"]:drawSI("right", x, y, size, size, color)
+        
+    end
+end
+
+function Entity:drawDamageScreen()
+    if self.lastDamageTakenTime < 0.5 and gametime > 0.5 then
+        love.graphics.setColor(1, 0, 0, (0.5 - self.lastDamageTakenTime) * 0.5)
+        for i2 = 1, 10 do
+            love.graphics.setLineWidth(i2 * 10)
+            love.graphics.rectangle("line", 2, 2, szx - 4, szy - 4, 10 + i2 * 4, 10 + i2 * 4)
+        end
     end
 end
 
 function Entity:drawCursorItem(itemToolTipOffset)
     local x1, y1, s1 = self.inventory[1]:getTilePosAndSize(1, 1)
-    x1 = mx - s1 / 2
-    y1 = my - s1 / 2
+    s1 = s1 * (TooltipSize ^ 0.5)
+    x1 = self.controls.mx - s1 / 2
+    y1 = self.controls.my - s1 / 2
     if self.inventoryCursor.name ~= "none" then
         if items[self.inventoryCursor.name] ~= nil then
             items[self.inventoryCursor.name]:draw("medium", x1 + s1 / 2, y1 + s1 / 2, s1, self.inventoryCursor
@@ -1356,7 +1937,7 @@ function Entity:drawCursorItem(itemToolTipOffset)
                 love.graphics.setColor(1, 1, 1, 1)
                 love.graphics.printf("x" .. self.inventoryCursor.amount, x1, y1 + s1 - 15, s1 / 1.2, "right", 0, 1.2, 1.2)
             end
-            items[self.inventoryCursor.name]:drawToolTip(true,mx+100,my + itemToolTipOffset + 10,math.ceil(szx*0.07),szx * 0.3,self.inventoryCursor.attributes,self.inventoryCursor.amount,self)
+            items[self.inventoryCursor.name]:drawToolTip(true,self.controls.mx+100,self.controls.my + itemToolTipOffset + 10,math.ceil(szx*0.07*TooltipSize),szx * 0.3*TooltipSize,self.inventoryCursor.attributes,self.inventoryCursor.amount,self)
         end
     end
 end
@@ -1367,28 +1948,32 @@ function Entity:CollisionDirectionCheck(center, otherAxisPosition, check, axis)
     local differenceAxis = self.size
     if axis == "x" then
         -- Horizontal resolution should not treat stairs as full wall blocks.
-        local collide = world:getColision(check, otherAxisPosition)
+        local collide = self:getColision(check, otherAxisPosition)
 
         if collide then
+            -- resolve against the tile that actually collided (round(check)), not the entity's own tile,
+            -- since for sizes >= 0.5 those can be different rows/columns.
             if check > center then
-                self.position.x = round(center) + (0.5 - differenceAxis - 0.005)
+                self.position.x = round(check) - (0.5 + differenceAxis + 0.005)
                 if self.velocity.x > 0 then self.velocity.x = 0 end
             else
-                self.position.x = round(center) - (0.5 - differenceAxis - 0.005)
+                self.position.x = round(check) + (0.5 + differenceAxis + 0.005)
                 if self.velocity.x < 0 then self.velocity.x = 0 end
             end
             return true
         end
     end
     if axis == "y" then
-        local collide = world:getColision(otherAxisPosition, check)
+        local collide = self:getColision(otherAxisPosition, check)
 
         if collide then
+            -- resolve against the tile that actually collided (round(check)), not the entity's own tile,
+            -- since for sizes >= 0.5 those can be different rows/columns.
             if check > center then
-                self.position.y = round(center) + (0.5 - differenceAxis - 0.005)
+                self.position.y = round(check) - (0.5 + differenceAxis + 0.005)
                 if self.velocity.y > 0 then self.velocity.y = 0 end
             else
-                self.position.y = round(center) - (0.5 - differenceAxis - 0.005)
+                self.position.y = round(check) + (0.5 + differenceAxis + 0.005)
                 if self.velocity.y < 0 then self.velocity.y = 0 end
             end
             return true
@@ -1425,26 +2010,46 @@ end
 
 function Entity:collisionWithEntities(dt)
     --
+    
     for i2 = 1, #entities do
-        other = entities[i2]
+        local other = entities[i2]
         if self.id ~= other.id then
             if dist(self.position.x, self.position.y, other.position.x, other.position.y) < self.size + other.size then
                 local distance = (1 - (1 / (self.size + other.size) * dist(self.position.x, self.position.y, other.position.x, other.position.y))) ^
                     0.5
-                entities[i2].position.x, entities[i2].position.y =
+                local oldPositionOther = other.position:copy()
+                local oldPosition = self.position:copy()
+                
+                other.position.x, other.position.y =
                     movetowards(other.position.x, other.position.y, self.position.x, self.position.y,
-                        -distance * entities[i2].size * dt * 10)
+                        -distance * other.size * dt * 10)
                 self.position.x, self.position.y =
                     movetowards(self.position.x, self.position.y, other.position.x, other.position.y,
                         -distance * self.size * dt * 10)
+
+                if other:getColision(other.position.x, other.position.y + other.size) or other:getColision(other.position.x, other.position.y - other.size) then
+                    other.position = oldPositionOther:copy()
+                end
+                if other:getColision(other.position.x + other.size, other.position.y) or other:getColision(other.position.x - other.size, other.position.y) then
+                    other.position = oldPositionOther:copy()
+                end
+
+                if self:getColision(self.position.x, self.position.y + self.size) or self:getColision(self.position.x, self.position.y - self.size) then
+                    self.position = oldPosition:copy()
+                end
+                if self:getColision(self.position.x + self.size, self.position.y) or self:getColision(self.position.x - self.size, self.position.y) then
+                    self.position = oldPosition:copy()
+                end
+                
             end
         end
     end
+    
 end
 
 function Entity:targetedBlock(x, y)
-    local posX = x or mxworldpos
-    local posY = y or myworldpos
+    local posX = x or self.controls.mxWorld
+    local posY = y or self.controls.myWorld
     local targetTile = world:getTile(posX, posY, "tiles")
     if targetTile == tiles["none"] then
         return nil
@@ -1553,6 +2158,57 @@ function Entity:entityUpdate(dt)
     self.xpBar:update(dt)
     self:levelUpdate(dt)
     self:statsUpdate(dt)
+    if self.elementalType ~= "none" then
+        self:elementalUpdate(dt)
+    end
+    if self.contactDamage > 0 then
+        self:contactDamageUpdate(dt)
+    end
+end
+
+function Entity:contactDamageUpdate(dt)
+
+    if self.contactDamageCooldown == nil then self.contactDamageCooldown = 0 end
+    if self.contactDamageCooldown > 0 then
+        self.contactDamageCooldown = self.contactDamageCooldown - dt
+        if self.contactDamageCooldown < 0 then self.contactDamageCooldown = 0 end
+    end
+    if self.contactDamageCooldown > 0 then return end
+    if #entities > 0 then
+        for i2 = 1, #entities do
+            other = entities[i2]
+            if self.id ~= other.id then
+                if dist(self.position.x, self.position.y, other.position.x, other.position.y) < self.size + other.size then
+                    if self.contactDamage > 0 and self.contactDamageType ~= "none" then
+                        other:damage(self.contactDamage,"contact",self,{})
+                        self.contactDamageCooldown = 1
+                    end
+                end
+            end
+        end
+    end
+end
+
+function Entity:elementalUpdate(dt)
+    if self.elementalType == "fire" then
+        world:spawnParticles(1,"fire",self.position:copy(),self.size,{0.9,0.9,0,0.7}, {0.05,0.05,0.05,0.05}, 0.8, 0.4,"fire", 1, -90, 360, {["color2"]={0.8,0.2,0.2,0.8},["color3"]={0.4,0.4,0.4,0.9}})
+    end
+    if self.elementalType == "earth" then
+        world:spawnParticles(1,"earth",self.position:copy(),self.size,{0.6,0.6,0.5,0.7}, {0.05,0.05,0.05,0.05}, 0.8, 0.4,"dust", 1, -90, 360, {weight = 0.3, ["color2"]={0.4,0.2,0.1,0.8},["color3"]={0.3,0.15,0,0.9}})
+    end
+    if self.elementalType == "nature" then
+        world:spawnParticles(2,"nature",self.position:copy(),self.size,{0.2,0.8,0.2,0.7}, {0.05,0.05,0.05,0.05}, 0.3, 0.2,"dust", 1, -90, 360, {weight = 0.1, ["color2"]={0.1,0.5,0.1,0.8},["color3"]={0.9,0.9,0.9,0.9}})
+    end
+    if self.elementalType == "water" then
+        if math.random() < 0.25 then
+            world:spawnParticles(1,"water",self.position:copy(),self.size,{0,0,0.25,0.7}, {0.05,0.05,0.05,0.05}, 1, 2,"floating", 0.4, -90, 360, {["color2"]={0,0,1,0.8},["color3"]={1,1,1,0.9}})
+        end
+    end
+    if self.elementalType == "void" then
+        if math.random() < 0.6 then
+            world:spawnParticles(1,"void",self.position:copy(),self.size,{0.5,0,0.8,0.7}, {0.05,0.05,0.05,0.05}, 2, 1,"dust", 1, -90, 360, {weight = -0.4, ["color2"]={0.2,0,0.3,0.8},["color3"]={0,0,0,0.9}})
+        end
+    end
 end
 
 function Entity:levelUpdate(dt)
@@ -1569,6 +2225,12 @@ function Entity:dropXp(proportion)
     if proportion == nil then proportion = 1 end
     local xpToDrop = (self.xpGiveOnDeath + self.xpAccumulated) * proportion
     world:spawnXPparticles(xpToDrop, self.position:copy())
+end
+
+function Entity:dropCoins(proportion)
+    if proportion == nil then proportion = 1 end
+    local coinsToDrop = (math.ceil(self.moneyGiveOnDeath * (1 + (self.level)/3)) + self.moneyAccumulated) * proportion
+    world:spawnCoinParticles(coinsToDrop, self.position:copy())
 end
 
 function Entity:giveXp(amount,from)
@@ -1592,7 +2254,9 @@ function Entity:levelUp()
 
     self.level = self.level + 1
     self.xpBar:setValue(self.xpBar:getValue() - self.xpBar:getMax())
-    self:gainHealth(self:getMaxHealth() - self.health:getValue("hp"),"hp")
+    if not self.isBoss then
+        self:gainHealth(self:getMaxHealth() - self.health:getValue("hp"),"hp")
+    end
 end
 
 function Entity:statsUpdate(dt)
@@ -1620,6 +2284,8 @@ function Entity:playerUpdate(dt)
 end
 
 function Entity:inventoryUpdate(dt)
+    if self.controls.mx == nil then self.controls.mx = 0 end
+    if self.controls.my == nil then self.controls.my = 0 end
     --self.controls.invClick
     --self.controls.invRightClick
     --self.controls.invShiftClick
@@ -1641,14 +2307,25 @@ function Entity:inventoryUpdate(dt)
 
     for inv = 1, #self.inventory do
         invX, invY, sizeX, sizeY = self.inventory[inv]:getPosAndSize()
-        if mx > invX and mx < invX + sizeX and my > invY and my < invY + sizeY then
+        if (self.inventoryControlsType == "mouse" and self.controls.mx > invX and self.controls.mx < invX + sizeX and self.controls.my > invY and self.controls.my < invY + sizeY) 
+            or (self.inventoryControlsType == "controller" and self.controls.inventoryCursor.inventory == inv)
+        then
             tileInteraction.insideInventory = true
         end
         for ix = 1, #self.inventory[inv]["items"][self.inventory[inv]["currentPage"]] do
             for iy = 1, #self.inventory[inv]["items"][self.inventory[inv]["currentPage"]][ix] do
                 tileX, tileY, size = self.inventory[inv]:getTilePosAndSize(ix, iy)
-                if mx > tileX and mx < tileX + size and my > tileY and my < tileY + size then
+                if (self.inventoryControlsType == "mouse" and self.controls.mx > tileX and self.controls.mx < tileX + size and self.controls.my > tileY and self.controls.my < tileY + size) 
+                    or (self.inventoryControlsType == "controller" and self.controls.inventoryCursor.inventory == inv and self.controls.inventoryCursor.x == ix and self.controls.inventoryCursor.y == iy) then
                     if not self.inventory[inv]:getSlotAttribute("disabled", ix, iy) then
+                        if self.inventoryControlsType == "controller" then
+                            self.controls.mx = tileX + size / 2
+                            self.controls.my = tileY + size / 2
+                        else
+                            self.controls.inventoryCursor.inventory = inv
+                            self.controls.inventoryCursor.x = ix
+                            self.controls.inventoryCursor.y = iy
+                        end
                         tileInteraction.x = ix
                         tileInteraction.y = iy
                         tileInteraction.page = self.inventory[inv]["currentPage"]
@@ -1862,10 +2539,11 @@ end
 function Entity:setAnimation(newAnimation, newSpeed)
     local canChange = true
     if self.animation ~= "none" then
-        if self.sprite.spriteData[newAnimation] == nil then canChange = false end
-        if self.sprite.spriteData[self.animation] ~= nil then
-            if self.sprite.spriteData[self.animation]["type"] == "repeat&needsToEnd" then
-                if self.animationTime < #self.sprite.spriteData[self.animation]["quads"] * self.sprite.spriteData[self.animation]["timePerFrame"] then
+        local sprite = textures["sprites"][self.sprite]
+        if sprite.spriteData[newAnimation] == nil then canChange = false end
+        if sprite.spriteData[self.animation] ~= nil then
+            if sprite.spriteData[self.animation]["type"] == "repeat&needsToEnd" then
+                if self.animationTime < #sprite.spriteData[self.animation]["quads"] * sprite.spriteData[self.animation]["timePerFrame"] then
                     canChange = false
                 end
             end
@@ -1908,6 +2586,16 @@ function Entity:drawHealthBars()
     love.graphics.printf("lvl "..self.level,x-width-100,y+szy*0.02-1,(width*2+200)/txtSize,"center",0,txtSize,txtSize)
     love.graphics.setColor(1,1,1,1)
     love.graphics.printf("lvl "..self.level,x-width-100,y+szy*0.02,(width*2+200)/txtSize,"center",0,txtSize,txtSize)
+    if self.name ~= "none" and self.name ~= "player" and self.name ~= nil then
+        love.graphics.setColor(0,0,0,1)
+        love.graphics.printf(self.name,x-width-100+1,y+szy*0.02+szy*0.02,(width*2+200)/txtSize,"center",0,txtSize,txtSize)
+        love.graphics.printf(self.name,x-width-100-1,y+szy*0.02+szy*0.02,(width*2+200)/txtSize,"center",0,txtSize,txtSize)
+        love.graphics.printf(self.name,x-width-100,y+szy*0.02+szy*0.02+1,(width*2+200)/txtSize,"center",0,txtSize,txtSize)
+        love.graphics.printf(self.name,x-width-100,y+szy*0.02+szy*0.02-1,(width*2+200)/txtSize,"center",0,txtSize,txtSize)
+        love.graphics.setColor(self.nameColor)
+        love.graphics.printf(self.name,x-width-100,y+szy*0.02+szy*0.02,(width*2+200)/txtSize,"center",0,txtSize,txtSize)
+    end
+    
     --love.graphics.rectangle("fill",x,y,100,5)
     --love.graphics.setColor(1,1,1,1)
     --love.graphics.print((round((self.position.y - self.size / 2 - 0.5) * 8) / 8),0,0)
@@ -1923,6 +2611,7 @@ function Entity:draw(inInventory, customX, customY, customSize)
     local spriteX, spriteY = positiontoscreen(round(self.position.x * 8) / 8,
         round((self.position.y + self.spriteOffsetY) * 8) / 8)
     spriteY = spriteY
+    
     if customX ~= nil then spriteX = customX end
     if customY ~= nil then spriteY = customY end
     if inInventory == nil then inInventory = false end
@@ -1947,8 +2636,9 @@ function Entity:draw(inInventory, customX, customY, customSize)
     --print("animation : "..self.animation)
 
     if self.spriteName ~= "none" and self.animation ~= "none" and textures["sprites"][self.spriteName] ~= nil then
+        local sprite = textures["sprites"][self.sprite]
         --print("draw1")
-        
+        local color = CopyAll(self.color)
         local colorisationColor = CopyAll(self.colorisation)
         if colorisationColor == nil then colorisationColor = { 1, 1, 1, 0 } end
         --self.lastDamageTakenTime = 0.1
@@ -1962,8 +2652,11 @@ function Entity:draw(inInventory, customX, customY, customSize)
             colorisationColor = OverrideColor(colorisationColor,{0,3,0,1,(0.5-self.greenTime)*2})
         end
 
-        self.sprite:draw(self.animation, self.animationTime, self.animationDirection, spriteX, spriteY, size, size,
-            { 1, 1, 1, 1 },colorisationColor)
+        local shader = "none"
+        if self.shaderName ~= nil then shader = textures["textures"][self.shaderName] end
+
+        sprite:draw(self.animation, self.animationTime, self.animationDirection, spriteX, spriteY, size, size,
+            color,{shader = shader, colorisation = colorisationColor})
     end
 
     --love.graphics.print(self.ia, x, y + 100)

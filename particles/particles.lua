@@ -35,6 +35,7 @@ function Particle:init(name,position, color,timer,motion, flags)
 
 
     self.xpValue = self.flags.xpValue or 0
+    self.coinValue = self.flags.coinValue or 0
     if self.flags.lightColor ~= nil then self.lightColor = self.flags.lightColor end
     if self.flags.flashColor ~= nil then self.flashColor = self.flags.flashColor end
     self.flashTime = self.flags.flashTime or 1
@@ -135,7 +136,7 @@ function Particle:update(dt)
     end
 
 
-    if self.xpValue > 0 and self.timeAlive > 1 then
+    if (self.xpValue > 0 and self.timeAlive > 1.6) or (self.coinValue > 0 and self.timeAlive > 0.8)  then
         die = self:xpUpdate(dt,die)
     end
 
@@ -153,12 +154,23 @@ function Particle:xpUpdate(dt,die)
     if #entities > 0 then
         for i = 1, #entities do
             local entity = entities[i]
-            if self.position:distance(entity.position) < 12 then
-                self.position:move(self.position:angle(entity.position),dt*6*(1-((self.position:distance(entity.position))/12))^2)
+            if self.position:distance(entity.position) < 20 then
+                self.position:move(self.position:angle(entity.position),dt*9*(1-((self.position:distance(entity.position))/20))^3)
             end
             if self.position:distance(entity.position) < entity.size then
-                entity:giveXp(self.xpValue)
+                if self.xpValue > 0 then
+                    entity:giveXp(self.xpValue)
+                end
+                if self.coinValue > 0 then
+                    entity.money = entity.money + self.coinValue
+                    if self.coinValue >= 1 then
+                        world:spawnTextParticle((round(self.coinValue)).."$",self.position:copy(),nil,nil,nil,{1,1,0,1},{0,0,0,1})
+                    else
+                        world:spawnTextParticle((round(self.coinValue*100)).."¢",self.position:copy(),nil,nil,nil,{0.6,0.6,0.65,1},{0,0,0,1})
+                    end
+                end
                 self.xpValue = 0
+                self.coinValue = 0
                 die = true
             end
         end

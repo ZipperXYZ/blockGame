@@ -1,0 +1,31 @@
+2026-08-19
+    initial beta
+2026-08-20
+    added :
+        added item attributes/enchants multiplier in world parameters
+        new enchants :
+            condition :
+                enemy is a boss
+
+    changed : 
+        enemy level updates :
+            enemy health per level 0.15 => 0.25
+            enemy damage per level 0.1 => 0.3
+        weapon charge time updates : 
+            knife charge 0.2 => 0
+            sword charge 0.5 => 0.2
+            greatSword charge 0.8 => 0.4
+            greatSword charge 0.3 => 0.2
+        tile health per level 0.05 => 0.1
+        xp to level up per level 10 => 50
+        velocity and dash limits :
+            dash velocity now limited to 70
+            entity velocity now limited to 60
+        easier slime boss :
+            projectile attacks cooldown 2 => 5
+            (enraged) 1 => 2
+        Bosses can see through walls and have infinite sight, and teleport if farther than 60 blocks away
+        increases the max levels of all items that were 999 to 999999999
+        some rings have higher max levels
+        nerfed
+        
